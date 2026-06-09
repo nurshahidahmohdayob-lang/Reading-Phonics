@@ -1,65 +1,130 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useState } from "react";
+import { lessons } from "./lessons";
+
+/** Speak text aloud using the browser's built-in voice. */
+function speak(text: string, rate = 0.8) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = rate;
+  utterance.pitch = 1.1;
+  utterance.lang = "en-US";
+  window.speechSynthesis.speak(utterance);
+}
 
 export default function Home() {
+  const [index, setIndex] = useState(0);
+  const lesson = lessons[index];
+  const isFirst = index === 0;
+  const isLast = index === lessons.length - 1;
+
+  const goNext = useCallback(
+    () => setIndex((i) => Math.min(i + 1, lessons.length - 1)),
+    [],
+  );
+  const goPrev = useCallback(() => setIndex((i) => Math.max(i - 1, 0)), []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="flex flex-1 flex-col items-center bg-gradient-to-b from-indigo-50 to-white px-4 py-8 font-sans text-zinc-900 dark:from-zinc-900 dark:to-black dark:text-zinc-50">
+      <header className="flex w-full max-w-2xl flex-col items-center gap-3 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          🐣 Phonics Pals
+        </h1>
+        <p className="text-zinc-500 dark:text-zinc-400">
+          Tap a card to hear the sound!
+        </p>
+
+        {/* Progress dots */}
+        <div className="mt-1 flex gap-2" aria-label="Lesson progress">
+          {lessons.map((l, i) => (
+            <button
+              key={l.letter}
+              onClick={() => setIndex(i)}
+              aria-label={`Go to letter ${l.letter.toUpperCase()}`}
+              aria-current={i === index}
+              className={`h-3 w-3 rounded-full transition-all ${
+                i === index
+                  ? "scale-125 bg-indigo-500"
+                  : i < index
+                    ? "bg-indigo-300"
+                    : "bg-zinc-300 dark:bg-zinc-700"
+              }`}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
+      </header>
+
+      <main className="mt-8 flex w-full max-w-2xl flex-1 flex-col items-center gap-8">
+        {/* Big letter card */}
+        <button
+          onClick={() => speak(lesson.sound, 0.6)}
+          className={`group flex w-full flex-col items-center gap-2 rounded-3xl bg-gradient-to-br ${lesson.accent} px-6 py-10 text-white shadow-xl transition-transform active:scale-[0.98]`}
+        >
+          <span className="text-[7rem] font-black leading-none drop-shadow-md sm:text-[9rem]">
+            {lesson.letter}
+            <span className="text-5xl font-bold opacity-80 sm:text-6xl">
+              {lesson.letter.toUpperCase()}
+            </span>
+          </span>
+          <span className="text-2xl font-bold">&ldquo;{lesson.sound}&rdquo;</span>
+          <span className="text-sm font-medium opacity-90">{lesson.hint}</span>
+          <span className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/25 px-4 py-2 text-base font-semibold backdrop-blur transition-colors group-hover:bg-white/35">
+            🔊 Hear the sound
+          </span>
+        </button>
+
+        {/* Example words */}
+        <section className="w-full">
+          <h2 className="mb-3 text-center text-lg font-semibold text-zinc-600 dark:text-zinc-300">
+            Words that start with{" "}
+            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+              {lesson.letter}
+            </span>
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {lesson.words.map((word) => (
+              <button
+                key={word.text}
+                onClick={() => speak(word.text, 0.85)}
+                className="flex flex-col items-center gap-2 rounded-2xl border-2 border-zinc-100 bg-white px-4 py-6 shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <span className="text-5xl" role="img" aria-label={word.text}>
+                  {word.emoji}
+                </span>
+                <span className="text-lg font-semibold lowercase">
+                  <span className="text-indigo-600 dark:text-indigo-400">
+                    {word.text[0]}
+                  </span>
+                  {word.text.slice(1)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
       </main>
+
+      {/* Navigation */}
+      <nav className="mt-8 flex w-full max-w-2xl items-center justify-between gap-4">
+        <button
+          onClick={goPrev}
+          disabled={isFirst}
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-white text-lg font-bold text-zinc-700 shadow-sm transition-all hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          ← Back
+        </button>
+        <span className="shrink-0 text-sm font-semibold text-zinc-400">
+          {index + 1} / {lessons.length}
+        </span>
+        <button
+          onClick={goNext}
+          disabled={isLast}
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-indigo-500 text-lg font-bold text-white shadow-md transition-all hover:bg-indigo-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next →
+        </button>
+      </nav>
     </div>
   );
 }
