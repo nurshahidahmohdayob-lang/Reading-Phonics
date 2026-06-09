@@ -1,0 +1,148 @@
+export type DictEntry = {
+  /** A picture cue for the meaning. */
+  emoji: string;
+  /** A short, child-friendly definition. */
+  meaning: string;
+};
+
+/**
+ * A small picture dictionary covering the vocabulary used in the stories and
+ * generated passages, so practice words can show a meaning with a picture.
+ */
+const DICTIONARY: Record<string, DictEntry> = {
+  // Animals
+  cat: { emoji: "🐱", meaning: "A small furry pet that says meow." },
+  dog: { emoji: "🐶", meaning: "A friendly pet that barks and wags its tail." },
+  pig: { emoji: "🐷", meaning: "A pink farm animal that likes mud." },
+  hen: { emoji: "🐔", meaning: "A female chicken that lays eggs." },
+  fox: { emoji: "🦊", meaning: "A wild animal with red fur and a bushy tail." },
+  frog: { emoji: "🐸", meaning: "A green animal that hops and lives near water." },
+  duck: { emoji: "🦆", meaning: "A bird that swims and says quack." },
+  owl: { emoji: "🦉", meaning: "A bird that is awake at night and hoots." },
+  bear: { emoji: "🐻", meaning: "A big strong animal that lives in the woods." },
+  fish: { emoji: "🐟", meaning: "An animal that lives and swims in water." },
+  bird: { emoji: "🐦", meaning: "An animal with feathers and wings that can fly." },
+  rabbit: { emoji: "🐰", meaning: "A soft animal with long ears that hops." },
+  cow: { emoji: "🐮", meaning: "A big farm animal that gives us milk." },
+  goat: { emoji: "🐐", meaning: "A farm animal with horns that likes to climb." },
+  mouse: { emoji: "🐭", meaning: "A tiny animal with a long thin tail." },
+  chick: { emoji: "🐤", meaning: "A baby chicken." },
+  crab: { emoji: "🦀", meaning: "A sea animal with claws that walks sideways." },
+  snake: { emoji: "🐍", meaning: "A long animal with no legs that slithers." },
+
+  // Places
+  park: { emoji: "🏞️", meaning: "An open place outside where you can play." },
+  pond: { emoji: "🪷", meaning: "A small area of still water." },
+  hill: { emoji: "⛰️", meaning: "A high piece of land, smaller than a mountain." },
+  garden: { emoji: "🌻", meaning: "A place where plants and flowers grow." },
+  barn: { emoji: "🛖", meaning: "A big farm building for animals and hay." },
+  beach: { emoji: "🏖️", meaning: "Sandy land beside the sea." },
+  forest: { emoji: "🌲", meaning: "A large area covered with many trees." },
+  river: { emoji: "🌊", meaning: "A long stream of water that flows to the sea." },
+  market: { emoji: "🏪", meaning: "A place where people buy and sell things." },
+  castle: { emoji: "🏰", meaning: "A huge stone building where kings once lived." },
+  cave: { emoji: "🕳️", meaning: "A hollow space inside a hill or rock." },
+  meadow: { emoji: "🌾", meaning: "A field full of grass and wildflowers." },
+  mountain: { emoji: "🏔️", meaning: "A very high, rocky piece of land." },
+  harbour: { emoji: "⚓", meaning: "A safe place by the sea for boats." },
+  museum: { emoji: "🏛️", meaning: "A place that keeps interesting old things." },
+  valley: { emoji: "🏞️", meaning: "Low land between two hills or mountains." },
+  island: { emoji: "🏝️", meaning: "Land with water all around it." },
+  observatory: { emoji: "🔭", meaning: "A place for looking at the stars." },
+  library: { emoji: "📚", meaning: "A place full of books to read and borrow." },
+  lighthouse: { emoji: "🗼", meaning: "A tower with a light that guides ships." },
+  nest: { emoji: "🪺", meaning: "A cosy home a bird builds for its eggs." },
+  home: { emoji: "🏠", meaning: "The place where you live." },
+  summit: { emoji: "⛰️", meaning: "The very top of a mountain." },
+
+  // Things / nouns
+  ball: { emoji: "⚽", meaning: "A round toy you kick, throw, or bounce." },
+  hat: { emoji: "🎩", meaning: "Something you wear on your head." },
+  mat: { emoji: "🟫", meaning: "A flat piece you put on the floor." },
+  box: { emoji: "📦", meaning: "A container with sides for keeping things." },
+  egg: { emoji: "🥚", meaning: "A round shell that a baby bird grows inside." },
+  kite: { emoji: "🪁", meaning: "A toy that flies on a string in the wind." },
+  key: { emoji: "🗝️", meaning: "A small metal tool that opens a lock." },
+  ribbon: { emoji: "🎀", meaning: "A thin strip of cloth used to tie gifts." },
+  gift: { emoji: "🎁", meaning: "A present you give to someone." },
+  seed: { emoji: "🌱", meaning: "A tiny thing that grows into a plant." },
+  flower: { emoji: "🌸", meaning: "The colourful part of a plant." },
+  flowers: { emoji: "🌷", meaning: "Many colourful blooms of a plant." },
+  tree: { emoji: "🌳", meaning: "A tall plant with a trunk and leaves." },
+  trees: { emoji: "🌲", meaning: "More than one tall plant with a trunk." },
+  sun: { emoji: "☀️", meaning: "The bright star that warms the day." },
+  rainbow: { emoji: "🌈", meaning: "A curve of colours in the sky after rain." },
+  rain: { emoji: "🌧️", meaning: "Water that falls from the clouds." },
+  cloud: { emoji: "☁️", meaning: "A white or grey shape of water in the sky." },
+  clouds: { emoji: "☁️", meaning: "Many white or grey shapes in the sky." },
+  puddle: { emoji: "💦", meaning: "A small pool of water on the ground." },
+  wind: { emoji: "🌬️", meaning: "Air that moves and blows things around." },
+  thunder: { emoji: "⛈️", meaning: "The loud noise that comes after lightning." },
+  lightning: { emoji: "⚡", meaning: "A bright flash of light in a storm." },
+  boat: { emoji: "⛵", meaning: "A small vehicle that floats on water." },
+  log: { emoji: "🪵", meaning: "A thick round piece of a tree trunk." },
+  crystal: { emoji: "💎", meaning: "A clear, shiny rock that sparkles." },
+  crystals: { emoji: "💎", meaning: "Many clear, shiny, sparkling rocks." },
+  book: { emoji: "📖", meaning: "Pages with words and pictures to read." },
+  books: { emoji: "📚", meaning: "Many things to read with pages." },
+  treasure: { emoji: "💰", meaning: "A pile of gold or precious things." },
+  machine: { emoji: "⚙️", meaning: "A built thing that does work for us." },
+  voice: { emoji: "🗣️", meaning: "The sound you make when you speak." },
+  path: { emoji: "🛤️", meaning: "A narrow way to walk along." },
+  view: { emoji: "🌄", meaning: "Everything you can see from a place." },
+  shell: { emoji: "🐚", meaning: "The hard cover of a sea creature." },
+
+  // Actions / verbs
+  run: { emoji: "🏃", meaning: "To move very fast on your feet." },
+  ran: { emoji: "🏃", meaning: "Moved very fast on your feet." },
+  jump: { emoji: "🤸", meaning: "To push off the ground into the air." },
+  hop: { emoji: "🐇", meaning: "To make small jumps." },
+  sit: { emoji: "🪑", meaning: "To rest on your bottom." },
+  nap: { emoji: "😴", meaning: "A short sleep." },
+  sleep: { emoji: "😴", meaning: "To close your eyes and rest at night." },
+  play: { emoji: "🤸", meaning: "To have fun with games or toys." },
+  look: { emoji: "👀", meaning: "To use your eyes to see something." },
+  find: { emoji: "🔍", meaning: "To discover something you were looking for." },
+  hide: { emoji: "🙈", meaning: "To go where others cannot see you." },
+  dig: { emoji: "⛏️", meaning: "To make a hole in the ground." },
+  climb: { emoji: "🧗", meaning: "To go up using your hands and feet." },
+  crept: { emoji: "👣", meaning: "Moved slowly and quietly." },
+  blew: { emoji: "🌬️", meaning: "Pushed air out, like the wind." },
+  grew: { emoji: "🌱", meaning: "Got bigger over time." },
+  follow: { emoji: "🐾", meaning: "To go after someone or something." },
+  followed: { emoji: "🐾", meaning: "Went after someone or something." },
+  discover: { emoji: "💡", meaning: "To find something for the first time." },
+  discovered: { emoji: "💡", meaning: "Found something for the first time." },
+  steer: { emoji: "🧭", meaning: "To guide which way something goes." },
+
+  // Describing words
+  big: { emoji: "🐘", meaning: "Large in size." },
+  little: { emoji: "🐜", meaning: "Small in size." },
+  tiny: { emoji: "🐜", meaning: "Very, very small." },
+  tall: { emoji: "📏", meaning: "Higher than usual from bottom to top." },
+  fast: { emoji: "💨", meaning: "Moving very quickly." },
+  red: { emoji: "🟥", meaning: "The colour of strawberries and apples." },
+  soft: { emoji: "🧸", meaning: "Nice and gentle to touch, not hard." },
+  dark: { emoji: "🌑", meaning: "With little or no light." },
+  cold: { emoji: "🥶", meaning: "Having a low temperature, not warm." },
+  brave: { emoji: "🦁", meaning: "Not afraid to do hard things." },
+  happy: { emoji: "😄", meaning: "Feeling glad and cheerful." },
+  scared: { emoji: "😨", meaning: "Feeling afraid." },
+  proud: { emoji: "🏅", meaning: "Pleased about something good you did." },
+  kind: { emoji: "🤗", meaning: "Friendly and caring to others." },
+  golden: { emoji: "🟡", meaning: "Shiny yellow, like gold." },
+  enormous: { emoji: "🐳", meaning: "Extremely big." },
+  ancient: { emoji: "🏺", meaning: "Very, very old." },
+  difficult: { emoji: "🧗", meaning: "Hard to do." },
+  curious: { emoji: "🧐", meaning: "Wanting to learn or find out more." },
+  friendly: { emoji: "🤝", meaning: "Kind and easy to get along with." },
+  remarkable: { emoji: "🌟", meaning: "So good it makes people notice." },
+  magnificent: { emoji: "🤩", meaning: "Wonderful and grand to see." },
+  determination: { emoji: "💪", meaning: "Trying hard and not giving up." },
+};
+
+/** Look up a word's meaning + picture, ignoring case and punctuation. */
+export function lookup(word: string): DictEntry | null {
+  const key = word.toLowerCase().replace(/[^a-z]/g, "");
+  return DICTIONARY[key] ?? null;
+}

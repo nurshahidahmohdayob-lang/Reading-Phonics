@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Phonics Pals — Learn Letter Sounds",
-  description: "A playful phonics lesson for early readers.",
+  title: "Phonics Pals & Guided Reading",
+  description:
+    "Playful phonics plus read-aloud guided reading with a friendly coach.",
 };
 
 export default function RootLayout({
