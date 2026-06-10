@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Zera brand tokens */
+  --background: #f7f7f5; /* Zera --bg */
+  --foreground: #1a1a1a; /* Zera --text */
 }
 
 @theme inline {
@@ -10,12 +11,32 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Zera Education green — primary brand scale (600 = #0D4A34) */
+  --color-brand-50: #ecf4ef;
+  --color-brand-100: #cfe5d9;
+  --color-brand-200: #a3ccb8;
+  --color-brand-300: #6fae92;
+  --color-brand-400: #3f8e6c;
+  --color-brand-500: #1c6b49;
+  --color-brand-600: #0d4a34;
+  --color-brand-700: #0a3a29;
+  --color-brand-800: #082e20;
+  --color-brand-900: #062017;
+  --color-brand-950: #03130d;
+
+  /* Zera sub-brand accents */
+  --color-zera-edu: #0d4a34;
+  --color-zera-intl: #668d4e;
+  --color-zera-pre: #3a7a5e;
+  --color-zera-plus: #27829e;
+  --color-zera-music: #f1b828;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #141414; /* Zera --dark */
+    --foreground: #f7f7f5;
   }
 }
 

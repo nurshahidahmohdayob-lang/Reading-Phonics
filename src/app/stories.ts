@@ -66,8 +66,8 @@ const baseLevels: Level[] = [
     instructional: { min: 90, max: 94 },
     frustrationBelow: 90,
     description: "First decodable words and short sentences.",
-    swatch: "bg-sky-300",
-    swatchText: "text-sky-950",
+    swatch: "bg-[#F1B828]",
+    swatchText: "text-[#3a2c00]",
     stories: [
       {
         id: "sam-the-cat",
@@ -110,8 +110,8 @@ const baseLevels: Level[] = [
     instructional: { min: 90, max: 94 },
     frustrationBelow: 90,
     description: "Longer sentences with everyday words.",
-    swatch: "bg-teal-400",
-    swatchText: "text-teal-950",
+    swatch: "bg-[#27829E]",
+    swatchText: "text-white",
     stories: [
       {
         id: "hen-and-egg",
@@ -155,8 +155,8 @@ const baseLevels: Level[] = [
     instructional: { min: 92, max: 95 },
     frustrationBelow: 92,
     description: "Short stories with a clear beginning and end.",
-    swatch: "bg-green-500",
-    swatchText: "text-green-950",
+    swatch: "bg-[#668D4E]",
+    swatchText: "text-white",
     stories: [
       {
         id: "the-red-kite",
@@ -201,8 +201,8 @@ const baseLevels: Level[] = [
     instructional: { min: 93, max: 96 },
     frustrationBelow: 93,
     description: "Stories with feelings and longer words.",
-    swatch: "bg-amber-500",
-    swatchText: "text-amber-950",
+    swatch: "bg-[#3A7A5E]",
+    swatchText: "text-white",
     stories: [
       {
         id: "a-trip-to-the-sea",
@@ -247,8 +247,8 @@ const baseLevels: Level[] = [
     instructional: { min: 94, max: 96 },
     frustrationBelow: 94,
     description: "Richer vocabulary and descriptive language.",
-    swatch: "bg-orange-500",
-    swatchText: "text-orange-950",
+    swatch: "bg-[#1C6B49]",
+    swatchText: "text-white",
     stories: [
       {
         id: "the-magic-seed",
@@ -294,8 +294,8 @@ const baseLevels: Level[] = [
     instructional: { min: 95, max: 97 },
     frustrationBelow: 95,
     description: "Complex sentences and advanced vocabulary.",
-    swatch: "bg-rose-500",
-    swatchText: "text-rose-950",
+    swatch: "bg-[#0D4A34]",
+    swatchText: "text-white",
     stories: [
       {
         id: "the-hidden-cave",

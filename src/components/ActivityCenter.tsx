@@ -20,21 +20,21 @@ const ACTIVITIES: {
     title: "Listen & Find",
     blurb: "Hear a word, tap the picture",
     emoji: "👂",
-    color: "from-sky-400 to-blue-400",
+    color: "from-[#3AA7C4] to-[#27829E]",
   },
   {
     id: "hunt",
     title: "Letter Hunt",
     blurb: "Tap every hidden letter",
     emoji: "🔍",
-    color: "from-amber-400 to-orange-400",
+    color: "from-[#7BA468] to-[#668D4E]",
   },
   {
     id: "sort",
     title: "Sound Sort",
     blurb: "Pick the matching sounds",
     emoji: "🧺",
-    color: "from-emerald-400 to-green-400",
+    color: "from-[#4E9A78] to-[#3A7A5E]",
   },
 ];
 
@@ -60,7 +60,7 @@ export default function ActivityCenter({
         </button>
         <span className="flex items-center gap-2 text-lg font-bold">
           Sound:
-          <span className="rounded-lg bg-indigo-100 px-3 py-1 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+          <span className="rounded-lg bg-brand-100 px-3 py-1 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
             {lesson.letter} &ldquo;{lesson.sound}&rdquo;
           </span>
         </span>

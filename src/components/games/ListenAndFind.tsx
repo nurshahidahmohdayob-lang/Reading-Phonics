@@ -71,7 +71,7 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
         </p>
         <button
           onClick={restart}
-          className="rounded-full bg-indigo-500 px-6 py-3 font-bold text-white shadow active:scale-95"
+          className="rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
         >
           Play again 🔁
         </button>
@@ -86,7 +86,7 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
       </p>
       <button
         onClick={playTarget}
-        className="flex items-center gap-3 rounded-full bg-indigo-100 px-6 py-4 text-xl font-bold text-indigo-700 shadow active:scale-95 dark:bg-indigo-950 dark:text-indigo-300"
+        className="flex items-center gap-3 rounded-full bg-brand-100 px-6 py-4 text-xl font-bold text-brand-700 shadow active:scale-95 dark:bg-brand-950 dark:text-brand-300"
       >
         🔊 Hear the word
       </button>
@@ -101,7 +101,7 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
               className={`flex h-28 w-24 flex-col items-center justify-center gap-1 rounded-2xl border-4 bg-white text-6xl shadow-sm transition-all active:scale-95 dark:bg-zinc-900 ${
                 isWrong
                   ? "animate-pulse border-rose-400"
-                  : "border-transparent hover:border-indigo-300"
+                  : "border-transparent hover:border-brand-300"
               }`}
               aria-label={word.text}
             >

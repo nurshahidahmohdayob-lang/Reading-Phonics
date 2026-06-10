@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import LetterSounds from "@/components/tabs/LetterSounds";
-import WordSounds from "@/components/tabs/WordSounds";
+import Phonics from "@/components/tabs/Phonics";
+import LetterFormation from "@/components/tabs/LetterFormation";
+import Spelling from "@/components/tabs/Spelling";
+import TrickyWords from "@/components/tabs/TrickyWords";
 import Stories from "@/components/tabs/Stories";
 import GuidedReading from "@/components/tabs/GuidedReading";
 import SoundPrimer from "@/components/SoundPrimer";
 
-type SectionId = "letters" | "words" | "stories" | "guided";
+type SectionId =
+  | "phonics"
+  | "formation"
+  | "spelling"
+  | "tricky"
+  | "stories"
+  | "guided";
 
 const SECTIONS: {
   id: SectionId;
@@ -17,32 +25,46 @@ const SECTIONS: {
   color: string;
 }[] = [
   {
-    id: "letters",
-    label: "Letter Sounds",
-    blurb: "Learn each letter and its sound",
-    emoji: "🔤",
-    color: "from-rose-400 to-orange-300",
+    id: "phonics",
+    label: "Phonics",
+    blurb: "Sounds, actions & blending",
+    emoji: "🙆",
+    color: "from-[#1C6B49] to-[#0D4A34]", // Zera Edu green
   },
   {
-    id: "words",
-    label: "Word Sounds",
-    blurb: "Blend sounds into words",
-    emoji: "🧩",
-    color: "from-sky-400 to-blue-300",
+    id: "formation",
+    label: "Letter Formation",
+    blurb: "Trace and write letters",
+    emoji: "✍️",
+    color: "from-[#2E8C77] to-[#1C6B49]", // Zera teal-green blend
+  },
+  {
+    id: "spelling",
+    label: "Spelling",
+    blurb: "Segment words and spell",
+    emoji: "🔡",
+    color: "from-[#1C6B49] to-[#0D4A34]", // Zera Edu green
+  },
+  {
+    id: "tricky",
+    label: "Tricky Words",
+    blurb: "Sight words to memorise",
+    emoji: "🌟",
+    color: "from-[#7BA468] to-[#668D4E]", // Zera Intl green
   },
   {
     id: "stories",
     label: "Sentences & Stories",
     blurb: "Read leveled stories",
     emoji: "📚",
-    color: "from-emerald-400 to-green-300",
+    color: "from-[#7BA468] to-[#668D4E]", // Zera Intl green
   },
   {
     id: "guided",
     label: "Guided Reading",
     blurb: "Read aloud with your coach",
     emoji: "🎤",
-    color: "from-violet-400 to-fuchsia-300",
+    color: "from-[#4E9A78] to-[#3A7A5E]", // Zera Pre green
   },
 ];
 
@@ -50,7 +72,7 @@ export default function Home() {
   const [section, setSection] = useState<SectionId | null>(null);
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-gradient-to-b from-indigo-50 to-white px-4 py-8 font-sans text-zinc-900 dark:from-zinc-900 dark:to-black dark:text-zinc-50">
+    <div className="flex flex-1 flex-col items-center bg-gradient-to-b from-brand-50 to-white px-4 py-8 font-sans text-zinc-900 dark:from-zinc-900 dark:to-black dark:text-zinc-50">
       <SoundPrimer />
       <header className="flex w-full max-w-2xl flex-col items-center gap-3 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -93,8 +115,10 @@ export default function Home() {
           </div>
 
           <div className="mt-6 flex w-full flex-1 flex-col items-center">
-            {section === "letters" && <LetterSounds />}
-            {section === "words" && <WordSounds />}
+            {section === "phonics" && <Phonics />}
+            {section === "formation" && <LetterFormation />}
+            {section === "spelling" && <Spelling />}
+            {section === "tricky" && <TrickyWords />}
             {section === "stories" && <Stories />}
             {section === "guided" && <GuidedReading />}
           </div>

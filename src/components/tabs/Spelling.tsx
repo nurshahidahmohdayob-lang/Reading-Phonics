@@ -1,0 +1,136 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { wordFamilies, type WordCard } from "@/app/words";
+import { speak, praise } from "@/lib/speak";
+import { shuffle } from "@/lib/random";
+
+// All simple 3-letter CVC words from the word families.
+const POOL: WordCard[] = wordFamilies
+  .flatMap((f) => f.words)
+  .filter((w) => w.text.length === 3 && w.sounds.length === 3);
+
+type Tile = { letter: string; id: number };
+
+function buildTiles(word: WordCard): Tile[] {
+  return shuffle(word.text.split("").map((letter, id) => ({ letter, id })));
+}
+
+export default function Spelling() {
+  const [index, setIndex] = useState(0);
+  const [tiles, setTiles] = useState<Tile[]>(() => buildTiles(POOL[0]));
+  const [used, setUsed] = useState<Set<number>>(new Set());
+  const [filled, setFilled] = useState(0);
+  const [wrongId, setWrongId] = useState<number | null>(null);
+
+  const word = POOL[index];
+  const done = filled === word.text.length;
+
+  // Say the word when a new one appears.
+  useEffect(() => {
+    speak(word.text, 0.8);
+  }, [word]);
+
+  function newRound(i: number) {
+    const w = POOL[i % POOL.length];
+    setIndex(i % POOL.length);
+    setTiles(buildTiles(w));
+    setUsed(new Set());
+    setFilled(0);
+    setWrongId(null);
+  }
+
+  function tap(tile: Tile) {
+    if (used.has(tile.id) || done) return;
+    if (tile.letter === word.text[filled]) {
+      speak(word.say[filled], 0.8); // say the sound as it's placed
+      setUsed((prev) => new Set(prev).add(tile.id));
+      const next = filled + 1;
+      setFilled(next);
+      if (next === word.text.length) {
+        setTimeout(() => {
+          praise();
+          speak(word.text, 0.85);
+        }, 300);
+      }
+    } else {
+      setWrongId(tile.id);
+      speak("Try again", 1);
+      setTimeout(() => setWrongId(null), 500);
+    }
+  }
+
+  return (
+    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+      <p className="text-center text-zinc-500 dark:text-zinc-400">
+        Listen, break the word into sounds, then spell it!
+      </p>
+
+      <div className="mt-6 flex w-full flex-col items-center gap-6 rounded-3xl bg-gradient-to-br from-[#1C6B49] to-[#0D4A34] px-6 py-8 text-white shadow-xl">
+        <div className="text-7xl">{word.emoji}</div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => speak(word.text, 0.8)}
+            className="rounded-full bg-white/25 px-4 py-2 font-bold backdrop-blur active:scale-95"
+          >
+            🔊 Hear word
+          </button>
+          <button
+            onClick={() => word.say.forEach((s, i) => setTimeout(() => speak(s, 0.8), i * 650))}
+            className="rounded-full bg-white/25 px-4 py-2 font-bold backdrop-blur active:scale-95"
+          >
+            🐢 Sound it out
+          </button>
+        </div>
+
+        {/* Letter slots */}
+        <div className="flex gap-3">
+          {word.text.split("").map((letter, i) => (
+            <div
+              key={i}
+              className={`flex h-16 w-14 items-center justify-center rounded-2xl text-3xl font-black ${
+                i < filled
+                  ? "bg-white text-brand-600"
+                  : "border-2 border-dashed border-white/60"
+              }`}
+            >
+              {i < filled ? letter : ""}
+            </div>
+          ))}
+        </div>
+
+        {done && <span className="text-2xl font-bold">🎉 You spelled it!</span>}
+      </div>
+
+      {/* Letter tiles */}
+      {!done ? (
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {tiles.map((tile) => (
+            <button
+              key={tile.id}
+              onClick={() => tap(tile)}
+              disabled={used.has(tile.id)}
+              className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl font-black shadow-sm transition-all active:scale-90 ${
+                used.has(tile.id)
+                  ? "bg-zinc-100 text-zinc-300 dark:bg-zinc-800 dark:text-zinc-700"
+                  : wrongId === tile.id
+                    ? "animate-pulse bg-rose-200 text-rose-700"
+                    : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
+              }`}
+            >
+              {tile.letter}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button
+          onClick={() => newRound(index + 1)}
+          className="mt-6 rounded-full bg-brand-600 px-8 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+        >
+          Next word →
+        </button>
+      )}
+    </div>
+  );
+}

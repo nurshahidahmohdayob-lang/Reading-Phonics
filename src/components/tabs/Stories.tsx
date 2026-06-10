@@ -62,7 +62,7 @@ function LevelGrid({ onPick }: { onPick: (l: Level) => void }) {
                   · Age {l.age}
                 </span>
               </span>
-              <span className="text-sm font-semibold text-indigo-500">
+              <span className="text-sm font-semibold text-brand-500">
                 {l.lexileRange} · {l.stories.length} stories
               </span>
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -118,7 +118,7 @@ function StoryList({
           <button
             key={s.id}
             onClick={() => onPick(start + i)}
-            className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
           >
             <span className="text-5xl">{s.emoji}</span>
             <div className="flex flex-col">
@@ -146,7 +146,7 @@ function StoryList({
         <button
           onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
           disabled={page >= pageCount - 1}
-          className="flex h-12 flex-1 items-center justify-center rounded-full bg-indigo-500 text-base font-bold text-white shadow-md hover:bg-indigo-600 active:scale-95 disabled:opacity-40"
+          className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-500 text-base font-bold text-white shadow-md hover:bg-brand-600 active:scale-95 disabled:opacity-40"
         >
           Next 10 →
         </button>
@@ -202,7 +202,7 @@ function Reader({
             <button
               key={i}
               onClick={() => speak(word.replace(/[.,!?;:"]/g, ""))}
-              className="rounded-md px-0.5 transition-colors hover:bg-indigo-100 active:bg-indigo-200 dark:hover:bg-indigo-950"
+              className="rounded-md px-0.5 transition-colors hover:bg-brand-100 active:bg-brand-200 dark:hover:bg-brand-950"
             >
               {word}
             </button>
@@ -211,7 +211,7 @@ function Reader({
 
         <button
           onClick={() => speak(text, 0.8)}
-          className="flex items-center gap-2 rounded-full bg-indigo-100 px-6 py-3 text-lg font-bold text-indigo-700 active:scale-95 dark:bg-indigo-950 dark:text-indigo-300"
+          className="flex items-center gap-2 rounded-full bg-brand-100 px-6 py-3 text-lg font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
         >
           🔊 Read to me
         </button>
@@ -232,7 +232,7 @@ function Reader({
         <button
           onClick={() => onIndex(Math.min(level.stories.length - 1, index + 1))}
           disabled={isLast}
-          className="flex h-14 flex-1 items-center justify-center rounded-full bg-indigo-500 text-lg font-bold text-white shadow-md hover:bg-indigo-600 active:scale-95 disabled:opacity-40"
+          className="flex h-14 flex-1 items-center justify-center rounded-full bg-brand-500 text-lg font-bold text-white shadow-md hover:bg-brand-600 active:scale-95 disabled:opacity-40"
         >
           Next story →
         </button>

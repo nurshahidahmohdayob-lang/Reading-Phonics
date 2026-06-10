@@ -59,7 +59,7 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
         Tap the pictures that start with{" "}
         <button
           onClick={() => speak(lesson.sound, 0.6)}
-          className="rounded-lg bg-indigo-100 px-3 py-1 text-xl font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+          className="rounded-lg bg-brand-100 px-3 py-1 text-xl font-black text-brand-700 dark:bg-brand-950 dark:text-brand-300"
         >
           {lesson.letter} &ldquo;{lesson.sound}&rdquo;
         </button>
@@ -71,7 +71,7 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
           <h3 className="text-xl font-bold">Perfect sorting!</h3>
           <button
             onClick={restart}
-            className="rounded-full bg-indigo-500 px-6 py-3 font-bold text-white shadow active:scale-95"
+            className="rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
           >
             Play again 🔁
           </button>
@@ -95,7 +95,7 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
                       ? "border-green-400 bg-green-50 dark:bg-green-950"
                       : isMissed
                         ? "animate-pulse border-rose-400 bg-rose-50 dark:bg-rose-950"
-                        : "border-transparent bg-white hover:border-indigo-300 dark:bg-zinc-900"
+                        : "border-transparent bg-white hover:border-brand-300 dark:bg-zinc-900"
                   }`}
                   aria-label={item.text}
                 >

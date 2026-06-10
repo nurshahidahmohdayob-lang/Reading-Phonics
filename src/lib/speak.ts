@@ -1,24 +1,75 @@
-/* Robust wrapper around the Web Speech API. Browsers (especially Chrome) have
-   a few quirks that cause "no sound":
-   - getVoices() is empty until the async "voiceschanged" event fires;
-   - the synth can get stuck in a paused state and needs resume();
-   - the utterance can be garbage-collected mid-speech, cutting it off.
-   We warm voices up, keep a reference to the active utterance, and resume(). */
+/* Speech for the app. Primary path streams real spoken audio from our own
+   /api/tts route (works without any browser voices installed). If that audio
+   can't play, we fall back to the Web Speech API. A "phonics-audio" event is
+   emitted with "ok" or "fail" so the UI can show a diagnostic. */
 
-let warmedUp = false;
+let currentAudio: HTMLAudioElement | null = null;
 let activeUtterance: SpeechSynthesisUtterance | null = null;
+let session = 0;
+let warmed = false;
 
-function warmUp() {
-  if (warmedUp || typeof window === "undefined" || !window.speechSynthesis) {
+/** Start loading speech-synthesis voices early (for the fallback). */
+export function initSpeech() {
+  if (warmed || typeof window === "undefined" || !window.speechSynthesis) {
     return;
   }
-  warmedUp = true;
-  // Touch getVoices() and listen for the async load so voices are ready.
+  warmed = true;
   window.speechSynthesis.getVoices();
   window.speechSynthesis.addEventListener("voiceschanged", () => {
     window.speechSynthesis.getVoices();
   });
 }
+
+export function voiceCount(): number {
+  if (typeof window === "undefined" || !window.speechSynthesis) return -1;
+  return window.speechSynthesis.getVoices().length;
+}
+
+function emit(detail: "ok" | "fail") {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("phonics-audio", { detail }));
+  }
+}
+
+function clampRate(rate: number): number {
+  return Math.min(1.2, Math.max(0.5, rate));
+}
+
+/** Split text into ≤180-char chunks on word boundaries (TTS length limit). */
+function chunkText(text: string, max = 180): string[] {
+  const words = text.trim().split(/\s+/);
+  const chunks: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (cur && (cur + " " + w).length > max) {
+      chunks.push(cur);
+      cur = w;
+    } else {
+      cur = cur ? cur + " " + w : w;
+    }
+  }
+  if (cur) chunks.push(cur);
+  return chunks.length ? chunks : [text];
+}
+
+function stopAll() {
+  if (currentAudio) {
+    currentAudio.onended = null;
+    currentAudio.onerror = null;
+    currentAudio.onplaying = null;
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (
+    typeof window !== "undefined" &&
+    window.speechSynthesis &&
+    (window.speechSynthesis.speaking || window.speechSynthesis.pending)
+  ) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+/* ---- Web Speech API fallback ---- */
 
 function pickEnglishVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -31,44 +82,89 @@ function pickEnglishVoice(): SpeechSynthesisVoice | null {
   );
 }
 
-/** Speak text aloud using the browser's built-in voice. */
-export function speak(text: string, rate = 0.85) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
+function synthSpeak(text: string, rate: number, token: number) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    emit("fail");
+    return;
+  }
   const synth = window.speechSynthesis;
-  warmUp();
+  initSpeech();
 
-  // Stop anything already playing so taps don't queue up.
-  if (synth.speaking || synth.pending) synth.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = rate;
-  utterance.pitch = 1.1;
-  utterance.lang = "en-US";
-  const voice = pickEnglishVoice();
-  if (voice) utterance.voice = voice;
-
-  // Keep a reference so the utterance isn't garbage-collected mid-speech.
-  activeUtterance = utterance;
-  utterance.onend = () => {
-    if (activeUtterance === utterance) activeUtterance = null;
+  const run = () => {
+    if (token !== session) return;
+    if (synth.getVoices().length === 0) {
+      emit("fail");
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = rate;
+    u.pitch = 1.1;
+    u.lang = "en-US";
+    const voice = pickEnglishVoice();
+    if (voice) u.voice = voice;
+    activeUtterance = u;
+    u.onstart = () => emit("ok");
+    u.onend = () => {
+      if (activeUtterance === u) activeUtterance = null;
+    };
+    u.onerror = () => emit("fail");
+    synth.speak(u);
+    synth.resume();
   };
 
-  synth.speak(utterance);
-  // Chrome can leave the queue paused; nudge it to actually play.
-  synth.resume();
+  if (synth.getVoices().length === 0) {
+    let fired = false;
+    const go = () => {
+      if (fired) return;
+      fired = true;
+      synth.removeEventListener("voiceschanged", go);
+      run();
+    };
+    synth.addEventListener("voiceschanged", go);
+    setTimeout(go, 300);
+  } else {
+    run();
+  }
 }
 
-/**
- * Unlock the speech engine. Some browsers only allow speech after a real user
- * gesture, so we play a silent utterance on the first tap to "prime" it.
- */
+/* ---- Public API ---- */
+
+/** Speak text aloud (audio first, browser voice as fallback). */
+export function speak(text: string, rate = 0.85) {
+  if (typeof window === "undefined" || !text.trim()) return;
+  stopAll();
+  const token = ++session;
+  const chunks = chunkText(text);
+  const playbackRate = clampRate(rate);
+  let playedOk = false;
+
+  const playFrom = (i: number) => {
+    if (token !== session || i >= chunks.length) return;
+    const audio = new Audio(
+      `/api/tts?tl=en&q=${encodeURIComponent(chunks[i])}`,
+    );
+    currentAudio = audio;
+    audio.playbackRate = playbackRate;
+    audio.onplaying = () => {
+      playedOk = true;
+      emit("ok");
+    };
+    audio.onended = () => {
+      if (token === session) playFrom(i + 1);
+    };
+    const onFail = () => {
+      if (token === session && !playedOk) synthSpeak(text, rate, token);
+    };
+    audio.onerror = onFail;
+    audio.play().catch(onFail);
+  };
+
+  playFrom(0);
+}
+
+/** Warm up the speech engine on first interaction. */
 export function primeSpeech() {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  warmUp();
-  const utterance = new SpeechSynthesisUtterance(" ");
-  utterance.volume = 0;
-  window.speechSynthesis.speak(utterance);
-  window.speechSynthesis.resume();
+  initSpeech();
 }
 
 /** Short spoken praise for correct answers. */

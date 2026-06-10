@@ -56,7 +56,7 @@ export default function LetterHunt({ lesson }: { lesson: Lesson }) {
         Tap every{" "}
         <button
           onClick={() => speak(lesson.sound, 0.6)}
-          className="rounded-lg bg-indigo-100 px-3 py-1 text-2xl font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+          className="rounded-lg bg-brand-100 px-3 py-1 text-2xl font-black text-brand-700 dark:bg-brand-950 dark:text-brand-300"
         >
           {target} {target.toUpperCase()}
         </button>
@@ -69,7 +69,7 @@ export default function LetterHunt({ lesson }: { lesson: Lesson }) {
           <p className="text-sm text-zinc-500">Misses: {missCount}</p>
           <button
             onClick={restart}
-            className="rounded-full bg-indigo-500 px-6 py-3 font-bold text-white shadow active:scale-95"
+            className="rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
           >
             Play again 🔁
           </button>
@@ -90,7 +90,7 @@ export default function LetterHunt({ lesson }: { lesson: Lesson }) {
                   className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl font-black shadow-sm transition-all active:scale-90 ${
                     caught
                       ? "bg-green-400 text-white"
-                      : "bg-white text-zinc-700 hover:bg-indigo-50 dark:bg-zinc-800 dark:text-zinc-200"
+                      : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
                   }`}
                 >
                   {caught ? "✓" : cell.letter}

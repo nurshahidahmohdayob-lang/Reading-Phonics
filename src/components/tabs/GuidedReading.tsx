@@ -109,7 +109,7 @@ function Choose({
                     · Age {l.age}
                   </span>
                 </span>
-                <span className="text-sm font-semibold text-indigo-500">
+                <span className="text-sm font-semibold text-brand-500">
                   {l.wpmLow}–{l.wpmHigh} wpm · ≥{l.accuracyGoal}%
                 </span>
               </div>
@@ -150,7 +150,7 @@ function Choose({
                 <button
                   key={p.id}
                   onClick={() => onPick(level, p)}
-                  className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
+                  className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <span className="text-5xl">{p.emoji}</span>
                   <div className="flex flex-col">
@@ -176,7 +176,7 @@ function Choose({
               <button
                 onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
                 disabled={page >= pageCount - 1}
-                className="flex h-12 flex-1 items-center justify-center rounded-full bg-indigo-500 text-base font-bold text-white shadow-md hover:bg-indigo-600 active:scale-95 disabled:opacity-40"
+                className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-500 text-base font-bold text-white shadow-md hover:bg-brand-600 active:scale-95 disabled:opacity-40"
               >
                 Next 10 →
               </button>
@@ -269,7 +269,7 @@ function ReadAloud({
                     : s === "missed"
                       ? "bg-rose-200 text-rose-900 dark:bg-rose-900 dark:text-rose-100"
                       : isCurrent
-                        ? "ring-2 ring-indigo-400"
+                        ? "ring-2 ring-brand-400"
                         : "text-zinc-700 dark:text-zinc-200"
                 }`}
               >
@@ -298,7 +298,7 @@ function ReadAloud({
           {!listening ? (
             <button
               onClick={begin}
-              className="flex items-center gap-2 rounded-full bg-indigo-600 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
+              className="flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
             >
               🎤 Start reading
             </button>
@@ -398,7 +398,7 @@ function Report({
           </div>
           <button
             onClick={onCoach}
-            className="mt-4 w-full rounded-full bg-indigo-600 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+            className="mt-4 w-full rounded-full bg-brand-600 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
           >
             🧑‍🏫 Practice with Coach
           </button>
@@ -440,7 +440,7 @@ function Stat({
 }) {
   return (
     <div className="flex flex-col items-center rounded-2xl bg-white py-5 shadow-sm dark:bg-zinc-900">
-      <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+      <span className="text-3xl font-extrabold text-brand-600 dark:text-brand-400">
         {value}
       </span>
       <span className="text-xs font-semibold uppercase text-zinc-400">
@@ -513,7 +513,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         <h2 className="text-2xl font-extrabold">Nothing to practice!</h2>
         <button
           onClick={onDone}
-          className="rounded-full bg-indigo-500 px-6 py-3 font-bold text-white shadow active:scale-95"
+          className="rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
         >
           Back to report
         </button>
@@ -563,7 +563,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         Let&apos;s practice this word
       </h2>
 
-      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-500 px-6 py-10 text-white shadow-xl">
+      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-3xl bg-gradient-to-br from-[#1C6B49] to-[#0D4A34] px-6 py-10 text-white shadow-xl">
         <span className="text-6xl font-black lowercase tracking-wide drop-shadow">
           {word}
         </span>
@@ -606,7 +606,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
             ) : (
               <button
                 onClick={start}
-                className="rounded-full bg-white px-5 py-3 font-bold text-indigo-600 active:scale-95"
+                className="rounded-full bg-white px-5 py-3 font-bold text-brand-600 active:scale-95"
               >
                 🎤 Say it
               </button>
@@ -616,11 +616,11 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
 
       {/* Picture dictionary */}
       {showMeaning && (
-        <div className="mt-4 flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-indigo-100 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mt-4 flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-brand-100 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           {entry ? (
             <>
               <span className="text-7xl">{entry.emoji}</span>
-              <span className="text-xl font-extrabold lowercase text-indigo-600 dark:text-indigo-400">
+              <span className="text-xl font-extrabold lowercase text-brand-600 dark:text-brand-400">
                 {word}
               </span>
               <p className="text-lg text-zinc-700 dark:text-zinc-200">
@@ -628,7 +628,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
               </p>
               <button
                 onClick={() => speak(`${word}. ${entry.meaning}`, 0.85)}
-                className="mt-1 rounded-full bg-indigo-100 px-5 py-2 font-bold text-indigo-700 active:scale-95 dark:bg-indigo-950 dark:text-indigo-300"
+                className="mt-1 rounded-full bg-brand-100 px-5 py-2 font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
               >
                 🔊 Read meaning
               </button>
@@ -641,7 +641,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
               </p>
               <button
                 onClick={() => speak(word, 0.5)}
-                className="rounded-full bg-indigo-100 px-5 py-2 font-bold text-indigo-700 active:scale-95 dark:bg-indigo-950 dark:text-indigo-300"
+                className="rounded-full bg-brand-100 px-5 py-2 font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
               >
                 🐢 Sound it out
               </button>
@@ -661,7 +661,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         {index < words.length - 1 ? (
           <button
             onClick={() => goTo(index + 1)}
-            className="flex-1 rounded-full bg-indigo-500 px-6 py-3 font-bold text-white shadow active:scale-95"
+            className="flex-1 rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
           >
             Next word →
           </button>

@@ -23,7 +23,7 @@ export const lessons: Lesson[] = [
     letter: "a",
     sound: "ah",
     hint: 'short "a" like in apple',
-    accent: "from-rose-400 to-orange-300",
+    accent: "from-[#1C6B49] to-[#0D4A34]",
     words: [
       { text: "apple", emoji: "🍎" },
       { text: "ant", emoji: "🐜" },
@@ -34,7 +34,7 @@ export const lessons: Lesson[] = [
     letter: "b",
     sound: "buh",
     hint: 'the "b" sound like in ball',
-    accent: "from-sky-400 to-blue-300",
+    accent: "from-[#3AA7C4] to-[#27829E]",
     words: [
       { text: "ball", emoji: "⚽" },
       { text: "bear", emoji: "🐻" },
@@ -45,7 +45,7 @@ export const lessons: Lesson[] = [
     letter: "c",
     sound: "kuh",
     hint: 'hard "c" like in cat',
-    accent: "from-amber-400 to-yellow-300",
+    accent: "from-[#4E9A78] to-[#3A7A5E]",
     words: [
       { text: "cat", emoji: "🐱" },
       { text: "car", emoji: "🚗" },
@@ -56,7 +56,7 @@ export const lessons: Lesson[] = [
     letter: "d",
     sound: "duh",
     hint: 'the "d" sound like in dog',
-    accent: "from-emerald-400 to-green-300",
+    accent: "from-[#7BA468] to-[#668D4E]",
     words: [
       { text: "dog", emoji: "🐶" },
       { text: "duck", emoji: "🦆" },
@@ -67,7 +67,7 @@ export const lessons: Lesson[] = [
     letter: "e",
     sound: "eh",
     hint: 'short "e" like in egg',
-    accent: "from-fuchsia-400 to-pink-300",
+    accent: "from-[#2E8C77] to-[#1C6B49]",
     words: [
       { text: "egg", emoji: "🥚" },
       { text: "elephant", emoji: "🐘" },
@@ -78,7 +78,7 @@ export const lessons: Lesson[] = [
     letter: "f",
     sound: "ff",
     hint: 'the "f" sound like in fish',
-    accent: "from-cyan-400 to-teal-300",
+    accent: "from-[#3AA7C4] to-[#27829E]",
     words: [
       { text: "fish", emoji: "🐟" },
       { text: "frog", emoji: "🐸" },
@@ -89,7 +89,7 @@ export const lessons: Lesson[] = [
     letter: "s",
     sound: "sss",
     hint: 'the "s" sound like in sun',
-    accent: "from-violet-400 to-indigo-300",
+    accent: "from-[#7BA468] to-[#668D4E]",
     words: [
       { text: "sun", emoji: "☀️" },
       { text: "snake", emoji: "🐍" },
