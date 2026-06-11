@@ -1,25 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Lesson, Word } from "@/app/lessons";
-import { speak, praise } from "@/lib/speak";
+import { speak, praise, playSoundClip } from "@/lib/speak";
 import { otherWords, sample, shuffle } from "@/lib/random";
 
 type Item = Word & { isMatch: boolean };
 
-function buildBoard(lesson: Lesson): Item[] {
-  const matches = sample(lesson.words, Math.min(3, lesson.words.length)).map(
+function buildBoard(lesson: Lesson, matches: number, decoys: number): Item[] {
+  const m = sample(lesson.words, Math.min(matches, lesson.words.length)).map(
     (w) => ({ ...w, isMatch: true }),
   );
-  const decoys = sample(otherWords(lesson), 3).map((w) => ({
+  const d = sample(otherWords(lesson), decoys).map((w) => ({
     ...w,
     isMatch: false,
   }));
-  return shuffle([...matches, ...decoys]);
+  return shuffle([...m, ...d]);
 }
 
-export default function SoundSort({ lesson }: { lesson: Lesson }) {
-  const [board, setBoard] = useState<Item[]>(() => buildBoard(lesson));
+export default function SoundSort({
+  lesson,
+  level = 1,
+  onDone,
+}: {
+  lesson: Lesson;
+  level?: number;
+  onDone?: () => void;
+}) {
+  // Higher levels: more matches to find among more decoys.
+  const matches = 3 + Math.min(2, Math.floor((level - 1) / 20));
+  const decoys = 3 + Math.min(4, Math.floor((level - 1) / 12));
+
+  const [board, setBoard] = useState<Item[]>(() =>
+    buildBoard(lesson, matches, decoys),
+  );
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [missed, setMissed] = useState<Set<string>>(new Set());
 
@@ -28,6 +42,13 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
     (i) => i.isMatch && picked.has(i.text),
   ).length;
   const done = correctCount === totalMatches;
+
+  useEffect(() => {
+    if (done && onDone) {
+      const t = setTimeout(onDone, 900);
+      return () => clearTimeout(t);
+    }
+  }, [done, onDone]);
 
   function tap(item: Item) {
     if (picked.has(item.text) || done) return;
@@ -48,7 +69,7 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
   }
 
   function restart() {
-    setBoard(buildBoard(lesson));
+    setBoard(buildBoard(lesson, matches, decoys));
     setPicked(new Set());
     setMissed(new Set());
   }
@@ -58,14 +79,14 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
       <p className="text-center text-lg font-semibold">
         Tap the pictures that start with{" "}
         <button
-          onClick={() => speak(lesson.sound, 0.6)}
+          onClick={() => playSoundClip(lesson.letter, lesson.sound)}
           className="rounded-lg bg-brand-100 px-3 py-1 text-xl font-black text-brand-700 dark:bg-brand-950 dark:text-brand-300"
         >
           {lesson.letter} &ldquo;{lesson.sound}&rdquo;
         </button>
       </p>
 
-      {done ? (
+      {done && !onDone ? (
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="text-6xl">🎉</div>
           <h3 className="text-xl font-bold">Perfect sorting!</h3>
@@ -79,7 +100,7 @@ export default function SoundSort({ lesson }: { lesson: Lesson }) {
       ) : (
         <>
           <p className="text-sm text-zinc-400">
-            {correctCount} of {totalMatches} found
+            {correctCount} of {totalMatches} found {done && "🎉"}
           </p>
           <div className="grid grid-cols-3 gap-4">
             {board.map((item) => {

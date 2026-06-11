@@ -5,21 +5,33 @@ import type { Lesson, Word } from "@/app/lessons";
 import { speak, praise } from "@/lib/speak";
 import { otherWords, sample, shuffle } from "@/lib/random";
 
-const ROUNDS = 4;
-
 type Round = { target: Word; options: Word[] };
 
-function buildRounds(lesson: Lesson): Round[] {
-  const targets = sample(lesson.words, Math.min(ROUNDS, lesson.words.length));
+function buildRounds(lesson: Lesson, rounds: number, options: number): Round[] {
+  const targets = sample(lesson.words, Math.min(rounds, lesson.words.length));
   const distractorPool = otherWords(lesson);
   return targets.map((target) => {
-    const distractors = sample(distractorPool, 2);
+    const distractors = sample(distractorPool, options - 1);
     return { target, options: shuffle([target, ...distractors]) };
   });
 }
 
-export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
-  const [rounds, setRounds] = useState<Round[]>(() => buildRounds(lesson));
+export default function ListenAndFind({
+  lesson,
+  level = 1,
+  onDone,
+}: {
+  lesson: Lesson;
+  level?: number;
+  onDone?: () => void;
+}) {
+  // Higher levels: more rounds and more pictures to choose between.
+  const roundCount = 4 + (level > 30 ? 2 : level > 12 ? 1 : 0);
+  const optionCount = 3 + Math.min(3, Math.floor((level - 1) / 12));
+
+  const [rounds, setRounds] = useState<Round[]>(() =>
+    buildRounds(lesson, roundCount, optionCount),
+  );
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   const [wrong, setWrong] = useState<string | null>(null);
@@ -31,19 +43,18 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
     if (round) speak(round.target.text);
   }, [round]);
 
-  // Speak the target word whenever a new round appears.
   useEffect(() => {
-    if (round) speak(round.target.text);
-  }, [round]);
+    if (round && !done) speak(round.target.text);
+  }, [round, done]);
 
   function pick(word: Word) {
     if (word.text === round.target.text) {
       praise();
       setWrong(null);
-      const nextScore = score + 1;
-      setScore(nextScore);
+      setScore((s) => s + 1);
       if (step + 1 >= rounds.length) {
-        setDone(true);
+        if (onDone) setTimeout(onDone, 900);
+        else setDone(true);
       } else {
         setStep(step + 1);
       }
@@ -54,7 +65,7 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
   }
 
   function restart() {
-    setRounds(buildRounds(lesson));
+    setRounds(buildRounds(lesson, roundCount, optionCount));
     setStep(0);
     setScore(0);
     setWrong(null);
@@ -91,7 +102,7 @@ export default function ListenAndFind({ lesson }: { lesson: Lesson }) {
         🔊 Hear the word
       </button>
       <p className="text-zinc-500">Tap the picture you hear</p>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         {round.options.map((word) => {
           const isWrong = wrong === word.text;
           return (

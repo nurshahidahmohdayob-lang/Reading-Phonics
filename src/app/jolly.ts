@@ -79,10 +79,10 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
     sounds: [
       { id: "y", label: "y", say: "yuh", word: "yo-yo", emoji: "🪀", group: 6, action: "Pretend to eat yoghurt and say y, y, y." },
       { id: "x", label: "x", say: "ks", word: "fox", emoji: "🦊", group: 6, action: "Pretend to take an x-ray and say ks, ks, ks." },
-      { id: "ch", label: "ch", say: "ch", word: "cheese", emoji: "🧀", group: 6, action: "Move your arms like a train and say ch, ch, ch." },
-      { id: "sh", label: "sh", say: "sh", word: "ship", emoji: "🚢", group: 6, action: "Put your finger to your lips and say shshsh." },
-      { id: "th-unvoiced", label: "th", say: "th", word: "thumb", emoji: "👍", group: 6, note: "unvoiced", action: "Stick your tongue out a little and say th (as in thumb)." },
-      { id: "th-voiced", label: "th", say: "th", word: "feather", emoji: "🪶", group: 6, note: "voiced", action: "Stick your tongue out a bit more and say th (as in this)." },
+      { id: "ch", label: "ch", say: "cha", word: "cheese", emoji: "🧀", group: 6, action: "Move your arms like a train and say ch, ch, ch." },
+      { id: "sh", label: "sh", say: "shh", word: "ship", emoji: "🚢", group: 6, action: "Put your finger to your lips and say shshsh." },
+      { id: "th-unvoiced", label: "th", say: "thuh", word: "thumb", emoji: "👍", group: 6, note: "unvoiced", action: "Stick your tongue out a little and say th (as in thumb)." },
+      { id: "th-voiced", label: "th", say: "thuh", word: "feather", emoji: "🪶", group: 6, note: "voiced", action: "Stick your tongue out a bit more and say th (as in this)." },
     ],
   },
   {

@@ -3,8 +3,21 @@
 import { useState } from "react";
 import { levels, type Level } from "@/app/stories";
 import { speak } from "@/lib/speak";
+import StoryGames from "@/components/StoryGames";
 
 const PER_PAGE = 10;
+
+/* Candy palette cycled across cards. */
+const CARD_STYLES = [
+  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
+  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
+  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
+  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
+  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
+  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+];
+
+const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
 
 export default function Stories() {
   const [level, setLevel] = useState<Level | null>(null);
@@ -43,34 +56,34 @@ function LevelGrid({ onPick }: { onPick: (l: Level) => void }) {
         Choose your reading level — sorted by Lexile measure.
       </p>
       <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        {levels.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => onPick(l)}
-            className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            <div
-              className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl ${l.swatch} ${l.swatchText} font-bold`}
+        {levels.map((l, i) => {
+          const style = CARD_STYLES[i % CARD_STYLES.length];
+          return (
+            <button
+              key={l.id}
+              onClick={() => onPick(l)}
+              className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
             >
-              <span className="text-xs uppercase opacity-80">Lexile</span>
-              <span className="text-sm leading-tight">{l.lexileRange}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-zinc-800 dark:text-zinc-100">
-                {l.grade}{" "}
-                <span className="text-sm font-medium text-zinc-400">
-                  · Age {l.age}
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                {LEVEL_EMOJI[i % LEVEL_EMOJI.length]}
+              </span>
+              <div className="flex flex-col gap-1">
+                <span className="text-lg font-extrabold">
+                  {l.grade}{" "}
+                  <span className="text-sm font-semibold opacity-70">
+                    · Age {l.age}
+                  </span>
                 </span>
-              </span>
-              <span className="text-sm font-semibold text-brand-500">
-                {l.lexileRange} · {l.stories.length} stories
-              </span>
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                {l.description}
-              </span>
-            </div>
-          </button>
-        ))}
+                <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
+                  Lexile {l.lexileRange} · {l.stories.length} stories
+                </span>
+                <span className="text-sm font-semibold opacity-80">
+                  {l.description}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -114,21 +127,26 @@ function StoryList({
       </p>
 
       <div className="mt-4 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        {slice.map((s, i) => (
-          <button
-            key={s.id}
-            onClick={() => onPick(start + i)}
-            className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            <span className="text-5xl">{s.emoji}</span>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">{s.title}</span>
-              <span className="text-sm text-zinc-400">
-                {s.lexile}L · {s.pages[0].text.split(/\s+/).length} words
+        {slice.map((s, i) => {
+          const style = CARD_STYLES[(start + i) % CARD_STYLES.length];
+          return (
+            <button
+              key={s.id}
+              onClick={() => onPick(start + i)}
+              className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
+            >
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                {s.emoji}
               </span>
-            </div>
-          </button>
-        ))}
+              <div className="flex flex-col gap-1">
+                <span className="text-lg font-extrabold">{s.title}</span>
+                <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
+                  {s.lexile}L · {s.pages[0].text.split(/\s+/).length} words
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Page navigation through the library */}
@@ -172,6 +190,18 @@ function Reader({
   const text = story.pages[0].text;
   const isFirst = index === 0;
   const isLast = index === level.stories.length - 1;
+  const [playing, setPlaying] = useState(false);
+
+  // Games open as their own page, not a floating window.
+  if (playing) {
+    return (
+      <StoryGames
+        title={story.title}
+        text={text}
+        onClose={() => setPlaying(false)}
+      />
+    );
+  }
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -191,31 +221,50 @@ function Reader({
         </span>
       </div>
 
-      {/* The whole story on one page */}
-      <div className="mt-6 flex w-full flex-1 flex-col items-center gap-6 rounded-3xl bg-white p-7 shadow-lg dark:bg-zinc-900">
-        <div className="text-7xl leading-none">{story.emoji}</div>
-        <h3 className="text-center text-2xl font-extrabold">{story.title}</h3>
+      {/* The whole story on one storybook page */}
+      <div
+        className="mt-6 flex w-full flex-1 flex-col items-center gap-6 rounded-[2rem] p-7 shadow-lg ring-4 ring-white/60 dark:bg-zinc-900"
+        style={{
+          background:
+            "radial-gradient(circle at 12% 10%, rgba(255,255,255,.65) 0 90px, transparent 90px)," +
+            "linear-gradient(#FFFBEE, #FFF1D6)",
+        }}
+      >
+        <div className="anim-bob text-7xl leading-none">{story.emoji}</div>
+        <h3 className="text-center text-3xl font-extrabold text-amber-900">
+          {story.title}
+        </h3>
+        <div className="h-1 w-28 rounded-full bg-gradient-to-r from-pink-300 via-amber-300 to-sky-300" />
 
         {/* Tap any word to hear it */}
-        <p className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-center text-xl font-semibold leading-relaxed sm:text-2xl">
+        <p className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-center text-xl font-semibold leading-relaxed text-zinc-800 sm:text-2xl">
           {text.split(" ").map((word, i) => (
             <button
               key={i}
               onClick={() => speak(word.replace(/[.,!?;:"]/g, ""))}
-              className="rounded-md px-0.5 transition-colors hover:bg-brand-100 active:bg-brand-200 dark:hover:bg-brand-950"
+              className="rounded-md px-0.5 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70"
             >
               {word}
             </button>
           ))}
         </p>
 
-        <button
-          onClick={() => speak(text, 0.8)}
-          className="flex items-center gap-2 rounded-full bg-brand-100 px-6 py-3 text-lg font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
-        >
-          🔊 Read to me
-        </button>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            onClick={() => speak(text, 0.8)}
+            className="flex items-center gap-2 rounded-full bg-white/80 px-6 py-3 text-lg font-bold text-amber-700 shadow-sm active:scale-95"
+          >
+            🔊 Read to me
+          </button>
+          <button
+            onClick={() => setPlaying(true)}
+            className="flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-lg font-extrabold text-white shadow-md active:scale-95"
+          >
+            🎮 Play Games
+          </button>
+        </div>
       </div>
+
 
       {/* Move between different stories */}
       <nav className="mt-6 flex w-full items-center justify-between gap-4">

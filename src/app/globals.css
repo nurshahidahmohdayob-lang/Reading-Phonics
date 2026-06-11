@@ -41,10 +41,16 @@
   }
 }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  touch-action: manipulation; /* fast taps, no double-tap zoom in games */
+  overflow-x: hidden;
 }
 
 /* Balloon Pop: balloons drift from above the play area to below it. */
@@ -236,6 +242,118 @@ body {
   animation: ball-bounce 0.8s ease-in-out infinite;
 }
 
+/* Letter Hunt: tiles idle with a tiny wiggle so the board feels alive. */
+@keyframes tile-wiggle {
+  0%,
+  100% {
+    transform: rotate(var(--tilt, 0deg)) translateY(0);
+  }
+  50% {
+    transform: rotate(calc(var(--tilt, 0deg) + 2deg)) translateY(-3px);
+  }
+}
+.tile-wiggle {
+  animation: tile-wiggle 3s ease-in-out infinite;
+}
+
+/* Caught one! The tile pops with a star. */
+@keyframes tile-pop {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+  }
+  60% {
+    transform: scale(1.25) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+.tile-pop {
+  animation: tile-pop 0.45s ease-out;
+}
+
+/* Wrong tile shakes its head no. */
+@keyframes tile-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+.tile-shake {
+  animation: tile-shake 0.4s ease-in-out;
+}
+
+/* Tap a cloud (or the sun) and it squashes happily. */
+@keyframes boing {
+  0%,
+  100% {
+    transform: scale(var(--s, 1));
+  }
+  35% {
+    transform: scale(calc(var(--s, 1) * 1.18), calc(var(--s, 1) * 0.8));
+  }
+  70% {
+    transform: scale(calc(var(--s, 1) * 0.92), calc(var(--s, 1) * 1.1));
+  }
+}
+.anim-boing {
+  animation: boing 0.6s ease-in-out;
+}
+
+/* Birds cross the whole sky… */
+@keyframes fly-across {
+  from {
+    transform: translateX(-12vw);
+  }
+  to {
+    transform: translateX(112vw);
+  }
+}
+.bird-fly {
+  position: absolute;
+  left: 0;
+  animation: fly-across linear infinite;
+}
+
+/* …flapping gently as they go. */
+@keyframes flutter {
+  0%,
+  100% {
+    transform: translateY(0) rotate(4deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-4deg);
+  }
+}
+.anim-flutter {
+  display: inline-block;
+  animation: flutter 1.6s ease-in-out infinite;
+}
+
+/* Tap a kid and a little heart floats up. */
+@keyframes heart-pop {
+  from {
+    transform: translateY(0) scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-44px) scale(1.3);
+    opacity: 0;
+  }
+}
+.anim-heart-pop {
+  animation: heart-pop 0.9s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
   .anim-sun,
@@ -244,7 +362,14 @@ body {
   .page-turn,
   .kite-sway,
   .kid-bounce,
-  .ball-bounce {
+  .ball-bounce,
+  .tile-wiggle,
+  .tile-pop,
+  .tile-shake,
+  .anim-boing,
+  .bird-fly,
+  .anim-flutter,
+  .anim-heart-pop {
     animation: none;
   }
 }

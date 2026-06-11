@@ -16,6 +16,18 @@ import { speak, praise } from "@/lib/speak";
 
 type Step = "choose" | "read" | "report" | "coach";
 
+/* Candy palette cycled across cards. */
+const CARD_STYLES = [
+  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
+  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
+  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
+  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
+  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
+  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+];
+
+const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
+
 export default function GuidedReading() {
   const [step, setStep] = useState<Step>("choose");
   const [level, setLevel] = useState<PassageLevel | null>(null);
@@ -29,15 +41,24 @@ export default function GuidedReading() {
     setStep("read");
   }
 
+  function goLevels() {
+    setLevel(null);
+    setPassage(null);
+    setStep("choose");
+  }
+
   if (step === "read" && passage && level) {
     return (
       <ReadAloud
         passage={passage}
         level={level}
         onBack={() => setStep("choose")}
+        onLevels={goLevels}
         onDone={(r) => {
           setReport(r);
-          setStep("report");
+          // Pull out the hard words and practice them with the coach first;
+          // the report comes after. No tricky words? Straight to the report.
+          setStep(r.practiceWords.length > 0 ? "coach" : "report");
         }}
       />
     );
@@ -65,7 +86,29 @@ export default function GuidedReading() {
     );
   }
 
-  return <Choose onPick={pickPassage} />;
+  // Coming back from a read keeps the chosen level open on the story list.
+  return <Choose onPick={pickPassage} initialLevel={level} />;
+}
+
+/* ---------- Custom stories (teacher/parent-added, saved on device) ---------- */
+
+const STORY_EMOJI = ["📖", "🦄", "🐉", "🚀", "🐶", "🧚", "⚽", "🌈"];
+
+function customKey(levelId: string) {
+  return `custom-passages-${levelId}`;
+}
+
+function loadCustom(levelId: string): Passage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(customKey(levelId)) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveCustom(levelId: string, list: Passage[]) {
+  localStorage.setItem(customKey(levelId), JSON.stringify(list));
 }
 
 /* ---------- Choose a passage by level ---------- */
@@ -74,11 +117,56 @@ const PER_PAGE = 10;
 
 function Choose({
   onPick,
+  initialLevel = null,
 }: {
   onPick: (l: PassageLevel, p: Passage) => void;
+  initialLevel?: PassageLevel | null;
 }) {
-  const [level, setLevel] = useState<PassageLevel | null>(null);
+  const [level, setLevel] = useState<PassageLevel | null>(initialLevel);
   const [page, setPage] = useState(0);
+
+  // My-own-stories for the open level.
+  const [customs, setCustoms] = useState<Passage[]>(() =>
+    initialLevel ? loadCustom(initialLevel.id) : [],
+  );
+  const [adding, setAdding] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newText, setNewText] = useState("");
+  const [newEmoji, setNewEmoji] = useState("📖");
+
+  function openLevel(l: PassageLevel) {
+    setLevel(l);
+    setPage(0);
+    setCustoms(loadCustom(l.id));
+    setAdding(false);
+  }
+
+  function addStory() {
+    if (!level) return;
+    const text = newText.trim().replace(/\s+/g, " ");
+    if (!newTitle.trim() || text.split(" ").length < 3) return;
+    const p: Passage = {
+      id: `custom-${Date.now()}`,
+      title: newTitle.trim(),
+      emoji: newEmoji,
+      lexile: 0,
+      text,
+    };
+    const next = [p, ...customs];
+    saveCustom(level.id, next);
+    setCustoms(next);
+    setAdding(false);
+    setNewTitle("");
+    setNewText("");
+    setPage(0);
+  }
+
+  function removeStory(id: string) {
+    if (!level) return;
+    const next = customs.filter((c) => c.id !== id);
+    saveCustom(level.id, next);
+    setCustoms(next);
+  }
 
   if (!level) {
     return (
@@ -87,34 +175,34 @@ function Choose({
           Read aloud and I&apos;ll be your reading coach. Pick your level first.
         </p>
         <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-          {passageLevels.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => {
-                setLevel(l);
-                setPage(0);
-              }}
-              className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <div
-                className={`flex h-14 w-16 shrink-0 flex-col items-center justify-center rounded-xl ${l.swatch} ${l.swatchText} font-bold`}
+          {passageLevels.map((l, i) => {
+            const style = CARD_STYLES[i % CARD_STYLES.length];
+            return (
+              <button
+                key={l.id}
+                onClick={() => openLevel(l)}
+                className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
               >
-                <span className="text-[10px] uppercase opacity-80">Lexile</span>
-                <span className="text-xs leading-tight">{l.lexileRange}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold">
-                  {l.grade}{" "}
-                  <span className="text-sm font-medium text-zinc-400">
-                    · Age {l.age}
+                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                  {LEVEL_EMOJI[i % LEVEL_EMOJI.length]}
+                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-extrabold">
+                    {l.grade}{" "}
+                    <span className="text-sm font-semibold opacity-70">
+                      · Age {l.age}
+                    </span>
                   </span>
-                </span>
-                <span className="text-sm font-semibold text-brand-500">
-                  {l.wpmLow}–{l.wpmHigh} wpm · ≥{l.accuracyGoal}%
-                </span>
-              </div>
-            </button>
-          ))}
+                  <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
+                    Lexile {l.lexileRange}
+                  </span>
+                  <span className="text-sm font-semibold opacity-80">
+                    {l.wpmLow}–{l.wpmHigh} wpm · ≥{l.accuracyGoal}% accuracy
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -136,31 +224,106 @@ function Choose({
         </span>
       </div>
       <h2 className="mt-6 text-xl font-extrabold">Pick something to read 🎤</h2>
+
+      {/* Add your own story for this level */}
+      {!adding ? (
+        <button
+          onClick={() => setAdding(true)}
+          className="mt-3 flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 font-extrabold text-white shadow-md active:scale-95"
+        >
+          ➕ Add my own story
+        </button>
+      ) : (
+        <div className="mt-3 flex w-full flex-col gap-3 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] p-5 shadow-lg ring-4 ring-white/60">
+          <p className="font-extrabold text-amber-800">📝 My own story</p>
+          <input
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="Story title"
+            className="rounded-2xl border-2 border-white/80 bg-white/90 px-4 py-2.5 font-bold text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-amber-400"
+          />
+          <textarea
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            placeholder="Type the story here… (the words the student will read aloud)"
+            rows={4}
+            className="rounded-2xl border-2 border-white/80 bg-white/90 px-4 py-2.5 font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-amber-400"
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-sm font-bold text-amber-800">Picture:</span>
+            {STORY_EMOJI.map((e) => (
+              <button
+                key={e}
+                onClick={() => setNewEmoji(e)}
+                className={`grid h-10 w-10 place-items-center rounded-xl text-xl transition-all active:scale-90 ${
+                  newEmoji === e ? "bg-white shadow ring-2 ring-amber-400" : "bg-white/50"
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={addStory}
+              disabled={!newTitle.trim() || newText.trim().split(/\s+/).length < 3}
+              className="flex-1 rounded-full bg-brand-600 px-6 py-2.5 font-extrabold text-white shadow active:scale-95 disabled:opacity-40"
+            >
+              💾 Save story
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="rounded-full bg-white px-6 py-2.5 font-bold text-zinc-600 shadow-sm active:scale-95"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {(() => {
-        const pageCount = Math.ceil(level.passages.length / PER_PAGE);
+        const allPassages = [...customs, ...level.passages];
+        const pageCount = Math.ceil(allPassages.length / PER_PAGE);
         const start = page * PER_PAGE;
-        const slice = level.passages.slice(start, start + PER_PAGE);
+        const slice = allPassages.slice(start, start + PER_PAGE);
         return (
           <>
             <p className="text-sm text-zinc-400">
-              {start + 1}–{start + slice.length} of {level.passages.length}
+              {start + 1}–{start + slice.length} of {allPassages.length}
             </p>
             <div className="mt-4 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-              {slice.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onPick(level, p)}
-                  className="flex items-center gap-4 rounded-2xl border-2 border-zinc-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <span className="text-5xl">{p.emoji}</span>
-                  <div className="flex flex-col">
-                    <span className="text-lg font-bold">{p.title}</span>
-                    <span className="text-sm text-zinc-400">
-                      {p.lexile}L · {p.text.split(/\s+/).length} words
-                    </span>
+              {slice.map((p, i) => {
+                const style = CARD_STYLES[(start + i) % CARD_STYLES.length];
+                const isCustom = p.id.startsWith("custom-");
+                return (
+                  <div key={p.id} className="relative">
+                    <button
+                      onClick={() => onPick(level, p)}
+                      className={`group flex w-full items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
+                    >
+                      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                        {p.emoji}
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-lg font-extrabold">{p.title}</span>
+                        <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
+                          {isCustom ? "📝 My story" : `${p.lexile}L`} ·{" "}
+                          {p.text.split(/\s+/).length} words
+                        </span>
+                      </div>
+                    </button>
+                    {isCustom && (
+                      <button
+                        onClick={() => removeStory(p.id)}
+                        aria-label={`Delete ${p.title}`}
+                        className="absolute -right-2 -top-2 grid h-9 w-9 place-items-center rounded-full bg-white text-base shadow-md ring-2 ring-rose-200 transition-all hover:scale-110 active:scale-90"
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
             <nav className="mt-6 flex w-full items-center justify-between gap-4">
               <button
@@ -194,11 +357,13 @@ function ReadAloud({
   passage,
   level,
   onBack,
+  onLevels,
   onDone,
 }: {
   passage: Passage;
   level: PassageLevel;
   onBack: () => void;
+  onLevels: () => void;
   onDone: (r: ReadingReport) => void;
 }) {
   const { supported, listening, transcript, start, stop, reset } =
@@ -210,12 +375,11 @@ function ReadAloud({
     () => (transcript ? transcript.split(/\s+/) : []),
     [transcript],
   );
+  // Alignment runs quietly in the background — no markings while reading.
   const status = useMemo(
     () => alignReading(words, spoken),
     [words, spoken],
   );
-  const currentIndex = status.indexOf("pending");
-  const correctSoFar = status.filter((s) => s === "correct").length;
 
   function begin() {
     reset();
@@ -231,16 +395,27 @@ function ReadAloud({
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
-      <div className="flex w-full items-center justify-between gap-3">
-        <button
-          onClick={() => {
-            stop();
-            onBack();
-          }}
-          className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-        >
-          ← Pick another
-        </button>
+      <div className="flex w-full flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              stop();
+              onBack();
+            }}
+            className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            ← Pick another
+          </button>
+          <button
+            onClick={() => {
+              stop();
+              onLevels();
+            }}
+            className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            📊 Levels
+          </button>
+        </div>
         <span
           className={`rounded-full ${level.swatch} ${level.swatchText} px-3 py-1 text-xs font-bold`}
         >
@@ -248,35 +423,33 @@ function ReadAloud({
         </span>
       </div>
 
-      <h2 className="mt-5 text-xl font-extrabold">{passage.title}</h2>
-      <p className="text-sm text-zinc-400">
-        {correctSoFar} / {words.length} words read
+      <h2 className="mt-5 flex items-center gap-2 text-2xl font-extrabold text-amber-900 dark:text-amber-100">
+        <span className="anim-bob text-3xl">{passage.emoji}</span>
+        {passage.title}
+      </h2>
+      <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        Read at your own pace — if a word is hard, just keep going! 💪
       </p>
 
-      {/* Passage with live highlighting */}
-      <div className="mt-5 w-full rounded-3xl bg-white p-6 text-2xl font-bold leading-relaxed shadow-lg dark:bg-zinc-900">
+      {/* Plain passage on storybook paper: no live markings while reading */}
+      <div
+        className="mt-5 w-full rounded-[2rem] p-7 text-2xl font-bold leading-relaxed shadow-lg ring-4 ring-white/60 dark:bg-zinc-900"
+        style={{
+          background:
+            "radial-gradient(circle at 12% 10%, rgba(255,255,255,.65) 0 90px, transparent 90px)," +
+            "linear-gradient(#FFFBEE, #FFF1D6)",
+        }}
+      >
         <p className="flex flex-wrap gap-x-2 gap-y-1">
-          {words.map((w, i) => {
-            const s = status[i];
-            const isCurrent = i === currentIndex && listening;
-            return (
-              <button
-                key={i}
-                onClick={() => speak(w.replace(/[.,!?;:"]/g, ""))}
-                className={`rounded-lg px-1 transition-colors ${
-                  s === "correct"
-                    ? "bg-green-200 text-green-900 dark:bg-green-900 dark:text-green-100"
-                    : s === "missed"
-                      ? "bg-rose-200 text-rose-900 dark:bg-rose-900 dark:text-rose-100"
-                      : isCurrent
-                        ? "ring-2 ring-brand-400"
-                        : "text-zinc-700 dark:text-zinc-200"
-                }`}
-              >
-                {w}
-              </button>
-            );
-          })}
+          {words.map((w, i) => (
+            <button
+              key={i}
+              onClick={() => speak(w.replace(/[.,!?;:"]/g, ""))}
+              className="rounded-lg px-1 text-zinc-800 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70"
+            >
+              {w}
+            </button>
+          ))}
         </p>
       </div>
 
@@ -368,16 +541,21 @@ function Report({
           value={`${report.accuracy}%`}
           goal={`goal ≥${level.accuracyGoal}%`}
           met={accuracyMet}
+          color="bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700"
         />
         <Stat
           label="Words correct"
-          value={`${report.correct}/${report.attempted || report.total}`}
+          value={`${report.correct}/${report.total}`}
+          goal="of the whole story"
+          met={report.correct === report.total}
+          color="bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF] text-sky-700"
         />
         <Stat
           label="Words / min"
           value={`${report.wcpm}`}
           goal={`goal ${level.wpmLow}–${level.wpmHigh}`}
           met={wpmMet}
+          color="bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] text-violet-700"
         />
       </div>
 
@@ -432,26 +610,24 @@ function Stat({
   value,
   goal,
   met,
+  color = "bg-white text-brand-600",
 }: {
   label: string;
   value: string;
   goal?: string;
   met?: boolean;
+  color?: string;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl bg-white py-5 shadow-sm dark:bg-zinc-900">
-      <span className="text-3xl font-extrabold text-brand-600 dark:text-brand-400">
-        {value}
-      </span>
-      <span className="text-xs font-semibold uppercase text-zinc-400">
-        {label}
-      </span>
+    <div
+      className={`flex flex-col items-center rounded-[1.5rem] ${color} py-5 shadow-md ring-4 ring-white/60`}
+    >
+      <span className="text-3xl font-extrabold">{value}</span>
+      <span className="text-xs font-bold uppercase opacity-70">{label}</span>
       {goal && (
         <span
-          className={`mt-1 text-[11px] font-semibold ${
-            met
-              ? "text-green-600 dark:text-green-400"
-              : "text-zinc-400 dark:text-zinc-500"
+          className={`mt-1 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-bold ${
+            met ? "text-green-600" : "opacity-70"
           }`}
         >
           {met ? "✓ " : ""}
@@ -539,6 +715,13 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
           Word {index + 1} / {words.length} · 💚 {greens}
         </span>
       </div>
+
+      <h2 className="mt-4 text-center text-xl font-extrabold">
+        🧑‍🏫 Let&apos;s practice your tricky words!
+      </h2>
+      <p className="text-sm text-zinc-400">
+        These words were hard while you read — say each one with me.
+      </p>
 
       {/* Word progress stars */}
       <div className="mt-4 flex flex-wrap justify-center gap-1.5">

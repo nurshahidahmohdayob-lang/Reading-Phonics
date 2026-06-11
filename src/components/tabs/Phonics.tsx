@@ -107,6 +107,11 @@ function Sounds() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /* ---- Activities open as their own page ---- */
+  if (playing && lesson) {
+    return <ActivityCenter lesson={lesson} onClose={() => setPlaying(false)} />;
+  }
+
   /* ---- Group picker: pastel cards like the home menu ---- */
   if (!groupData) {
     return (
@@ -258,9 +263,6 @@ function Sounds() {
         </div>
       </div>
 
-      {playing && lesson && (
-        <ActivityCenter lesson={lesson} onClose={() => setPlaying(false)} />
-      )}
     </div>
   );
 }

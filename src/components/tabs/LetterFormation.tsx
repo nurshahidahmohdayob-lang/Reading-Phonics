@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { letterSound, letterSounds } from "@/app/alphabet";
-import { speak } from "@/lib/speak";
+import { speak, playSoundClip } from "@/lib/speak";
+import FormationGames from "@/components/FormationGames";
 
 const SIZE = 300;
 
 export default function LetterFormation() {
   const [selected, setSelected] = useState("a");
   const [upper, setUpper] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
 
@@ -20,6 +22,11 @@ export default function LetterFormation() {
     const ctx = canvasRef.current?.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, SIZE, SIZE);
   }, [selected, upper]);
+
+  // Games open as their own page, not a floating window.
+  if (playing) {
+    return <FormationGames onClose={() => setPlaying(false)} />;
+  }
 
   function pos(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -63,7 +70,7 @@ export default function LetterFormation() {
 
   function chooseLetter(letter: string) {
     setSelected(letter);
-    speak(letterSound(letter).say, 1.1);
+    playSoundClip(letter, letterSound(letter).say);
   }
 
   return (
@@ -141,7 +148,7 @@ export default function LetterFormation() {
           🧽 Clear
         </button>
         <button
-          onClick={() => speak(info.say, 1.1)}
+          onClick={() => playSoundClip(selected, info.say)}
           className="rounded-full bg-brand-600 px-5 py-2.5 font-bold text-white active:scale-95"
         >
           🔊 Hear sound
@@ -163,6 +170,15 @@ export default function LetterFormation() {
         </div>
         <p className="mt-2 text-zinc-700 dark:text-zinc-200">{info.formation}</p>
       </div>
+
+      {/* Letter-shape games */}
+      <button
+        onClick={() => setPlaying(true)}
+        className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg transition-all hover:bg-brand-700 active:scale-[0.98]"
+      >
+        🎮 Play Games
+      </button>
+
     </div>
   );
 }

@@ -1,26 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Lesson, Word } from "@/app/lessons";
 import { speak, praise } from "@/lib/speak";
 import { sample, shuffle } from "@/lib/random";
 
 type Card = { id: number; word: Word };
 
-function buildCards(lesson: Lesson): Card[] {
-  const words = sample(lesson.words, Math.min(3, lesson.words.length));
+function buildCards(lesson: Lesson, pairs: number): Card[] {
+  const words = sample(lesson.words, Math.min(pairs, lesson.words.length));
   return shuffle(
     words.flatMap((word) => [{ word }, { word }]),
   ).map((c, id) => ({ ...c, id }));
 }
 
-export default function MemoryMatch({ lesson }: { lesson: Lesson }) {
-  const [cards, setCards] = useState<Card[]>(() => buildCards(lesson));
+export default function MemoryMatch({
+  lesson,
+  level = 1,
+  onDone,
+}: {
+  lesson: Lesson;
+  level?: number;
+  onDone?: () => void;
+}) {
+  // Higher levels: more pairs to remember.
+  const pairs = 3 + Math.min(3, Math.floor((level - 1) / 16));
+  const [cards, setCards] = useState<Card[]>(() => buildCards(lesson, pairs));
   const [open, setOpen] = useState<number[]>([]);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [tries, setTries] = useState(0);
 
   const done = matched.size > 0 && matched.size * 2 === cards.length;
+
+  useEffect(() => {
+    if (done && onDone) {
+      const t = setTimeout(onDone, 900);
+      return () => clearTimeout(t);
+    }
+  }, [done, onDone]);
 
   function flip(card: Card) {
     if (open.includes(card.id) || matched.has(card.word.text) || open.length === 2)
@@ -42,7 +59,7 @@ export default function MemoryMatch({ lesson }: { lesson: Lesson }) {
   }
 
   function restart() {
-    setCards(buildCards(lesson));
+    setCards(buildCards(lesson, pairs));
     setOpen([]);
     setMatched(new Set());
     setTries(0);

@@ -5,29 +5,41 @@ import type { Lesson, Word } from "@/app/lessons";
 import { speak, praise } from "@/lib/speak";
 import { otherWords, sample, shuffle } from "@/lib/random";
 
-const ROUNDS = 4;
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 
 type Round = { word: Word; options: string[] };
 
-function buildRounds(lesson: Lesson): Round[] {
+function buildRounds(lesson: Lesson, rounds: number, options: number): Round[] {
   // Mix lesson words with words from other lessons so the answer varies.
   const pool = shuffle([
-    ...sample(lesson.words, 2),
-    ...sample(otherWords(lesson), 2),
+    ...sample(lesson.words, Math.ceil(rounds / 2)),
+    ...sample(otherWords(lesson), Math.ceil(rounds / 2)),
   ]);
-  return pool.slice(0, ROUNDS).map((word) => {
+  return pool.slice(0, rounds).map((word) => {
     const answer = word.text[0];
     const decoys = sample(
       ALPHABET.filter((c) => c !== answer),
-      2,
+      options - 1,
     );
     return { word, options: shuffle([answer, ...decoys]) };
   });
 }
 
-export default function FirstLetter({ lesson }: { lesson: Lesson }) {
-  const [rounds, setRounds] = useState<Round[]>(() => buildRounds(lesson));
+export default function FirstLetter({
+  lesson,
+  level = 1,
+  onDone,
+}: {
+  lesson: Lesson;
+  level?: number;
+  onDone?: () => void;
+}) {
+  // Higher levels: more rounds and more letters to choose from.
+  const roundCount = 4 + (level > 25 ? 2 : level > 10 ? 1 : 0);
+  const optionCount = 3 + Math.min(2, Math.floor((level - 1) / 16));
+  const [rounds, setRounds] = useState<Round[]>(() =>
+    buildRounds(lesson, roundCount, optionCount),
+  );
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   const [wrong, setWrong] = useState<string | null>(null);
@@ -46,7 +58,8 @@ export default function FirstLetter({ lesson }: { lesson: Lesson }) {
       setWrong(null);
       setScore((s) => s + 1);
       if (step + 1 >= rounds.length) {
-        setDone(true);
+        if (onDone) setTimeout(onDone, 900);
+        else setDone(true);
       } else {
         setStep(step + 1);
       }
@@ -57,7 +70,7 @@ export default function FirstLetter({ lesson }: { lesson: Lesson }) {
   }
 
   function restart() {
-    setRounds(buildRounds(lesson));
+    setRounds(buildRounds(lesson, roundCount, optionCount));
     setStep(0);
     setScore(0);
     setWrong(null);

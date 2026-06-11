@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "@/app/lessons";
-import { speak, praise } from "@/lib/speak";
+import { speak, praise, playSoundClip } from "@/lib/speak";
 
-const GOAL = 8; // target balloons to pop
 const FLYING = 6; // balloons in the air at once
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 const COLORS = [
@@ -28,7 +27,12 @@ type Balloon = {
   popped: boolean;
 };
 
-function makeBalloon(target: string, id: number, delay: number): Balloon {
+function makeBalloon(
+  target: string,
+  id: number,
+  delay: number,
+  speedup = 0,
+): Balloon {
   // Roughly half the balloons are the target, in BIG or small form.
   const isTarget = Math.random() < 0.45;
   const letter = isTarget
@@ -40,32 +44,52 @@ function makeBalloon(target: string, id: number, delay: number): Balloon {
     isTarget: letter === target,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     x: 4 + Math.random() * 78,
-    duration: 6 + Math.random() * 5,
+    duration: 6 - speedup + Math.random() * 5,
     delay,
     sway: 1.6 + Math.random() * 1.4,
     popped: false,
   };
 }
 
-function firstWave(target: string): Balloon[] {
+function firstWave(target: string, speedup = 0): Balloon[] {
   return Array.from({ length: FLYING }, (_, i) =>
-    makeBalloon(target, i, i * 1.1),
+    makeBalloon(target, i, i * 1.1, speedup),
   );
 }
 
-export default function BalloonPop({ lesson }: { lesson: Lesson }) {
+export default function BalloonPop({
+  lesson,
+  level = 1,
+  onDone,
+}: {
+  lesson: Lesson;
+  level?: number;
+  onDone?: () => void;
+}) {
   const target = lesson.letter;
-  const [balloons, setBalloons] = useState<Balloon[]>(() => firstWave(target));
+  // Higher levels: more balloons to pop, falling faster.
+  const GOAL = 6 + Math.min(6, Math.floor((level - 1) / 8));
+  const speedup = Math.min(3, (level - 1) / 16);
+  const [balloons, setBalloons] = useState<Balloon[]>(() => firstWave(target, speedup));
   const [popCount, setPopCount] = useState(0);
   const [missCount, setMissCount] = useState(0);
   const nextId = useRef(FLYING);
 
   const done = popCount >= GOAL;
 
+  useEffect(() => {
+    if (done && onDone) {
+      const t = setTimeout(onDone, 900);
+      return () => clearTimeout(t);
+    }
+  }, [done, onDone]);
+
   /** Swap a balloon for a fresh one at the top. */
   function respawn(id: number, delay = Math.random()) {
     setBalloons((prev) =>
-      prev.map((b) => (b.id === id ? makeBalloon(target, nextId.current++, delay) : b)),
+      prev.map((b) =>
+        b.id === id ? makeBalloon(target, nextId.current++, delay, speedup) : b,
+      ),
     );
   }
 
@@ -86,7 +110,7 @@ export default function BalloonPop({ lesson }: { lesson: Lesson }) {
   }
 
   function restart() {
-    setBalloons(firstWave(target));
+    setBalloons(firstWave(target, speedup));
     setPopCount(0);
     setMissCount(0);
     nextId.current = FLYING;
@@ -97,14 +121,14 @@ export default function BalloonPop({ lesson }: { lesson: Lesson }) {
       <p className="text-center text-lg font-semibold">
         Pop the balloons with big and small{" "}
         <button
-          onClick={() => speak(lesson.sound, 0.6)}
+          onClick={() => playSoundClip(lesson.letter, lesson.sound)}
           className="rounded-lg bg-brand-100 px-3 py-1 text-2xl font-black text-brand-700 dark:bg-brand-950 dark:text-brand-300"
         >
           {target.toUpperCase()} {target}
         </button>
       </p>
 
-      {done ? (
+      {done && !onDone ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
           <div className="text-6xl">🎈</div>
           <h3 className="text-xl font-bold">All popped!</h3>
@@ -119,7 +143,7 @@ export default function BalloonPop({ lesson }: { lesson: Lesson }) {
       ) : (
         <>
           <p className="text-sm text-zinc-400">
-            Popped {popCount} of {GOAL} 🎈
+            Popped {popCount} of {GOAL} 🎈 {done && "🎉"}
           </p>
           <div className="relative h-[420px] w-full max-w-md overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#D3EBFF] to-[#EAF7FF] shadow-inner ring-4 ring-white/60 dark:from-zinc-800 dark:to-zinc-900">
             {/* A few clouds for scenery */}

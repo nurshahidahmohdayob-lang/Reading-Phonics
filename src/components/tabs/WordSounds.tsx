@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { wordFamilies, type WordCard } from "@/app/words";
-import { speak } from "@/lib/speak";
+import { playSoundClip, speak } from "@/lib/speak";
 
 export default function WordSounds() {
   const [familyIndex, setFamilyIndex] = useState(0);
@@ -37,12 +37,12 @@ export default function WordSounds() {
   /** Light up each sound in turn, then say the whole word. */
   function blend(word: WordCard) {
     stop();
-    const step = 700;
+    const step = 950;
     word.say.forEach((s, i) => {
       timers.current.push(
         setTimeout(() => {
           setActive(i);
-          speak(s, 0.7);
+          playSoundClip(word.sounds[i] ?? s, s);
         }, i * step),
       );
     });
@@ -79,27 +79,27 @@ export default function WordSounds() {
 
       {/* Blender for the selected word */}
       <div
-        className={`mt-6 flex w-full flex-col items-center gap-5 rounded-3xl bg-gradient-to-br ${family.color} px-6 py-8 text-white shadow-xl`}
+        className={`mt-6 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br ${family.color} ${family.text} px-6 py-8 shadow-lg ring-4 ring-white/60`}
       >
         <div className="text-7xl">{selected.emoji}</div>
 
         {/* The whole word, always visible */}
         <button
           onClick={() => speak(selected.text, 0.85)}
-          className="text-5xl font-black lowercase tracking-wide drop-shadow-md"
+          className="text-5xl font-black lowercase tracking-wide drop-shadow-sm"
         >
           {selected.text}
         </button>
 
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end justify-center gap-2">
           {selected.sounds.map((s, i) => (
             <button
               key={i}
-              onClick={() => speak(selected.say[i], 0.7)}
-              className={`flex h-20 w-16 items-center justify-center rounded-2xl text-4xl font-black shadow-md transition-all active:scale-90 ${
+              onClick={() => playSoundClip(selected.sounds[i] ?? selected.say[i], selected.say[i])}
+              className={`flex h-20 min-w-16 items-center justify-center rounded-2xl px-2 text-4xl font-black shadow-md transition-all active:scale-90 ${
                 active === i
                   ? "scale-110 bg-white text-brand-600"
-                  : "bg-white/25 text-white backdrop-blur hover:bg-white/40"
+                  : "bg-white/60 backdrop-blur hover:bg-white/80"
               }`}
             >
               {s}
@@ -109,11 +109,11 @@ export default function WordSounds() {
 
         <button
           onClick={() => blend(selected)}
-          className="flex items-center gap-2 rounded-full bg-white px-8 py-3 text-xl font-extrabold text-brand-600 shadow-lg active:scale-95"
+          className="flex items-center gap-2 rounded-full bg-brand-600 px-8 py-3 text-xl font-extrabold text-white shadow-lg active:scale-95"
         >
           🔉 Blend it!
         </button>
-        <p className="text-sm font-medium opacity-90">
+        <p className="text-sm font-semibold opacity-80">
           Tap a letter for its sound, or blend the whole word.
         </p>
       </div>

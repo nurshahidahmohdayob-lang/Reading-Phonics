@@ -189,6 +189,12 @@ export function stopSpeech() {
   stopAll();
 }
 
+/** Speak a grapheme (letter or digraph) with the recorded phonics clip from
+    /public/sounds, falling back to the TTS approximation. */
+export function playSoundClip(grapheme: string, fallbackSay: string, rate = 0.85) {
+  playClip(grapheme.toLowerCase(), () => speak(fallbackSay, rate));
+}
+
 /** Warm up the speech engine on first interaction. */
 export function primeSpeech() {
   initSpeech();

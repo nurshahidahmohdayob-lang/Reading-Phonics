@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trickySets, type TrickySet } from "@/app/tricky";
 import { speak, playClip } from "@/lib/speak";
+import TrickyGames from "@/components/TrickyGames";
 
 /** Say a tricky word with the real recording from the Jolly Phonics recap
     video (/sounds/tricky-<word>.mp3), falling back to TTS. */
@@ -23,11 +24,17 @@ const SET_STYLES = [
 export default function TrickyWords() {
   const [set, setSet] = useState<TrickySet | null>(null);
   const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
 
   function enterSet(s: TrickySet) {
     setSet(s);
     setIndex(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* ---- Games open as their own page ---- */
+  if (playing && set) {
+    return <TrickyGames set={set} onClose={() => setPlaying(false)} />;
   }
 
   /* ---- Set picker: colour-named pastel cards ---- */
@@ -130,6 +137,14 @@ export default function TrickyWords() {
         </div>
       </div>
 
+      {/* Games for this set */}
+      <button
+        onClick={() => setPlaying(true)}
+        className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg transition-all hover:bg-brand-700 active:scale-[0.98]"
+      >
+        🎮 Play Games
+      </button>
+
       {/* Navigation */}
       <nav className="mt-6 flex w-full items-center justify-between gap-4">
         <button
@@ -165,6 +180,7 @@ export default function TrickyWords() {
           </button>
         ))}
       </div>
+
     </div>
   );
 }
