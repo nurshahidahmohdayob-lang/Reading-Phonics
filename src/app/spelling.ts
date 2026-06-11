@@ -28,7 +28,7 @@ const SAY: Record<string, string> = {
   h: "huh", i: "ih", j: "juh", k: "kuh", l: "lll", m: "mmm", n: "nnn",
   o: "o", p: "puh", qu: "kwuh", r: "rrr", s: "sss", t: "tuh", u: "uh",
   v: "vvv", w: "wuh", x: "ks", y: "yuh", z: "zzz",
-  ai: "ay", ee: "ee", or: "or", oa: "oh", ie: "eye",
+  ai: "ay", ee: "e", or: "or", oa: "oh", ie: "eye",
   oo: "oo", ng: "ng", sh: "shh", ch: "cha", th: "thuh",
   ou: "ow", ow: "ow", oi: "oy", oy: "oy", er: "er", ar: "ar", ay: "ay",
 };

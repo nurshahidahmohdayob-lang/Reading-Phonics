@@ -59,7 +59,7 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
       { id: "j", label: "j", say: "juh", word: "jelly", emoji: "🍮", group: 4, action: "Wobble like jelly on a plate and say j, j, j." },
       { id: "oa", label: "oa", say: "oh", word: "boat", emoji: "⛵", group: 4, action: "Bring your hand to your mouth as if you did something wrong and say oh!" },
       { id: "ie", label: "ie", say: "eye", word: "pie", emoji: "🥧", group: 4, action: "Stand up straight and salute, saying ie, ie." },
-      { id: "ee", label: "ee", say: "ee", word: "bee", emoji: "🐝", group: 4, action: "Put your hands on your head like donkey ears and say ee, ee." },
+      { id: "ee", label: "ee", say: "e", word: "bee", emoji: "🐝", group: 4, action: "Put your hands on your head like donkey ears and say ee, ee." },
       { id: "or", label: "or", say: "or", word: "fork", emoji: "🍴", group: 4, action: "Put your hands on your head and bray ee-or, ee-or, like a donkey." },
     ],
   },
@@ -100,7 +100,7 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
     group: 8,
     sounds: [
       { id: "ay", label: "ay", say: "ay", word: "day", emoji: "📅", group: 8, note: "digraph", action: "Two letters, one sound: ay as in day." },
-      { id: "ea", label: "ea", say: "ee", word: "leaf", emoji: "🍃", group: 8, note: "digraph", action: "Two letters, one sound: ea as in leaf." },
+      { id: "ea", label: "ea", say: "e", word: "leaf", emoji: "🍃", group: 8, note: "digraph", action: "Two letters, one sound: ea as in leaf." },
       { id: "igh", label: "igh", say: "eye", word: "light", emoji: "💡", group: 8, note: "trigraph", action: "Three letters, one sound: igh as in light." },
       { id: "ow", label: "ow", say: "ow", word: "owl", emoji: "🦉", group: 8, note: "digraph", action: "Two letters, one sound: ow as in owl." },
       { id: "oy", label: "oy", say: "oy", word: "toy", emoji: "🧸", group: 8, note: "digraph", action: "Two letters, one sound: oy as in toy." },
