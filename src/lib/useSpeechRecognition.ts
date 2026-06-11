@@ -79,7 +79,21 @@ export function useSpeechRecognition() {
       }
     };
 
-    rec.onerror = () => setListening(false);
+    rec.onerror = (e) => {
+      // Pauses cause harmless "no-speech"/"aborted" errors — keep listening;
+      // onend fires next and restarts the engine. Only give up when the mic
+      // is actually blocked.
+      if (
+        wantRef.current &&
+        e.error !== "not-allowed" &&
+        e.error !== "service-not-allowed" &&
+        e.error !== "audio-capture"
+      ) {
+        return;
+      }
+      wantRef.current = false;
+      setListening(false);
+    };
     recRef.current = rec;
 
     return () => {

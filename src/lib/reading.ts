@@ -6,6 +6,37 @@ export function normalize(word: string): string {
 }
 
 /**
+ * Fold away accent differences so reading counts even without "perfect"
+ * English pronunciation (th→t for "tink/dis", end-sound devoicing d→t and
+ * g→k, ph→f, silent wh, doubled letters). Both the target word and what the
+ * recogniser heard get folded before comparing.
+ */
+export function accentFold(word: string): string {
+  return word
+    .replace(/ch/g, "1") // protect ch before the c/k merge
+    .replace(/th/g, "t")
+    .replace(/ph/g, "f")
+    .replace(/wh/g, "w")
+    .replace(/d/g, "t")
+    .replace(/g/g, "k")
+    .replace(/c/g, "k")
+    .replace(/z/g, "s")
+    .replace(/1/g, "ch")
+    .replace(/([a-z])\1+/g, "$1");
+}
+
+/** True when a spoken word is close enough to count as reading the target. */
+export function lenientMatch(target: string, spoken: string): boolean {
+  if (target === spoken) return true;
+  const t = accentFold(target);
+  const s = accentFold(spoken);
+  if (t === s) return true;
+  const len = Math.max(t.length, s.length);
+  const d = editDistance(t, s);
+  return len >= 7 ? d <= 2 : len >= 4 ? d <= 1 : false;
+}
+
+/**
  * Greedily align the words a child spoke against the target passage,
  * marking each target word correct / missed / not-yet-read. Mirrors how
  * Reading Progress tracks accuracy as a child reads aloud.
@@ -16,15 +47,16 @@ export function alignReading(
 ): WordStatus[] {
   const status: WordStatus[] = targetWords.map(() => "pending");
   const target = targetWords.map(normalize);
-  const WINDOW = 3; // how far ahead we'll look to forgive a skipped word
+  const WINDOW = 5; // how far ahead we'll look to forgive a skipped word
   let ti = 0;
+  const leftovers: string[] = [];
 
   for (const raw of spokenWords) {
     const sw = normalize(raw);
     if (!sw) continue;
     let matchedAt = -1;
     for (let k = ti; k <= Math.min(target.length - 1, ti + WINDOW); k++) {
-      if (target[k] === sw) {
+      if (lenientMatch(target[k], sw)) {
         matchedAt = k;
         break;
       }
@@ -33,8 +65,21 @@ export function alignReading(
       for (let j = ti; j < matchedAt; j++) status[j] = "missed";
       status[matchedAt] = "correct";
       ti = matchedAt + 1;
+    } else {
+      leftovers.push(sw);
     }
-    // Unmatched spoken word = an insertion or misread; we simply skip it.
+  }
+
+  // Rescue pass: recognition sometimes garbles the order or merges words.
+  // Any target still marked missed/pending can be claimed by an unused
+  // spoken word, wherever it appeared.
+  for (let k = 0; k < target.length; k++) {
+    if (status[k] === "correct") continue;
+    const hit = leftovers.findIndex((sw) => lenientMatch(target[k], sw));
+    if (hit >= 0) {
+      status[k] = "correct";
+      leftovers.splice(hit, 1);
+    }
   }
   return status;
 }
@@ -75,9 +120,14 @@ export type Rating = "green" | "yellow" | "red";
 export function rateAttempt(target: string, spokenWords: string[]): Rating {
   const t = normalize(target);
   let best = 0;
-  for (const w of spokenWords) best = Math.max(best, similarity(t, w));
-  if (best >= 0.85) return "green";
-  if (best >= 0.5) return "yellow";
+  for (const w of spokenWords) {
+    const s = normalize(w);
+    // Accent-tolerant: a recognisable reading earns green right away.
+    if (lenientMatch(t, s)) return "green";
+    best = Math.max(best, similarity(accentFold(t), accentFold(s)));
+  }
+  if (best >= 0.75) return "green";
+  if (best >= 0.45) return "yellow";
   return "red";
 }
 

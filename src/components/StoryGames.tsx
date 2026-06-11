@@ -74,9 +74,9 @@ const GAMES: {
   },
   {
     id: "missing",
-    title: "Sentence Halves",
-    blurb: "Join each beginning to its ending",
-    emoji: "🔗",
+    title: "Word Intruder",
+    blurb: "Tap the word that sneaked in!",
+    emoji: "🕵️",
     color: "from-[#CFF5E1] to-[#A7E9C8]",
     text: "text-emerald-700",
   },
@@ -299,7 +299,7 @@ function LevelPlay({
         <WordFinder sentences={levelSentences(level, 5)} onDone={handleDone} />
       )}
       {game === "missing" && (
-        <SentenceHalves sentences={levelSentences(level, 3)} onDone={handleDone} />
+        <WordIntruder sentences={levelSentences(level, 4)} onDone={handleDone} />
       )}
       {game === "flash" && (
         <FlashSentence sentences={levelSentences(level, 3)} onDone={handleDone} />
@@ -492,109 +492,103 @@ function WordFinder({
   );
 }
 
-/* ---------- Game 3: Sentence Halves ---------- */
+/* ---------- Game 3: Word Intruder ---------- */
 
-type HalfPair = { id: number; left: string; right: string };
+type IntruderRound = {
+  /** The sentence's words with one intruder inserted. */
+  words: string[];
+  intruderIndex: number;
+  original: string;
+};
 
-function splitHalves(sentence: string): { left: string; right: string } {
-  const words = sentence.split(/\s+/);
-  const mid = Math.ceil(words.length / 2);
-  return { left: words.slice(0, mid).join(" "), right: words.slice(mid).join(" ") };
+function randomIntruder(notFrom: string): string {
+  for (let tries = 0; tries < 20; tries++) {
+    const sentence = sample(ALL_SENTENCES, 1)[0];
+    const candidates = sentence
+      .split(/\s+/)
+      .map(norm)
+      .filter((w) => w.length >= 3 && !notFrom.toLowerCase().includes(w));
+    if (candidates.length) return sample(candidates, 1)[0];
+  }
+  return "banana";
 }
 
-function SentenceHalves({
+function buildIntruderRounds(sentences: string[]): IntruderRound[] {
+  return sentences.map((original) => {
+    const words = original.split(/\s+/);
+    const intruder = randomIntruder(original);
+    // Slip the intruder somewhere in the middle of the sentence.
+    const at = 1 + Math.floor(Math.random() * Math.max(1, words.length - 1));
+    const mixed = [...words.slice(0, at), intruder, ...words.slice(at)];
+    return { words: mixed, intruderIndex: at, original };
+  });
+}
+
+function WordIntruder({
   sentences,
   onDone,
 }: {
   sentences: string[];
   onDone: () => void;
 }) {
-  const [pairs] = useState<HalfPair[]>(() =>
-    sentences.map((sen, id) => ({ id, ...splitHalves(sen) })),
+  const [rounds] = useState<IntruderRound[]>(() =>
+    buildIntruderRounds(sentences),
   );
-  const [rights] = useState(() => shuffle(pairs.map((p) => p.id)));
-  const [chosenLeft, setChosenLeft] = useState<number | null>(null);
-  const [solved, setSolved] = useState<Set<number>>(new Set());
-  const [wrongRight, setWrongRight] = useState<number | null>(null);
+  const [step, setStep] = useState(0);
+  const [wrongIdx, setWrongIdx] = useState<number | null>(null);
+  const [caught, setCaught] = useState(false);
 
-  const complete = solved.size === pairs.length && pairs.length > 0;
+  const round = rounds[step];
+  if (!round) return null;
 
-  useEffect(() => {
-    if (complete) {
+  function pick(i: number) {
+    if (caught) return;
+    if (i === round.intruderIndex) {
       praise();
-      const t = setTimeout(onDone, 1400);
-      return () => clearTimeout(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete]);
-
-  if (!pairs.length) return null;
-
-  function pickLeft(id: number) {
-    if (solved.has(id)) return;
-    setChosenLeft(id);
-    speak(pairs[id].left, 0.85);
-  }
-
-  function pickRight(id: number) {
-    if (solved.has(id) || chosenLeft === null) return;
-    if (id === chosenLeft) {
-      setSolved((prev) => new Set(prev).add(id));
-      setChosenLeft(null);
-      speak(`${pairs[id].left} ${pairs[id].right}`, 0.85);
+      setCaught(true);
+      speak(round.original, 0.85);
+      setTimeout(() => {
+        setCaught(false);
+        if (step + 1 >= rounds.length) onDone();
+        else setStep(step + 1);
+      }, 1700);
     } else {
-      setWrongRight(id);
+      setWrongIdx(i);
       speak("Try again");
-      setTimeout(() => setWrongRight(null), 600);
+      setTimeout(() => setWrongIdx(null), 600);
     }
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-5">
-      <p className="text-zinc-500">
-        Tap a beginning, then tap the ending that finishes it!
+    <div className="flex w-full flex-col items-center gap-6">
+      <p className="text-sm font-semibold text-zinc-400">
+        Sentence {step + 1} of {rounds.length}
       </p>
-      <div className="grid w-full grid-cols-2 gap-3">
-        {/* Beginnings, in order */}
-        <div className="flex flex-col gap-3">
-          {pairs.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => pickLeft(p.id)}
-              disabled={solved.has(p.id)}
-              className={`min-h-16 rounded-2xl border-4 px-4 py-3 text-left text-base font-bold shadow-sm transition-all active:scale-[0.98] sm:text-lg ${
-                solved.has(p.id)
-                  ? "border-green-400 bg-green-50 text-green-700 dark:bg-green-950"
-                  : chosenLeft === p.id
-                    ? "border-brand-400 bg-white text-brand-700 dark:bg-zinc-900"
-                    : "border-transparent bg-white text-zinc-700 hover:border-brand-200 dark:bg-zinc-900 dark:text-zinc-200"
-              }`}
-            >
-              {p.left}…
-            </button>
-          ))}
-        </div>
-        {/* Endings, shuffled */}
-        <div className="flex flex-col gap-3">
-          {rights.map((id) => (
-            <button
-              key={id}
-              onClick={() => pickRight(id)}
-              disabled={solved.has(id)}
-              className={`min-h-16 rounded-2xl border-4 px-4 py-3 text-left text-base font-bold shadow-sm transition-all active:scale-[0.98] sm:text-lg ${
-                solved.has(id)
-                  ? "border-green-400 bg-green-50 text-green-700 dark:bg-green-950"
-                  : wrongRight === id
-                    ? "animate-pulse border-rose-400 bg-white text-rose-600 dark:bg-zinc-900"
-                    : "border-transparent bg-white text-zinc-700 hover:border-brand-200 dark:bg-zinc-900 dark:text-zinc-200"
-              }`}
-            >
-              …{pairs[id].right}
-            </button>
-          ))}
-        </div>
+      <p className="text-center text-lg font-semibold">
+        🕵️ A sneaky word crept into this sentence — tap it!
+      </p>
+      <div className="flex w-full flex-wrap items-center justify-center gap-2 rounded-3xl bg-white p-6 text-2xl font-bold shadow-lg dark:bg-zinc-900">
+        {round.words.map((w, i) => (
+          <button
+            key={i}
+            onClick={() => pick(i)}
+            className={`rounded-xl px-2 py-1 transition-colors ${
+              caught && i === round.intruderIndex
+                ? "bg-emerald-200 text-emerald-800 line-through"
+                : wrongIdx === i
+                  ? "animate-pulse bg-rose-200 text-rose-700"
+                  : "text-zinc-700 hover:bg-brand-100 dark:text-zinc-200 dark:hover:bg-brand-950"
+            }`}
+          >
+            {w}
+          </button>
+        ))}
       </div>
-      {complete && <span className="text-3xl">🎉</span>}
+      {caught && (
+        <p className="text-lg font-bold text-emerald-600">
+          🎉 Caught it! “{round.original}”
+        </p>
+      )}
     </div>
   );
 }

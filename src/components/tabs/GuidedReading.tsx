@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
 import { lookup } from "@/app/dictionary";
@@ -56,9 +56,8 @@ export default function GuidedReading() {
         onLevels={goLevels}
         onDone={(r) => {
           setReport(r);
-          // Pull out the hard words and practice them with the coach first;
-          // the report comes after. No tricky words? Straight to the report.
-          setStep(r.practiceWords.length > 0 ? "coach" : "report");
+          // Marks first: show the report, then the coach for the hard words.
+          setStep("report");
         }}
       />
     );
@@ -369,6 +368,7 @@ function ReadAloud({
   const { supported, listening, transcript, start, stop, reset } =
     useSpeechRecognition();
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [grading, setGrading] = useState(false);
 
   const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
   const spoken = useMemo(
@@ -381,6 +381,10 @@ function ReadAloud({
     [words, spoken],
   );
 
+  // Track the latest alignment so delayed grading sees the final words.
+  const statusRef = useRef(status);
+  statusRef.current = status;
+
   function begin() {
     reset();
     setStartedAt(Date.now());
@@ -389,9 +393,20 @@ function ReadAloud({
 
   function finish() {
     stop();
-    const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : 1;
-    onDone(scoreReading(words, status, elapsed));
+    setGrading(true);
   }
+
+  // Grade a beat after stopping: the recogniser often delivers the last
+  // stretch of speech only after the mic is closed.
+  useEffect(() => {
+    if (!grading) return;
+    const t = setTimeout(() => {
+      const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : 1;
+      onDone(scoreReading(words, statusRef.current, elapsed));
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grading]);
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -478,9 +493,10 @@ function ReadAloud({
           ) : (
             <button
               onClick={finish}
-              className="flex animate-pulse items-center gap-2 rounded-full bg-rose-500 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
+              disabled={grading}
+              className="flex animate-pulse items-center gap-2 rounded-full bg-rose-500 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95 disabled:opacity-60"
             >
-              ⏹ I&apos;m done
+              {grading ? "✨ Checking…" : "⏹ I'm done"}
             </button>
           )}
         </div>
@@ -657,32 +673,33 @@ const STAR: Record<Rating, { color: string; label: string; say: string }> = {
 function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
   const { supported, listening, transcript, start, stop } =
     useSpeechRecognition();
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState<number | null>(null);
   const [results, setResults] = useState<Record<number, Rating>>({});
   const [showMeaning, setShowMeaning] = useState(false);
 
-  const word = words[index];
-  const rating = results[index];
+  const word = index !== null ? words[index] : null;
+  const rating = index !== null ? results[index] : undefined;
   const entry = word ? lookup(word) : null;
+  const greens = Object.values(results).filter((r) => r === "green").length;
 
-  // Score the spoken word the moment we hear something.
+  // Score the spoken word the moment we hear something, then return to the
+  // word list so the student can pick the next word themselves.
   useEffect(() => {
-    if (!listening || !word || !transcript.trim()) return;
+    if (!listening || !word || index === null || !transcript.trim()) return;
     const said = transcript.split(/\s+/);
     const r = rateAttempt(word, said);
     stop();
     setResults((prev) => ({ ...prev, [index]: r }));
     if (r === "green") praise();
     else speak(STAR[r].say, 1);
+    const t = setTimeout(() => {
+      setShowMeaning(false);
+      setIndex(null);
+    }, 1600);
+    return () => clearTimeout(t);
   }, [transcript, listening, word, index, stop]);
 
-  function goTo(i: number) {
-    stop();
-    setShowMeaning(false);
-    setIndex(i);
-  }
-
-  if (!word) {
+  if (words.length === 0) {
     return (
       <div className="flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-4 text-center">
         <div className="text-6xl">🎉</div>
@@ -697,49 +714,81 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
     );
   }
 
-  const greens = Object.values(results).filter((r) => r === "green").length;
+  /* ---- All the tricky words at once: tap one to practice ---- */
+  if (index === null || !word) {
+    return (
+      <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
+        <div className="flex w-full items-center justify-between">
+          <button
+            onClick={onDone}
+            className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            ← Report
+          </button>
+          <span className="text-sm font-bold text-zinc-400">
+            💚 {greens} / {words.length} words green
+          </span>
+        </div>
 
+        <h2 className="mt-4 text-center text-xl font-extrabold">
+          🧑‍🏫 Your words to practice
+        </h2>
+        <p className="text-sm text-zinc-400">
+          These were hard while you read — tap any word to practice it.
+        </p>
+
+        <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
+          {words.map((w, i) => {
+            const r = results[i];
+            return (
+              <button
+                key={i}
+                onClick={() => setIndex(i)}
+                className="group flex flex-col items-center gap-1 rounded-2xl bg-white px-4 py-5 shadow-sm ring-2 ring-white/70 transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-95 dark:bg-zinc-900"
+              >
+                <span className="text-2xl font-black lowercase text-sky-700">
+                  {w}
+                </span>
+                <span
+                  className={`text-xl ${r ? STAR[r].color : "text-zinc-200 dark:text-zinc-700"}`}
+                >
+                  ★
+                </span>
+                <span className="text-xs font-semibold text-zinc-400">
+                  {r ? STAR[r].label : "tap to practice"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onDone}
+          className="mt-8 rounded-full bg-green-500 px-8 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+        >
+          Finish practicing 🎉
+        </button>
+      </div>
+    );
+  }
+
+  /* ---- Practicing one chosen word ---- */
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center justify-between">
         <button
           onClick={() => {
             stop();
-            onDone();
+            setShowMeaning(false);
+            setIndex(null);
           }}
           className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
         >
-          ← Report
+          ← All words
         </button>
         <span className="text-sm font-bold text-zinc-400">
-          Word {index + 1} / {words.length} · 💚 {greens}
+          💚 {greens} / {words.length}
         </span>
-      </div>
-
-      <h2 className="mt-4 text-center text-xl font-extrabold">
-        🧑‍🏫 Let&apos;s practice your tricky words!
-      </h2>
-      <p className="text-sm text-zinc-400">
-        These words were hard while you read — say each one with me.
-      </p>
-
-      {/* Word progress stars */}
-      <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-        {words.map((w, i) => {
-          const r = results[i];
-          return (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              aria-label={`Practice ${w}`}
-              className={`text-xl ${
-                r ? STAR[r].color : "text-zinc-300 dark:text-zinc-700"
-              } ${i === index ? "scale-125" : ""}`}
-            >
-              ★
-            </button>
-          );
-        })}
       </div>
 
       <h2 className="mt-5 text-lg font-bold text-zinc-500">
@@ -832,34 +881,6 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
           )}
         </div>
       )}
-
-      <div className="mt-6 flex w-full gap-3">
-        <button
-          onClick={() => goTo(Math.max(0, index - 1))}
-          disabled={index === 0}
-          className="flex-1 rounded-full bg-white px-6 py-3 font-bold text-zinc-700 shadow-sm active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
-        >
-          ← Back
-        </button>
-        {index < words.length - 1 ? (
-          <button
-            onClick={() => goTo(index + 1)}
-            className="flex-1 rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow active:scale-95"
-          >
-            Next word →
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              stop();
-              onDone();
-            }}
-            className="flex-1 rounded-full bg-green-500 px-6 py-3 font-bold text-white shadow active:scale-95"
-          >
-            Finish 🎉
-          </button>
-        )}
-      </div>
     </div>
   );
 }
