@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trickySets, type TrickySet } from "@/app/tricky";
-import { speak, playClip } from "@/lib/speak";
+import { speak, playClip, stopSpeech } from "@/lib/speak";
 import TrickyGames from "@/components/TrickyGames";
 
 /** Say a tricky word with the real recording from the Jolly Phonics recap
@@ -23,6 +23,12 @@ const SET_STYLES = [
 
 export default function TrickyWords() {
   const [set, setSet] = useState<TrickySet | null>(null);
+
+  // Switching sets or leaving the tab silences any word/sentence audio.
+  useEffect(() => {
+    stopSpeech();
+  }, [set]);
+  useEffect(() => () => stopSpeech(), []);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
 

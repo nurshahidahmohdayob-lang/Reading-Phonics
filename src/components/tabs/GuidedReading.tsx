@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
-import { lookup } from "@/app/dictionary";
+import { lookup, POS_BADGE } from "@/app/dictionary";
 import {
   alignReading,
   rateAttempt,
@@ -12,7 +12,8 @@ import {
   type ReadingReport,
 } from "@/lib/reading";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { speak, praise } from "@/lib/speak";
+import { speak, praise, playSoundClip, chime } from "@/lib/speak";
+import { sayWord } from "@/lib/sayWord";
 
 type Step = "choose" | "read" | "report" | "coach";
 
@@ -369,6 +370,11 @@ function ReadAloud({
     useSpeechRecognition();
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [grading, setGrading] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const pickedEntry = picked ? lookup(picked) : null;
+
+  // A new passage closes the word card.
+  useEffect(() => setPicked(null), [passage.id]);
 
   const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
   const spoken = useMemo(
@@ -456,17 +462,83 @@ function ReadAloud({
         }}
       >
         <p className="flex flex-wrap gap-x-2 gap-y-1">
-          {words.map((w, i) => (
-            <button
-              key={i}
-              onClick={() => speak(w.replace(/[.,!?;:"]/g, ""))}
-              className="rounded-lg px-1 text-zinc-800 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70"
-            >
-              {w}
-            </button>
-          ))}
+          {words.map((w, i) => {
+            const clean = w.replace(/[.,!?;:"]/g, "");
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  sayWord(clean);
+                  setPicked(clean.toLowerCase());
+                }}
+                className={`rounded-lg px-1 text-zinc-800 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
+                  picked === clean.toLowerCase() ? "bg-amber-200/80" : ""
+                }`}
+              >
+                {w}
+              </button>
+            );
+          })}
         </p>
       </div>
+
+      {/* Picture dictionary for the tapped word */}
+      {picked && (
+        <div className="relative mt-4 flex w-full max-w-md flex-col items-center gap-2 rounded-2xl bg-white/85 p-5 text-center shadow-md ring-2 ring-amber-200">
+          <button
+            onClick={() => setPicked(null)}
+            aria-label="Close meaning"
+            className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-bold text-zinc-500 shadow ring-2 ring-amber-200 active:scale-90"
+          >
+            ✕
+          </button>
+          {pickedEntry ? (
+            <>
+              <div
+                className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
+                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+              >
+                <span className="absolute right-2 top-1 text-xl">🌤️</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
+                <span className="relative text-6xl drop-shadow-md">{pickedEntry.emoji}</span>
+              </div>
+              <span className="text-xl font-extrabold lowercase text-amber-800">
+                {picked}
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${POS_BADGE[pickedEntry.pos].chip}`}
+              >
+                {POS_BADGE[pickedEntry.pos].label}
+              </span>
+              <p className="text-base font-semibold text-zinc-700">
+                {pickedEntry.meaning}
+              </p>
+              <button
+                onClick={() => speak(`${picked}. ${pickedEntry.meaning}`, 0.85)}
+                className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
+              >
+                🔊 Read meaning
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-5xl">🔎</span>
+              <span className="text-xl font-extrabold lowercase text-amber-800">
+                {picked}
+              </span>
+              <p className="text-base font-semibold text-zinc-600">
+                No picture for this word yet — listen and sound it out!
+              </p>
+              <button
+                onClick={() => speak(picked, 0.5)}
+                className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
+              >
+                🐢 Say it slowly
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Controls */}
       {!supported ? (
@@ -580,6 +652,13 @@ function Report({
           <h3 className="font-bold text-amber-800 dark:text-amber-200">
             Words to practice
           </h3>
+          <p className="mt-0.5 text-sm font-semibold text-amber-700/80 dark:text-amber-300/80">
+            {report.practiceWords.length} different{" "}
+            {report.practiceWords.length === 1 ? "word" : "words"} from{" "}
+            {report.total - report.correct}{" "}
+            {report.total - report.correct === 1 ? "spot" : "spots"} in the
+            story — repeated words are listed once.
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {report.practiceWords.map((w) => (
               <span
@@ -681,23 +760,54 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
   const rating = index !== null ? results[index] : undefined;
   const entry = word ? lookup(word) : null;
   const greens = Object.values(results).filter((r) => r === "green").length;
+  const justRated = useRef(false);
 
-  // Score the spoken word the moment we hear something, then return to the
-  // word list so the student can pick the next word themselves.
+  // Entering a word starts a fresh attempt — with the mic already hot, so
+  // the student just says the word without pressing anything.
+  useEffect(() => {
+    justRated.current = false;
+    if (index !== null) {
+      const t = setTimeout(start, 150);
+      return () => clearTimeout(t);
+    }
+  }, [index, start]);
+
+  // Score on the very first scrap of recognised speech — no waiting for the
+  // engine to "finalise". The verdict speaks immediately.
   useEffect(() => {
     if (!listening || !word || index === null || !transcript.trim()) return;
     const said = transcript.split(/\s+/);
     const r = rateAttempt(word, said);
     stop();
+    justRated.current = true;
     setResults((prev) => ({ ...prev, [index]: r }));
+    chime(r === "green"); // instant feedback, before any speech loads
     if (r === "green") praise();
     else speak(STAR[r].say, 1);
+  }, [transcript, listening, word, index, stop]);
+
+  // Watchdog: if the mic has been "listening" for 7s without hearing a thing,
+  // restart it — never leave the student talking to a dead microphone.
+  useEffect(() => {
+    if (!listening || index === null || transcript.trim()) return;
+    const t = setTimeout(() => {
+      stop();
+      setTimeout(start, 300);
+    }, 7000);
+    return () => clearTimeout(t);
+  }, [listening, transcript, index, stop, start]);
+
+  // Once a verdict lands, hop back to the word list after a short beat.
+  // (Kept separate so late transcript updates can't cancel the hop.)
+  const verdict = index !== null ? results[index] : undefined;
+  useEffect(() => {
+    if (index === null || verdict === undefined || !justRated.current) return;
     const t = setTimeout(() => {
       setShowMeaning(false);
       setIndex(null);
-    }, 1600);
+    }, 1000);
     return () => clearTimeout(t);
-  }, [transcript, listening, word, index, stop]);
+  }, [verdict, index]);
 
   if (words.length === 0) {
     return (
@@ -810,37 +920,46 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
 
         <div className="flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => speak(word, 0.85)}
+            onClick={() => {
+              stop(); // don't let the mic hear the app's own voice
+              // Single letters say their phonics sound ("a" -> "ah"), not a word.
+              if (word.length === 1) playSoundClip(word, word === "a" ? "ah" : word);
+              else sayWord(word, 0.85);
+            }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             🔊 Sound
           </button>
           <button
-            onClick={() => speak(word, 0.4)}
+            onClick={() => {
+              stop();
+              if (word.length === 1) playSoundClip(word, word === "a" ? "ah" : word);
+              else speak(word, 0.4);
+            }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             🐢 Slowly
           </button>
           <button
-            onClick={() => setShowMeaning((v) => !v)}
+            onClick={() => {
+              stop();
+              setShowMeaning((v) => !v);
+            }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             📖 Meaning
           </button>
           {supported &&
             (listening ? (
-              <button
-                onClick={stop}
-                className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold text-white active:scale-95"
-              >
-                ⏹ Listening…
-              </button>
+              <span className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold text-white">
+                👂 Say the word now!
+              </span>
             ) : (
               <button
                 onClick={start}
                 className="rounded-full bg-sky-600 px-5 py-3 font-bold text-white shadow-md active:scale-95"
               >
-                🎤 Say it
+                🎤 Try again
               </button>
             ))}
         </div>
@@ -851,9 +970,21 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         <div className="mt-4 flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-brand-100 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           {entry ? (
             <>
-              <span className="text-7xl">{entry.emoji}</span>
+              <div
+                className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
+                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+              >
+                <span className="absolute right-2 top-1 text-xl">🌤️</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
+                <span className="relative text-6xl drop-shadow-md">{entry.emoji}</span>
+              </div>
               <span className="text-xl font-extrabold lowercase text-brand-600 dark:text-brand-400">
                 {word}
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${POS_BADGE[entry.pos].chip}`}
+              >
+                {POS_BADGE[entry.pos].label}
               </span>
               <p className="text-lg text-zinc-700 dark:text-zinc-200">
                 {entry.meaning}

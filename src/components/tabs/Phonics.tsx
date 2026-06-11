@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   allJollySounds,
   jollyGroups,
@@ -32,7 +32,10 @@ export default function Phonics() {
         ).map((t) => (
           <button
             key={t.id}
-            onClick={() => setMode(t.id)}
+            onClick={() => {
+              stopSpeech();
+              setMode(t.id);
+            }}
             aria-current={mode === t.id}
             className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-bold transition-all ${
               mode === t.id
@@ -99,6 +102,14 @@ function Sounds() {
   }
 
   const groupData = jollyGroups.find((g) => g.group === openGroup);
+
+  // Entering or leaving a group cuts off any song or sound right away.
+  useEffect(() => {
+    stopSpeech();
+  }, [openGroup]);
+
+  // Leaving the Phonics tab entirely stops audio too.
+  useEffect(() => () => stopSpeech(), []);
 
   function enterGroup(group: number) {
     const sounds = jollyGroups.find((g) => g.group === group)!.sounds;
@@ -178,12 +189,14 @@ function Sounds() {
           </span>
         </span>
         <div className="mt-1 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => song(selected)}
-            className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2 text-base font-bold text-white shadow-md active:scale-95"
-          >
-            🎵 Song
-          </button>
+          {selected.group <= 7 && (
+            <button
+              onClick={() => song(selected)}
+              className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2 text-base font-bold text-white shadow-md active:scale-95"
+            >
+              🎵 Song
+            </button>
+          )}
           <button
             onClick={stopSpeech}
             className="inline-flex items-center gap-2 rounded-full bg-rose-500 px-5 py-2 text-base font-bold text-white shadow-md active:scale-95"

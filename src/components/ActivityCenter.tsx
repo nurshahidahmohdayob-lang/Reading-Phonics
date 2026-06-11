@@ -3,11 +3,11 @@
 import { useState } from "react";
 import type { Lesson } from "@/app/lessons";
 import ListenAndFind from "@/components/games/ListenAndFind";
-import LetterHunt from "@/components/games/LetterHunt";
+import LetterHunt, { type HuntDifficulty } from "@/components/games/LetterHunt";
 import SoundSort from "@/components/games/SoundSort";
 import MemoryMatch from "@/components/games/MemoryMatch";
 import FirstLetter from "@/components/games/FirstLetter";
-import BalloonPop from "@/components/games/BalloonPop";
+import BalloonPop, { type BalloonDifficulty } from "@/components/games/BalloonPop";
 
 const TOTAL_LEVELS = 50;
 
@@ -70,6 +70,33 @@ const ACTIVITIES: {
     text: "text-amber-700",
   },
 ];
+
+type ModeCard = {
+  level: number;
+  difficulty: string;
+  label: string;
+  blurb: string;
+  emoji: string;
+  chip: string;
+};
+
+const POP_MODES: ModeCard[] = [
+  { level: 1, difficulty: "easy", label: "Easy", blurb: "Slow, floaty balloons", emoji: "🐢", chip: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700" },
+  { level: 2, difficulty: "medium", label: "Medium", blurb: "A steady breeze", emoji: "🐰", chip: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] text-amber-700" },
+  { level: 3, difficulty: "hard", label: "Hard", blurb: "They drop super fast!", emoji: "🚀", chip: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB] text-pink-700" },
+];
+
+const HUNT_MODES: ModeCard[] = [
+  { level: 1, difficulty: "easy", label: "Easy", blurb: "A small board, 4 letters", emoji: "🐢", chip: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700" },
+  { level: 2, difficulty: "medium", label: "Medium", blurb: "More tiles to search", emoji: "🐰", chip: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] text-amber-700" },
+  { level: 3, difficulty: "hard", label: "Hard", blurb: "A big board full of letters!", emoji: "🚀", chip: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB] text-pink-700" },
+];
+
+/** Games that use Easy/Medium/Hard instead of 50 levels. */
+const THREE_MODE: Partial<Record<GameId, { modes: ModeCard[]; prompt: string }>> = {
+  pop: { modes: POP_MODES, prompt: "How fast should the balloons fall?" },
+  hunt: { modes: HUNT_MODES, prompt: "How tricky should the hunt be?" },
+};
 
 /* Level-button colours by band of ten. */
 const LEVEL_BANDS = [
@@ -183,7 +210,40 @@ export default function ActivityCenter({
                     {a.blurb}
                   </span>
                   <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
-                    50 levels
+                    {THREE_MODE[a.id] ? "Easy · Medium · Hard" : "50 levels"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : level === null && game && THREE_MODE[game] ? (
+          /* ---- Easy / Medium / Hard picker ---- */
+          <>
+            <h2 className="mb-1 flex items-center gap-2 text-xl font-extrabold">
+              <span className="text-3xl">{active.emoji}</span> {active.title}
+            </h2>
+            <p className="mb-5 text-sm text-zinc-500">
+              {THREE_MODE[game]!.prompt}
+            </p>
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
+              {THREE_MODE[game]!.modes.map((m) => (
+                <button
+                  key={m.level}
+                  onClick={() => {
+                    setLevel(m.level);
+                    setWon(false);
+                  }}
+                  className={`group relative flex flex-col items-center gap-2 rounded-[2rem] ${m.chip} px-4 py-8 shadow-lg ring-4 ring-white/60 transition-transform hover:-translate-y-1 active:scale-95`}
+                >
+                  {doneSet.has(m.level) && (
+                    <span className="absolute right-3 top-3 text-xl">⭐</span>
+                  )}
+                  <span className="grid h-16 w-16 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                    {m.emoji}
+                  </span>
+                  <span className="text-lg font-bold">{m.label}</span>
+                  <span className="text-center text-sm font-semibold opacity-80">
+                    {m.blurb}
                   </span>
                 </button>
               ))}
@@ -230,16 +290,18 @@ export default function ActivityCenter({
           <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE07F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
             <div className="text-7xl">🏆</div>
             <h3 className="text-2xl font-extrabold">
-              Level {level} complete!
+              {game && THREE_MODE[game]
+                ? `${THREE_MODE[game]!.modes[(level ?? 1) - 1].label} mode beaten!`
+                : `Level ${level} complete!`}
             </h3>
             <div className="flex gap-3">
               <button
                 onClick={() => setLevel(null)}
                 className="rounded-full bg-white px-6 py-3 font-bold text-amber-700 shadow active:scale-95"
               >
-                All levels
+                {game && THREE_MODE[game] ? "All modes" : "All levels"}
               </button>
-              {level < TOTAL_LEVELS && (
+              {level < (game && THREE_MODE[game] ? 3 : TOTAL_LEVELS) && (
                 <button
                   onClick={() => {
                     setWon(false);
@@ -247,7 +309,9 @@ export default function ActivityCenter({
                   }}
                   className="rounded-full bg-brand-600 px-6 py-3 font-bold text-white shadow active:scale-95"
                 >
-                  Level {level + 1} →
+                  {game && THREE_MODE[game]
+                    ? `${THREE_MODE[game]!.modes[level].label} →`
+                    : `Level ${level + 1} →`}
                 </button>
               )}
             </div>
@@ -256,7 +320,9 @@ export default function ActivityCenter({
           /* ---- Playing a level ---- */
           <div className="flex w-full flex-col items-center">
             <p className="mb-4 rounded-full bg-white/70 px-4 py-1 text-sm font-bold text-zinc-500 shadow-sm">
-              {active.emoji} {active.title} · Level {level} of {TOTAL_LEVELS}
+              {game && THREE_MODE[game]
+                ? `${active.emoji} ${active.title} · ${THREE_MODE[game]!.modes[level - 1].label} mode`
+                : `${active.emoji} ${active.title} · Level ${level} of ${TOTAL_LEVELS}`}
             </p>
             {game === "find" && (
               <ListenAndFind
@@ -270,7 +336,7 @@ export default function ActivityCenter({
               <LetterHunt
                 key={`hunt-${level}`}
                 lesson={lesson}
-                level={level}
+                difficulty={HUNT_MODES[level - 1].difficulty as HuntDifficulty}
                 onDone={completeLevel}
               />
             )}
@@ -302,7 +368,7 @@ export default function ActivityCenter({
               <BalloonPop
                 key={`pop-${level}`}
                 lesson={lesson}
-                level={level}
+                difficulty={POP_MODES[level - 1].difficulty as BalloonDifficulty}
                 onDone={completeLevel}
               />
             )}

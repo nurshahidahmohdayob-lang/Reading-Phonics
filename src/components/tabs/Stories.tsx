@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { levels, type Level } from "@/app/stories";
-import { speak } from "@/lib/speak";
+import { lookup, POS_BADGE } from "@/app/dictionary";
+import { speak, stopSpeech } from "@/lib/speak";
+import { sayWord } from "@/lib/sayWord";
 import StoryGames from "@/components/StoryGames";
 
 const PER_PAGE = 10;
@@ -191,6 +194,17 @@ function Reader({
   const isFirst = index === 0;
   const isLast = index === level.stories.length - 1;
   const [playing, setPlaying] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const entry = picked ? lookup(picked) : null;
+
+  // Changing story closes the word card and stops any reading voice.
+  useEffect(() => {
+    setPicked(null);
+    stopSpeech();
+  }, [index]);
+
+  // Leaving the reader stops the voice too.
+  useEffect(() => () => stopSpeech(), []);
 
   // Games open as their own page, not a floating window.
   if (playing) {
@@ -238,16 +252,82 @@ function Reader({
 
         {/* Tap any word to hear it */}
         <p className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-center text-xl font-semibold leading-relaxed text-zinc-800 sm:text-2xl">
-          {text.split(" ").map((word, i) => (
-            <button
-              key={i}
-              onClick={() => speak(word.replace(/[.,!?;:"]/g, ""))}
-              className="rounded-md px-0.5 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70"
-            >
-              {word}
-            </button>
-          ))}
+          {text.split(" ").map((word, i) => {
+            const clean = word.replace(/[.,!?;:"]/g, "");
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  sayWord(clean);
+                  setPicked(clean.toLowerCase());
+                }}
+                className={`rounded-md px-0.5 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
+                  picked === clean.toLowerCase() ? "bg-amber-200/80" : ""
+                }`}
+              >
+                {word}
+              </button>
+            );
+          })}
         </p>
+
+        {/* Picture dictionary for the tapped word */}
+        {picked && (
+          <div className="relative flex w-full max-w-md flex-col items-center gap-2 rounded-2xl bg-white/85 p-5 text-center shadow-md ring-2 ring-amber-200">
+            <button
+              onClick={() => setPicked(null)}
+              aria-label="Close meaning"
+              className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-bold text-zinc-500 shadow ring-2 ring-amber-200 active:scale-90"
+            >
+              ✕
+            </button>
+            {entry ? (
+              <>
+                <div
+                className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
+                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+              >
+                <span className="absolute right-2 top-1 text-xl">🌤️</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
+                <span className="relative text-6xl drop-shadow-md">{entry.emoji}</span>
+              </div>
+                <span className="text-xl font-extrabold lowercase text-amber-800">
+                  {picked}
+                </span>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${POS_BADGE[entry.pos].chip}`}
+                >
+                  {POS_BADGE[entry.pos].label}
+                </span>
+                <p className="text-base font-semibold text-zinc-700">
+                  {entry.meaning}
+                </p>
+                <button
+                  onClick={() => speak(`${picked}. ${entry.meaning}`, 0.85)}
+                  className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
+                >
+                  🔊 Read meaning
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-5xl">🔎</span>
+                <span className="text-xl font-extrabold lowercase text-amber-800">
+                  {picked}
+                </span>
+                <p className="text-base font-semibold text-zinc-600">
+                  No picture for this word yet — listen and sound it out!
+                </p>
+                <button
+                  onClick={() => speak(picked, 0.5)}
+                  className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
+                >
+                  🐢 Say it slowly
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-center gap-3">
           <button
@@ -255,6 +335,12 @@ function Reader({
             className="flex items-center gap-2 rounded-full bg-white/80 px-6 py-3 text-lg font-bold text-amber-700 shadow-sm active:scale-95"
           >
             🔊 Read to me
+          </button>
+          <button
+            onClick={stopSpeech}
+            className="flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-lg font-extrabold text-white shadow-md active:scale-95"
+          >
+            ⏹ Stop
           </button>
           <button
             onClick={() => setPlaying(true)}

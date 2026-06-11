@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "@/app/lessons";
-import { speak, praise, playSoundClip } from "@/lib/speak";
+import { speak, praise, playSoundClip, popSound } from "@/lib/speak";
 
 const FLYING = 6; // balloons in the air at once
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
@@ -44,7 +44,7 @@ function makeBalloon(
     isTarget: letter === target,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     x: 4 + Math.random() * 78,
-    duration: 6 - speedup + Math.random() * 5,
+    duration: Math.max(1.6, 6 - speedup) + Math.random() * Math.max(0.8, 5 - speedup),
     delay,
     sway: 1.6 + Math.random() * 1.4,
     popped: false,
@@ -57,19 +57,26 @@ function firstWave(target: string, speedup = 0): Balloon[] {
   );
 }
 
+export type BalloonDifficulty = "easy" | "medium" | "hard";
+
+const DIFFICULTY = {
+  easy: { goal: 6, speedup: 0 },     // slow, floaty balloons
+  medium: { goal: 8, speedup: 2 },   // a steady drift
+  hard: { goal: 10, speedup: 4.2 },  // they drop FAST
+} as const;
+
 export default function BalloonPop({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: BalloonDifficulty;
   onDone?: () => void;
 }) {
   const target = lesson.letter;
-  // Higher levels: more balloons to pop, falling faster.
-  const GOAL = 6 + Math.min(6, Math.floor((level - 1) / 8));
-  const speedup = Math.min(3, (level - 1) / 16);
+  const GOAL = DIFFICULTY[difficulty].goal;
+  const speedup = DIFFICULTY[difficulty].speedup;
   const [balloons, setBalloons] = useState<Balloon[]>(() => firstWave(target, speedup));
   const [popCount, setPopCount] = useState(0);
   const [missCount, setMissCount] = useState(0);
@@ -96,6 +103,7 @@ export default function BalloonPop({
   function pop(b: Balloon) {
     if (b.popped || done) return;
     if (b.isTarget) {
+      popSound();
       praise();
       setPopCount((n) => n + 1);
       // Freeze it as a burst, then float in a replacement.

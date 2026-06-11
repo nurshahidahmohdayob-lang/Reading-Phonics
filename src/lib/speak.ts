@@ -165,7 +165,11 @@ export function speak(text: string, rate = 0.85) {
 /** Play a pre-recorded clip from /public/sounds/<name>.mp3. If the file
     doesn't exist (or can't play), run the fallback — usually a speak() call —
     so recordings can be added one at a time. */
-export function playClip(name: string, fallback?: () => void) {
+export function playClip(
+  name: string,
+  fallback?: () => void,
+  onEnd?: () => void,
+) {
   if (typeof window === "undefined") return;
   stopAll();
   const token = ++session;
@@ -176,8 +180,15 @@ export function playClip(name: string, fallback?: () => void) {
     playedOk = true;
     emit("ok");
   };
+  audio.onended = () => {
+    if (token === session) onEnd?.();
+  };
   const onFail = () => {
-    if (token === session && !playedOk) fallback?.();
+    if (token === session && !playedOk) {
+      fallback?.();
+      // The TTS fallback has no end event — estimate one.
+      if (onEnd) setTimeout(() => token === session && onEnd(), 1200);
+    }
   };
   audio.onerror = onFail;
   audio.play().catch(onFail);
@@ -198,6 +209,66 @@ export function playSoundClip(grapheme: string, fallbackSay: string, rate = 0.85
 /** Warm up the speech engine on first interaction. */
 export function primeSpeech() {
   initSpeech();
+}
+
+/** Instant feedback chime generated locally — zero network delay. */
+export function chime(ok: boolean) {
+  if (typeof window === "undefined") return;
+  type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
+  const Ctx = window.AudioContext ?? (window as AudioWindow).webkitAudioContext;
+  if (!Ctx) return;
+  const ctx = new Ctx();
+  const notes = ok ? [523.25, 659.25, 783.99] : [311.13, 246.94];
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const t0 = ctx.currentTime + i * 0.09;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+  });
+  setTimeout(() => ctx.close(), 1200);
+}
+
+/** A balloon-pop burst: a snap of noise with a falling squeak. */
+export function popSound() {
+  if (typeof window === "undefined") return;
+  type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
+  const Ctx = window.AudioContext ?? (window as AudioWindow).webkitAudioContext;
+  if (!Ctx) return;
+  const ctx = new Ctx();
+  const t0 = ctx.currentTime;
+  // the snap: a short burst of noise
+  const len = Math.floor(ctx.sampleRate * 0.08);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const nGain = ctx.createGain();
+  nGain.gain.setValueAtTime(0.5, t0);
+  nGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+  noise.connect(nGain).connect(ctx.destination);
+  noise.start(t0);
+  // the squeak: a quick falling tone
+  const osc = ctx.createOscillator();
+  const oGain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(680, t0);
+  osc.frequency.exponentialRampToValueAtTime(140, t0 + 0.12);
+  oGain.gain.setValueAtTime(0.12, t0);
+  oGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.13);
+  osc.connect(oGain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.15);
+  setTimeout(() => ctx.close(), 400);
 }
 
 /** Short spoken praise for correct answers. */

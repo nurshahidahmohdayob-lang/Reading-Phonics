@@ -43,19 +43,26 @@ function buildGrid(target: string, cellCount: number, targetCount: number) {
   return { cells, total: targetCount };
 }
 
+export type HuntDifficulty = "easy" | "medium" | "hard";
+
+const HUNT_SETTINGS = {
+  easy: { cells: 12, targets: 4 },   // small board
+  medium: { cells: 16, targets: 6 }, // more to search
+  hard: { cells: 24, targets: 8 },   // a big busy board
+} as const;
+
 export default function LetterHunt({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: HuntDifficulty;
   onDone?: () => void;
 }) {
   const target = lesson.letter;
-  // Higher levels: a bigger board hiding more letters.
-  const cellCount = 12 + Math.min(12, Math.floor((level - 1) / 12) * 4);
-  const targetCount = 4 + Math.min(4, Math.floor((level - 1) / 12));
+  const cellCount = HUNT_SETTINGS[difficulty].cells;
+  const targetCount = HUNT_SETTINGS[difficulty].targets;
 
   const [{ cells, total }, setGrid] = useState(() =>
     buildGrid(target, cellCount, targetCount),

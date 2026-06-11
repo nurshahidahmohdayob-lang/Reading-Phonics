@@ -401,13 +401,28 @@ function WordTrain({ set }: { set: TrickySet }) {
   const [done, setDone] = useState(false);
   const cards = useRef<string[]>(shuffle([...sequence]));
 
-  // Speak the three words in order, like train cars rolling past.
+  // Speak the three words in order, like train cars rolling past — each
+  // word plays to the END before the next one starts.
+  const seqToken = useRef(0);
   function playSequence(words: string[]) {
-    words.forEach((w, i) => setTimeout(() => sayWord(w), i * 1100));
+    const token = ++seqToken.current;
+    const playFrom = (i: number) => {
+      if (token !== seqToken.current || i >= words.length) return;
+      const w = words[i];
+      playClip(
+        `tricky-${w.toLowerCase()}`,
+        () => speak(w, 0.85), // onEnd below also covers this fallback
+        () => setTimeout(() => playFrom(i + 1), 350),
+      );
+    };
+    playFrom(0);
   }
 
   useEffect(() => {
     if (!done) playSequence(sequence);
+    return () => {
+      seqToken.current++; // leaving the round cancels the chain
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sequence, done]);
 

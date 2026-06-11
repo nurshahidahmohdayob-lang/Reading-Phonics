@@ -116,7 +116,21 @@ export function useSpeechRecognition() {
     try {
       rec.start();
     } catch {
-      /* already started */
+      // The engine was still tearing down — force it closed and retry, so
+      // we never end up "listening" with a dead microphone.
+      try {
+        rec.abort();
+      } catch {
+        /* ignore */
+      }
+      setTimeout(() => {
+        if (!wantRef.current) return;
+        try {
+          rec.start();
+        } catch {
+          setListening(false);
+        }
+      }, 250);
     }
   }, []);
 

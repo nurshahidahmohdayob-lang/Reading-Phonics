@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Phonics from "@/components/tabs/Phonics";
 import LetterFormation from "@/components/tabs/LetterFormation";
 import Spelling from "@/components/tabs/Spelling";
@@ -9,6 +9,7 @@ import Stories from "@/components/tabs/Stories";
 import GuidedReading from "@/components/tabs/GuidedReading";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
+import { stopSpeech } from "@/lib/speak";
 
 type SectionId =
   | "phonics"
@@ -79,6 +80,20 @@ const SECTIONS: {
 export default function Home() {
   const [section, setSection] = useState<SectionId | null>(null);
 
+  // Silence everything when the child switches away from this browser tab.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.hidden) stopSpeech();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, []);
+
+  function go(next: SectionId | null) {
+    stopSpeech(); // leaving a page always stops whatever is playing
+    setSection(next);
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] px-4 py-8 font-sans text-zinc-900 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black dark:text-zinc-50">
       <SoundPrimer />
@@ -104,7 +119,7 @@ export default function Home() {
           {SECTIONS.map((s) => (
             <button
               key={s.id}
-              onClick={() => setSection(s.id)}
+              onClick={() => go(s.id)}
               className={`group flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br ${s.color} ${s.text} px-6 py-9 shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
             >
               <span className="grid h-20 w-20 place-items-center rounded-full bg-white/70 text-5xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
@@ -122,7 +137,7 @@ export default function Home() {
           {/* Back to home */}
           <div className="flex w-full">
             <button
-              onClick={() => setSection(null)}
+              onClick={() => go(null)}
               className="flex items-center gap-1 rounded-full bg-white px-5 py-2.5 font-bold text-zinc-600 shadow-sm transition-all hover:shadow active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
             >
               🏠 Home
