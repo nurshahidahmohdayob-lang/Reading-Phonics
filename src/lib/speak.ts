@@ -162,6 +162,33 @@ export function speak(text: string, rate = 0.85) {
   playFrom(0);
 }
 
+/** Play a pre-recorded clip from /public/sounds/<name>.mp3. If the file
+    doesn't exist (or can't play), run the fallback — usually a speak() call —
+    so recordings can be added one at a time. */
+export function playClip(name: string, fallback?: () => void) {
+  if (typeof window === "undefined") return;
+  stopAll();
+  const token = ++session;
+  const audio = new Audio(`/sounds/${encodeURIComponent(name)}.mp3`);
+  currentAudio = audio;
+  let playedOk = false;
+  audio.onplaying = () => {
+    playedOk = true;
+    emit("ok");
+  };
+  const onFail = () => {
+    if (token === session && !playedOk) fallback?.();
+  };
+  audio.onerror = onFail;
+  audio.play().catch(onFail);
+}
+
+/** Stop whatever is currently playing (clips, TTS, or browser speech). */
+export function stopSpeech() {
+  session++; // invalidate any queued chunks and fallbacks
+  stopAll();
+}
+
 /** Warm up the speech engine on first interaction. */
 export function primeSpeech() {
   initSpeech();

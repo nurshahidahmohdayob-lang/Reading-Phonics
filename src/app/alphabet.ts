@@ -68,6 +68,7 @@ const ACCENT: Record<LetterCategory, string> = {
 /** Continuous sounds need an elongated spelling so the TTS sustains the
     fricative/hum rather than reading a short syllable with a vowel. */
 const SAY_OVERRIDE: Record<string, string> = {
+  f: "ffffff",
   s: "ssssss",
   h: "hhhhh",
   l: "lllll",
@@ -126,7 +127,7 @@ const DATA: Omit<LetterSound, "hint" | "accent" | "say" | "formation">[] = [
   },
   {
     letter: "f",
-    sound: "fuh",
+    sound: "fff",
     ipa: "/f/",
     word: "fish",
     category: "Continuous Unvoiced",

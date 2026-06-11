@@ -28,6 +28,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "hat", emoji: "🎩", sounds: ["h", "a", "t"], say: ["huh", "ah", "tuh"] },
       { text: "bat", emoji: "🦇", sounds: ["b", "a", "t"], say: ["buh", "ah", "tuh"] },
       { text: "mat", emoji: "🟫", sounds: ["m", "a", "t"], say: ["mmm", "ah", "tuh"] },
+      { text: "rat", emoji: "🐀", sounds: ["r", "a", "t"], say: ["ruh", "ah", "tuh"] },
+      { text: "sat", emoji: "🪑", sounds: ["s", "a", "t"], say: ["sss", "ah", "tuh"] },
     ],
   },
   {
@@ -39,6 +41,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "wig", emoji: "👱", sounds: ["w", "i", "g"], say: ["wuh", "ih", "guh"] },
       { text: "dig", emoji: "⛏️", sounds: ["d", "i", "g"], say: ["duh", "ih", "guh"] },
       { text: "fig", emoji: "🫐", sounds: ["f", "i", "g"], say: ["fff", "ih", "guh"] },
+      { text: "big", emoji: "🐘", sounds: ["b", "i", "g"], say: ["buh", "ih", "guh"] },
+      { text: "rig", emoji: "🛢️", sounds: ["r", "i", "g"], say: ["ruh", "ih", "guh"] },
     ],
   },
   {
@@ -50,6 +54,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "log", emoji: "🪵", sounds: ["l", "o", "g"], say: ["luh", "oh", "guh"] },
       { text: "frog", emoji: "🐸", sounds: ["fr", "o", "g"], say: ["fr", "oh", "guh"] },
       { text: "fog", emoji: "🌫️", sounds: ["f", "o", "g"], say: ["fff", "oh", "guh"] },
+      { text: "jog", emoji: "🏃", sounds: ["j", "o", "g"], say: ["juh", "oh", "guh"] },
+      { text: "hog", emoji: "🐗", sounds: ["h", "o", "g"], say: ["huh", "oh", "guh"] },
     ],
   },
   {
@@ -61,6 +67,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "bun", emoji: "🍔", sounds: ["b", "u", "n"], say: ["buh", "uh", "nnn"] },
       { text: "run", emoji: "🏃", sounds: ["r", "u", "n"], say: ["ruh", "uh", "nnn"] },
       { text: "fun", emoji: "🎉", sounds: ["f", "u", "n"], say: ["fff", "uh", "nnn"] },
+      { text: "pun", emoji: "😄", sounds: ["p", "u", "n"], say: ["puh", "uh", "nnn"] },
+      { text: "nun", emoji: "🙏", sounds: ["n", "u", "n"], say: ["nnn", "uh", "nnn"] },
     ],
   },
   {
@@ -72,6 +80,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "red", emoji: "🟥", sounds: ["r", "e", "d"], say: ["ruh", "eh", "duh"] },
       { text: "hen", emoji: "🐔", sounds: ["h", "e", "n"], say: ["huh", "eh", "nnn"] },
       { text: "net", emoji: "🥅", sounds: ["n", "e", "t"], say: ["nnn", "eh", "tuh"] },
+      { text: "wed", emoji: "💍", sounds: ["w", "e", "d"], say: ["wuh", "eh", "duh"] },
+      { text: "led", emoji: "✏️", sounds: ["l", "e", "d"], say: ["luh", "eh", "duh"] },
     ],
   },
   {
@@ -84,6 +94,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "pan", emoji: "🍳", sounds: ["p", "a", "n"], say: ["puh", "ah", "nnn"] },
       { text: "fan", emoji: "🪭", sounds: ["f", "a", "n"], say: ["fff", "ah", "nnn"] },
       { text: "van", emoji: "🚐", sounds: ["v", "a", "n"], say: ["vvv", "ah", "nnn"] },
+      { text: "ran", emoji: "🏃", sounds: ["r", "a", "n"], say: ["ruh", "ah", "nnn"] },
+      { text: "tan", emoji: "🌞", sounds: ["t", "a", "n"], say: ["tuh", "ah", "nnn"] },
     ],
   },
   {
@@ -96,6 +108,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "tap", emoji: "🚰", sounds: ["t", "a", "p"], say: ["tuh", "ah", "puh"] },
       { text: "nap", emoji: "😴", sounds: ["n", "a", "p"], say: ["nnn", "ah", "puh"] },
       { text: "zap", emoji: "⚡", sounds: ["z", "a", "p"], say: ["zzz", "ah", "puh"] },
+      { text: "rap", emoji: "🎤", sounds: ["r", "a", "p"], say: ["ruh", "ah", "puh"] },
+      { text: "lap", emoji: "🦵", sounds: ["l", "a", "p"], say: ["luh", "ah", "puh"] },
     ],
   },
   {
@@ -108,6 +122,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "win", emoji: "🏆", sounds: ["w", "i", "n"], say: ["wuh", "ih", "nnn"] },
       { text: "fin", emoji: "🐟", sounds: ["f", "i", "n"], say: ["fff", "ih", "nnn"] },
       { text: "tin", emoji: "🥫", sounds: ["t", "i", "n"], say: ["tuh", "ih", "nnn"] },
+      { text: "sin", emoji: "😈", sounds: ["s", "i", "n"], say: ["sss", "ih", "nnn"] },
+      { text: "kin", emoji: "👪", sounds: ["k", "i", "n"], say: ["kuh", "ih", "nnn"] },
     ],
   },
   {
@@ -119,6 +135,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "hot", emoji: "🔥", sounds: ["h", "o", "t"], say: ["huh", "oh", "tuh"] },
       { text: "dot", emoji: "🔴", sounds: ["d", "o", "t"], say: ["duh", "oh", "tuh"] },
       { text: "cot", emoji: "🛏️", sounds: ["c", "o", "t"], say: ["kuh", "oh", "tuh"] },
+      { text: "jot", emoji: "📝", sounds: ["j", "o", "t"], say: ["juh", "oh", "tuh"] },
+      { text: "rot", emoji: "🥀", sounds: ["r", "o", "t"], say: ["ruh", "oh", "tuh"] },
     ],
   },
   {
@@ -131,6 +149,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "hug", emoji: "🤗", sounds: ["h", "u", "g"], say: ["huh", "uh", "guh"] },
       { text: "jug", emoji: "🫗", sounds: ["j", "u", "g"], say: ["juh", "uh", "guh"] },
       { text: "rug", emoji: "🧶", sounds: ["r", "u", "g"], say: ["ruh", "uh", "guh"] },
+      { text: "tug", emoji: "🪢", sounds: ["t", "u", "g"], say: ["tuh", "uh", "guh"] },
+      { text: "dug", emoji: "⛏️", sounds: ["d", "u", "g"], say: ["duh", "uh", "guh"] },
     ],
   },
   {
@@ -155,6 +175,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "dad", emoji: "👨", sounds: ["d", "a", "d"], say: ["duh", "ah", "duh"] },
       { text: "bad", emoji: "👎", sounds: ["b", "a", "d"], say: ["buh", "ah", "duh"] },
       { text: "pad", emoji: "🧾", sounds: ["p", "a", "d"], say: ["puh", "ah", "duh"] },
+      { text: "lad", emoji: "👦", sounds: ["l", "a", "d"], say: ["luh", "ah", "duh"] },
+      { text: "had", emoji: "✋", sounds: ["h", "a", "d"], say: ["huh", "ah", "duh"] },
     ],
   },
   {
@@ -166,6 +188,7 @@ export const wordFamilies: WordFamily[] = [
       { text: "ten", emoji: "🔟", sounds: ["t", "e", "n"], say: ["tuh", "eh", "nnn"] },
       { text: "pen", emoji: "🖊️", sounds: ["p", "e", "n"], say: ["puh", "eh", "nnn"] },
       { text: "men", emoji: "👬", sounds: ["m", "e", "n"], say: ["mmm", "eh", "nnn"] },
+      { text: "den", emoji: "🛖", sounds: ["d", "e", "n"], say: ["duh", "eh", "nnn"] },
     ],
   },
   {
@@ -177,6 +200,8 @@ export const wordFamilies: WordFamily[] = [
       { text: "kit", emoji: "🧰", sounds: ["k", "i", "t"], say: ["kuh", "ih", "tuh"] },
       { text: "hit", emoji: "🥊", sounds: ["h", "i", "t"], say: ["huh", "ih", "tuh"] },
       { text: "fit", emoji: "💪", sounds: ["f", "i", "t"], say: ["fff", "ih", "tuh"] },
+      { text: "lit", emoji: "🔥", sounds: ["l", "i", "t"], say: ["luh", "ih", "tuh"] },
+      { text: "pit", emoji: "🕳️", sounds: ["p", "i", "t"], say: ["puh", "ih", "tuh"] },
     ],
   },
 ];

@@ -44,7 +44,7 @@ export default function LetterFormation() {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const { x, y } = pos(e);
-    ctx.strokeStyle = "#0D4A34";
+    ctx.strokeStyle = "#8559d6";
     ctx.lineWidth = 14;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -67,7 +67,7 @@ export default function LetterFormation() {
   }
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <p className="text-center text-zinc-500 dark:text-zinc-400">
         Trace the letter to practise writing it!
       </p>

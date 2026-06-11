@@ -38,7 +38,7 @@ export default function Stories() {
 
 function LevelGrid({ onPick }: { onPick: (l: Level) => void }) {
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <p className="text-center text-zinc-500 dark:text-zinc-400">
         Choose your reading level — sorted by Lexile measure.
       </p>
@@ -93,7 +93,7 @@ function StoryList({
   const slice = level.stories.slice(start, start + PER_PAGE);
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center gap-3">
         <button
           onClick={onBack}
@@ -174,7 +174,7 @@ function Reader({
   const isLast = index === level.stories.length - 1;
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       {/* Header */}
       <div className="flex w-full items-center justify-between gap-3">
         <button

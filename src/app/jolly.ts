@@ -22,7 +22,7 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
     group: 1,
     sounds: [
       { id: "s", label: "s", say: "sss", word: "snake", emoji: "🐍", group: 1, action: "Weave your hand like a snake and say ssssss." },
-      { id: "a", label: "a", say: "a", word: "ant", emoji: "🐜", group: 1, action: "Wiggle your fingers above your elbow like ants crawling and say a, a, a." },
+      { id: "a", label: "a", say: "ah", word: "ant", emoji: "🐜", group: 1, action: "Wiggle your fingers above your elbow like ants crawling and say a, a, a." },
       { id: "t", label: "t", say: "tuh", word: "tennis", emoji: "🎾", group: 1, action: "Turn your head side to side as if watching tennis and say t, t, t." },
       { id: "i", label: "i", say: "ih", word: "insect", emoji: "🐛", group: 1, action: "Wriggle fingers at the end of your nose like a mouse and squeak i, i, i." },
       { id: "p", label: "p", say: "puh", word: "pig", emoji: "🐷", group: 1, action: "Pretend to puff out candles and say p, p, p." },
@@ -48,7 +48,7 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
       { id: "o", label: "o", say: "o", word: "orange", emoji: "🍊", group: 3, action: "Flick a light switch on and off and say o, o." },
       { id: "u", label: "u", say: "uh", word: "umbrella", emoji: "☂️", group: 3, action: "Pretend to put up an umbrella and say u, u, u." },
       { id: "l", label: "l", say: "lll", word: "lollipop", emoji: "🍭", group: 3, action: "Pretend to lick a lollipop and say l, l, l." },
-      { id: "f", label: "f", say: "fuh", word: "fish", emoji: "🐟", group: 3, action: "Let your hands come together like a deflating fish and say ffffff." },
+      { id: "f", label: "f", say: "fff", word: "fish", emoji: "🐟", group: 3, action: "Let your hands come together like a deflating fish and say ffffff." },
       { id: "b", label: "b", say: "buh", word: "ball", emoji: "⚽", group: 3, action: "Pretend to hit a ball with a bat and say b, b, b." },
     ],
   },
@@ -115,7 +115,7 @@ export const jollyGroups: { group: number; sounds: JollySound[] }[] = [
       { id: "ew", label: "ew", say: "you", word: "stew", emoji: "🍲", group: 9, note: "digraph", action: "Two letters, one sound: ew as in stew." },
       { id: "air", label: "air", say: "air", word: "chair", emoji: "🪑", group: 9, note: "trigraph", action: "Three letters, one sound: air as in chair." },
       { id: "ear", label: "ear", say: "ear", word: "ear", emoji: "👂", group: 9, note: "trigraph", action: "Three letters, one sound: ear as in ear." },
-      { id: "ph", label: "ph", say: "fuh", word: "phone", emoji: "📱", group: 9, note: "digraph", action: "Two letters, one sound: ph says f, as in phone." },
+      { id: "ph", label: "ph", say: "fff", word: "phone", emoji: "📱", group: 9, note: "digraph", action: "Two letters, one sound: ph says f, as in phone." },
     ],
   },
 ];

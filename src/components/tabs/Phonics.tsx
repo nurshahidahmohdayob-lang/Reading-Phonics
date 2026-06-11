@@ -10,7 +10,7 @@ import {
 } from "@/app/jolly";
 import { letterSounds } from "@/app/alphabet";
 import { lessons } from "@/app/lessons";
-import { speak } from "@/lib/speak";
+import { speak, playClip, stopSpeech } from "@/lib/speak";
 import ActivityCenter from "@/components/ActivityCenter";
 import WordSounds from "@/components/tabs/WordSounds";
 
@@ -21,7 +21,7 @@ export default function Phonics() {
   const [mode, setMode] = useState<Mode>("sounds");
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       {/* Sub-navigation */}
       <div className="flex w-full max-w-sm gap-2 rounded-2xl bg-white/70 p-1.5 shadow-sm backdrop-blur dark:bg-zinc-800/70">
         {(
@@ -54,11 +54,22 @@ export default function Phonics() {
 
 /* ---------- Sounds: phonics groups enriched with letter-sound detail ---------- */
 
+/* Candy palette cycled across the group cards. */
+const GROUP_STYLES = [
+  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
+  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
+  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
+  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
+  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
+  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+];
+
 function Sounds() {
   const [selected, setSelected] = useState<JollySound>(allJollySounds[0]);
   const [playing, setPlaying] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [openGroup, setOpenGroup] = useState<number | null>(null);
 
   // Letter-sound detail (IPA, mouth guide) for single-letter sounds.
   const alpha =
@@ -68,13 +79,205 @@ function Sounds() {
   // Rich lesson (example words + mini-games) for some single letters.
   const lesson = lessons.find((l) => l.letter === selected.label);
 
-  function choose(s: JollySound) {
-    setSelected(s);
-    speak(s.say, SOUND_RATE);
+  /** The song verse for this letter: /sounds/<id>-chant.mp3, else TTS chant. */
+  function song(s: JollySound) {
+    playClip(`${s.id}-chant`, () =>
+      speak(`${s.say}, ${s.say}, ${s.word}!`, SOUND_RATE),
+    );
   }
 
+  /** Just the sound, as sung in the song: /sounds/<id>.mp3, else TTS. */
+  function pureSound(s: JollySound) {
+    playClip(s.id, () => speak(s.say, SOUND_RATE));
+  }
+
+  function choose(s: JollySound) {
+    setSelected(s);
+    pureSound(s);
+    // Bring the big letter card (and its activities) into view.
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  const groupData = jollyGroups.find((g) => g.group === openGroup);
+
+  function enterGroup(group: number) {
+    const sounds = jollyGroups.find((g) => g.group === group)!.sounds;
+    setOpenGroup(group);
+    setSelected(sounds[0]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* ---- Group picker: pastel cards like the home menu ---- */
+  if (!groupData) {
+    return (
+      <div className="flex w-full flex-col items-center">
+        <TeacherNotes
+          showWhy={showWhy}
+          setShowWhy={setShowWhy}
+          showGuide={showGuide}
+          setShowGuide={setShowGuide}
+        />
+        <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3">
+          {jollyGroups.map(({ group, sounds }, gi) => {
+            const style = GROUP_STYLES[gi % GROUP_STYLES.length];
+            const [label, letters] = GROUP_TITLES[group].split(" · ");
+            return (
+              <button
+                key={group}
+                onClick={() => enterGroup(group)}
+                className={`group flex flex-col items-center gap-2 rounded-[2rem] ${style.bg} ${style.text} px-4 py-7 shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
+              >
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                  {sounds[0].emoji}
+                </span>
+                <span className="text-lg font-extrabold">{label}</span>
+                <span className="text-center font-mono text-sm font-bold opacity-80">
+                  {letters}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---- Inside a group: its letters and activities ---- */
   return (
     <div className="flex w-full flex-col items-center">
+      {/* Back to all groups */}
+      <div className="mb-4 flex w-full">
+        <button
+          onClick={() => setOpenGroup(null)}
+          className="flex items-center gap-1 rounded-full bg-white px-5 py-2.5 font-bold text-zinc-600 shadow-sm transition-all hover:shadow active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+        >
+          ← All groups
+        </button>
+      </div>
+      {/* Detail card */}
+      <div className="flex w-full flex-col items-center gap-2 rounded-[2rem] bg-gradient-to-br from-[#E9DFFF] to-[#CDB6FF] px-6 py-8 text-violet-900 shadow-lg ring-4 ring-white/60">
+        <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+          Group {selected.group}
+          {selected.note ? ` · ${selected.note}` : ""}
+        </span>
+        <button
+          onClick={() => pureSound(selected)}
+          className="text-7xl font-black lowercase text-violet-700 drop-shadow-sm sm:text-8xl"
+        >
+          {selected.label}
+        </button>
+        <span className="text-lg font-bold">
+          {alpha ? `${alpha.ipa} · ` : ""}
+          <span className="inline-flex items-center gap-1">
+            {selected.emoji} {selected.word}
+          </span>
+        </span>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => song(selected)}
+            className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2 text-base font-bold text-white shadow-md active:scale-95"
+          >
+            🎵 Song
+          </button>
+          <button
+            onClick={stopSpeech}
+            className="inline-flex items-center gap-2 rounded-full bg-rose-500 px-5 py-2 text-base font-bold text-white shadow-md active:scale-95"
+          >
+            ⏹ Stop
+          </button>
+          <button
+            onClick={() => pureSound(selected)}
+            className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-base font-bold text-violet-700 shadow-sm backdrop-blur active:scale-95"
+          >
+            🔊 Just the sound
+          </button>
+        </div>
+      </div>
+
+      {/* Action */}
+      <Panel title="🙆 Action" body={selected.action} readRate={0.95} />
+
+      {/* How to make the sound (single letters only) */}
+      {alpha && (
+        <Panel
+          title={`🗣️ How to make the ${selected.label} sound`}
+          body={alpha.guide}
+          readRate={0.95}
+        />
+      )}
+
+      {/* Activities + example words for letters that have them */}
+      {lesson && (
+        <button
+          onClick={() => setPlaying(true)}
+          className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg transition-all hover:bg-brand-700 active:scale-[0.98]"
+        >
+          🎮 Play Activities
+        </button>
+      )}
+      {lesson && lesson.words.length > 0 && (
+        <div className="mt-4 grid w-full grid-cols-3 gap-3">
+          {lesson.words.map((word) => (
+            <button
+              key={word.text}
+              onClick={() => speak(word.text, 0.95)}
+              className="flex flex-col items-center gap-1 rounded-2xl border-2 border-zinc-100 bg-white px-3 py-4 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <span className="text-4xl">{word.emoji}</span>
+              <span className="text-sm font-bold lowercase text-zinc-700 dark:text-zinc-200">
+                {word.text}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* This group's sounds */}
+      <div className="mt-8 w-full">
+        <h2 className="mb-2 text-sm font-bold text-zinc-500 dark:text-zinc-400">
+          {GROUP_TITLES[groupData.group]}
+        </h2>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {groupData.sounds.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => choose(s)}
+              aria-current={s.id === selected.id}
+              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-3 shadow-sm transition-all active:scale-90 ${
+                s.id === selected.id
+                  ? "bg-brand-600 text-white shadow"
+                  : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
+              }`}
+            >
+              <span className="text-2xl">{s.emoji}</span>
+              <span className="text-base font-extrabold lowercase">
+                {s.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {playing && lesson && (
+        <ActivityCenter lesson={lesson} onClose={() => setPlaying(false)} />
+      )}
+    </div>
+  );
+}
+
+function TeacherNotes({
+  showWhy,
+  setShowWhy,
+  showGuide,
+  setShowGuide,
+}: {
+  showWhy: boolean;
+  setShowWhy: (fn: (v: boolean) => boolean) => void;
+  showGuide: boolean;
+  setShowGuide: (fn: (v: boolean) => boolean) => void;
+}) {
+  return (
+    <>
       {/* Teacher note: why 7 groups */}
       <div className="mb-4 w-full">
         <button
@@ -160,105 +363,7 @@ function Sounds() {
           </div>
         )}
       </div>
-
-      {/* Detail card */}
-      <div className="flex w-full flex-col items-center gap-2 rounded-3xl bg-gradient-to-br from-[#1C6B49] to-[#0D4A34] px-6 py-8 text-white shadow-xl">
-        <span className="rounded-full bg-white/25 px-3 py-1 text-xs font-bold uppercase tracking-wide">
-          Group {selected.group}
-          {selected.note ? ` · ${selected.note}` : ""}
-        </span>
-        <button
-          onClick={() => speak(selected.say, SOUND_RATE)}
-          className="text-7xl font-black lowercase drop-shadow-md sm:text-8xl"
-        >
-          {selected.label}
-        </button>
-        <span className="text-lg font-bold">
-          {alpha ? `${alpha.ipa} · ` : ""}
-          <span className="inline-flex items-center gap-1">
-            {selected.emoji} {selected.word}
-          </span>
-        </span>
-        <button
-          onClick={() => speak(selected.say, SOUND_RATE)}
-          className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/25 px-4 py-2 text-base font-semibold backdrop-blur active:scale-95"
-        >
-          🔊 Hear the sound
-        </button>
-      </div>
-
-      {/* Action */}
-      <Panel title="🙆 Action" body={selected.action} readRate={0.95} />
-
-      {/* How to make the sound (single letters only) */}
-      {alpha && (
-        <Panel
-          title={`🗣️ How to make the ${selected.label} sound`}
-          body={alpha.guide}
-          readRate={0.95}
-        />
-      )}
-
-      {/* Activities + example words for letters that have them */}
-      {lesson && (
-        <button
-          onClick={() => setPlaying(true)}
-          className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg transition-all hover:bg-brand-700 active:scale-[0.98]"
-        >
-          🎮 Play Activities
-        </button>
-      )}
-      {lesson && lesson.words.length > 0 && (
-        <div className="mt-4 grid w-full grid-cols-3 gap-3">
-          {lesson.words.map((word) => (
-            <button
-              key={word.text}
-              onClick={() => speak(word.text, 0.95)}
-              className="flex flex-col items-center gap-1 rounded-2xl border-2 border-zinc-100 bg-white px-3 py-4 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <span className="text-4xl">{word.emoji}</span>
-              <span className="text-sm font-bold lowercase text-zinc-700 dark:text-zinc-200">
-                {word.text}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* The sound groups */}
-      <div className="mt-8 flex w-full flex-col gap-5">
-        {jollyGroups.map(({ group, sounds }) => (
-          <section key={group} className="w-full">
-            <h2 className="mb-2 text-sm font-bold text-zinc-500 dark:text-zinc-400">
-              {GROUP_TITLES[group]}
-            </h2>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {sounds.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => choose(s)}
-                  aria-current={s.id === selected.id}
-                  className={`flex flex-col items-center gap-1 rounded-xl px-2 py-3 shadow-sm transition-all active:scale-90 ${
-                    s.id === selected.id
-                      ? "bg-brand-600 text-white shadow"
-                      : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
-                  }`}
-                >
-                  <span className="text-2xl">{s.emoji}</span>
-                  <span className="text-base font-extrabold lowercase">
-                    {s.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-
-      {playing && lesson && (
-        <ActivityCenter lesson={lesson} onClose={() => setPlaying(false)} />
-      )}
-    </div>
+    </>
   );
 }
 

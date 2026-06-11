@@ -21,7 +21,10 @@ export default function Spelling() {
   const [tiles, setTiles] = useState<Tile[]>(() => buildTiles(POOL[0]));
   const [used, setUsed] = useState<Set<number>>(new Set());
   const [filled, setFilled] = useState(0);
-  const [wrongId, setWrongId] = useState<number | null>(null);
+  // A wrong tap: show the tapped letter (in red) in the next slot briefly.
+  const [wrong, setWrong] = useState<{ letter: string; id: number } | null>(
+    null,
+  );
 
   const word = POOL[index];
   const done = filled === word.text.length;
@@ -37,11 +40,11 @@ export default function Spelling() {
     setTiles(buildTiles(w));
     setUsed(new Set());
     setFilled(0);
-    setWrongId(null);
+    setWrong(null);
   }
 
   function tap(tile: Tile) {
-    if (used.has(tile.id) || done) return;
+    if (used.has(tile.id) || done || wrong) return;
     if (tile.letter === word.text[filled]) {
       speak(word.say[filled], 0.8); // say the sound as it's placed
       setUsed((prev) => new Set(prev).add(tile.id));
@@ -54,31 +57,32 @@ export default function Spelling() {
         }, 300);
       }
     } else {
-      setWrongId(tile.id);
+      // Show the tapped letter in the next slot (red), then clear it.
+      setWrong({ letter: tile.letter, id: tile.id });
       speak("Try again", 1);
-      setTimeout(() => setWrongId(null), 500);
+      setTimeout(() => setWrong(null), 700);
     }
   }
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <p className="text-center text-zinc-500 dark:text-zinc-400">
         Listen, break the word into sounds, then spell it!
       </p>
 
-      <div className="mt-6 flex w-full flex-col items-center gap-6 rounded-3xl bg-gradient-to-br from-[#1C6B49] to-[#0D4A34] px-6 py-8 text-white shadow-xl">
+      <div className="mt-6 flex w-full flex-col items-center gap-6 rounded-[2rem] bg-gradient-to-br from-[#CFF5E1] to-[#9FE7C3] px-6 py-8 text-emerald-900 shadow-lg ring-4 ring-white/60">
         <div className="text-7xl">{word.emoji}</div>
 
         <div className="flex gap-2">
           <button
             onClick={() => speak(word.text, 0.8)}
-            className="rounded-full bg-white/25 px-4 py-2 font-bold backdrop-blur active:scale-95"
+            className="rounded-full bg-white/70 px-4 py-2 font-bold text-emerald-700 shadow-sm backdrop-blur active:scale-95"
           >
             🔊 Hear word
           </button>
           <button
             onClick={() => word.say.forEach((s, i) => setTimeout(() => speak(s, 0.8), i * 650))}
-            className="rounded-full bg-white/25 px-4 py-2 font-bold backdrop-blur active:scale-95"
+            className="rounded-full bg-white/70 px-4 py-2 font-bold text-emerald-700 shadow-sm backdrop-blur active:scale-95"
           >
             🐢 Sound it out
           </button>
@@ -86,18 +90,23 @@ export default function Spelling() {
 
         {/* Letter slots */}
         <div className="flex gap-3">
-          {word.text.split("").map((letter, i) => (
-            <div
-              key={i}
-              className={`flex h-16 w-14 items-center justify-center rounded-2xl text-3xl font-black ${
-                i < filled
-                  ? "bg-white text-brand-600"
-                  : "border-2 border-dashed border-white/60"
-              }`}
-            >
-              {i < filled ? letter : ""}
-            </div>
-          ))}
+          {word.text.split("").map((letter, i) => {
+            const isWrongHere = !!wrong && i === filled;
+            return (
+              <div
+                key={i}
+                className={`flex h-16 w-14 items-center justify-center rounded-2xl text-3xl font-black ${
+                  i < filled
+                    ? "bg-white text-emerald-600 shadow-sm"
+                    : isWrongHere
+                      ? "animate-pulse bg-rose-200 text-rose-700"
+                      : "border-2 border-dashed border-emerald-500/50"
+                }`}
+              >
+                {i < filled ? letter : isWrongHere ? wrong!.letter : ""}
+              </div>
+            );
+          })}
         </div>
 
         {done && <span className="text-2xl font-bold">🎉 You spelled it!</span>}
@@ -113,8 +122,8 @@ export default function Spelling() {
               disabled={used.has(tile.id)}
               className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl font-black shadow-sm transition-all active:scale-90 ${
                 used.has(tile.id)
-                  ? "bg-zinc-100 text-zinc-300 dark:bg-zinc-800 dark:text-zinc-700"
-                  : wrongId === tile.id
+                  ? "bg-brand-100 text-brand-400 dark:bg-zinc-800 dark:text-zinc-600"
+                  : wrong?.id === tile.id
                     ? "animate-pulse bg-rose-200 text-rose-700"
                     : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
               }`}

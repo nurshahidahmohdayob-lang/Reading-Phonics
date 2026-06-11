@@ -55,7 +55,7 @@ export default function WordSounds() {
   }
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <p className="text-zinc-500 dark:text-zinc-400">
         Sound out each letter, then blend it into a word!
       </p>
@@ -82,6 +82,14 @@ export default function WordSounds() {
         className={`mt-6 flex w-full flex-col items-center gap-5 rounded-3xl bg-gradient-to-br ${family.color} px-6 py-8 text-white shadow-xl`}
       >
         <div className="text-7xl">{selected.emoji}</div>
+
+        {/* The whole word, always visible */}
+        <button
+          onClick={() => speak(selected.text, 0.85)}
+          className="text-5xl font-black lowercase tracking-wide drop-shadow-md"
+        >
+          {selected.text}
+        </button>
 
         <div className="flex items-end gap-2">
           {selected.sounds.map((s, i) => (

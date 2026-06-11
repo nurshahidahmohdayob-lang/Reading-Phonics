@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  /* Zera brand tokens */
-  --background: #f7f7f5; /* Zera --bg */
-  --foreground: #1a1a1a; /* Zera --text */
+  /* Pastel theme tokens */
+  --background: #fdf8ff; /* soft lilac cream */
+  --foreground: #3d3654; /* friendly dark plum */
 }
 
 @theme inline {
@@ -12,31 +12,32 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Zera Education green — primary brand scale (600 = #0D4A34) */
-  --color-brand-50: #ecf4ef;
-  --color-brand-100: #cfe5d9;
-  --color-brand-200: #a3ccb8;
-  --color-brand-300: #6fae92;
-  --color-brand-400: #3f8e6c;
-  --color-brand-500: #1c6b49;
-  --color-brand-600: #0d4a34;
-  --color-brand-700: #0a3a29;
-  --color-brand-800: #082e20;
-  --color-brand-900: #062017;
-  --color-brand-950: #03130d;
+  /* Playful pastel violet — primary brand scale (600 still works with white text) */
+  --color-brand-50: #faf6ff;
+  --color-brand-100: #f1e8ff;
+  --color-brand-200: #e3d2ff;
+  --color-brand-300: #cdb2fb;
+  --color-brand-400: #b291f3;
+  --color-brand-500: #9b74e8;
+  --color-brand-600: #8559d6;
+  --color-brand-700: #6f46b8;
+  --color-brand-800: #593894;
+  --color-brand-900: #432a70;
+  --color-brand-950: #2c1b4d;
 
-  /* Zera sub-brand accents */
-  --color-zera-edu: #0d4a34;
-  --color-zera-intl: #668d4e;
-  --color-zera-pre: #3a7a5e;
-  --color-zera-plus: #27829e;
-  --color-zera-music: #f1b828;
+  /* Candy pastel accents */
+  --color-candy-pink: #ffd6e8;
+  --color-candy-peach: #ffe5c7;
+  --color-candy-lemon: #fff3b8;
+  --color-candy-mint: #cdf3de;
+  --color-candy-sky: #cfe9ff;
+  --color-candy-lilac: #e6dcff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #141414; /* Zera --dark */
-    --foreground: #f7f7f5;
+    --background: #1c1726;
+    --foreground: #f6f1ff;
   }
 }
 
@@ -44,4 +45,206 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Balloon Pop: balloons drift from above the play area to below it. */
+@keyframes balloon-fall {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(560px);
+  }
+}
+
+/* Gentle side-to-side sway, layered on a child so it combines with the fall. */
+@keyframes balloon-sway {
+  0%,
+  100% {
+    transform: translateX(-6px) rotate(-3deg);
+  }
+  50% {
+    transform: translateX(6px) rotate(3deg);
+  }
+}
+
+/* Wallpaper sky: clouds drift right across the whole screen, forever. */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-30vw);
+  }
+  to {
+    transform: translateX(115vw);
+  }
+}
+
+/* The sun breathes a soft warm glow. */
+@keyframes sun-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 70px 30px rgba(255, 214, 90, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 110px 55px rgba(255, 214, 90, 0.65);
+  }
+}
+
+/* Puffy 3D-looking cloud built from soft gradients and shadows. */
+.cloud {
+  position: relative;
+  width: 190px;
+  height: 64px;
+  background: linear-gradient(#ffffff, #e9f4ff);
+  border-radius: 999px;
+  box-shadow:
+    0 10px 22px rgba(110, 155, 210, 0.28),
+    inset 0 -8px 12px rgba(165, 195, 235, 0.4);
+}
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(#ffffff, #f0f8ff);
+  box-shadow: inset 0 -6px 10px rgba(165, 195, 235, 0.35);
+}
+.cloud::before {
+  width: 78px;
+  height: 78px;
+  left: 28px;
+  top: -38px;
+}
+.cloud::after {
+  width: 56px;
+  height: 56px;
+  right: 34px;
+  top: -24px;
+}
+
+.cloud-drift {
+  position: absolute;
+  left: 0;
+  animation: cloud-drift linear infinite;
+}
+
+/* A friendly little bounce for the mascot. */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.anim-bob {
+  display: inline-block;
+  animation: bob 2.2s ease-in-out infinite;
+}
+.anim-sun {
+  animation: sun-pulse 6s ease-in-out infinite;
+}
+
+/* Reading kid: a gentle rock while absorbed in the book. */
+@keyframes kid-rock {
+  0%,
+  100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+.kid-rock {
+  animation: kid-rock 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+/* A page lifts, turns over, and settles — then a pause before the next. */
+@keyframes page-turn {
+  0%,
+  55% {
+    transform: perspective(260px) rotateY(0deg);
+    opacity: 1;
+  }
+  70% {
+    transform: perspective(260px) rotateY(-150deg);
+    opacity: 1;
+  }
+  70.5% {
+    opacity: 0;
+  }
+  71% {
+    transform: perspective(260px) rotateY(0deg);
+    opacity: 0;
+  }
+  78%,
+  100% {
+    transform: perspective(260px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+.page-turn {
+  transform-origin: left center;
+  animation: page-turn 6s ease-in-out infinite;
+}
+
+/* Kite kid: the kite leans left and right on a taut string. */
+@keyframes kite-sway {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+.kite-sway {
+  animation: kite-sway 5s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+/* Bouncy kid hops in place… */
+@keyframes kid-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-12px);
+  }
+  70% {
+    transform: translateY(0);
+  }
+}
+.kid-bounce {
+  animation: kid-bounce 1.6s ease-in-out infinite;
+}
+
+/* …while the ball bounces beside them. */
+@keyframes ball-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 0.92);
+  }
+  40% {
+    transform: translateY(-30px) scale(1, 1);
+  }
+}
+.ball-bounce {
+  animation: ball-bounce 0.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-bob,
+  .anim-sun,
+  .cloud-drift,
+  .kid-rock,
+  .page-turn,
+  .kite-sway,
+  .kid-bounce,
+  .ball-bounce {
+    animation: none;
+  }
 }

@@ -82,7 +82,7 @@ function Choose({
 
   if (!level) {
     return (
-      <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+      <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
         <p className="text-center text-zinc-500 dark:text-zinc-400">
           Read aloud and I&apos;ll be your reading coach. Pick your level first.
         </p>
@@ -121,7 +121,7 @@ function Choose({
   }
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center gap-3">
         <button
           onClick={() => setLevel(null)}
@@ -230,7 +230,7 @@ function ReadAloud({
   }
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center justify-between gap-3">
         <button
           onClick={() => {
@@ -344,7 +344,7 @@ function Report({
   const wpmMet = report.wcpm >= level.wpmLow;
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <h2 className="text-2xl font-extrabold">Your reading report 📊</h2>
       <p className="text-zinc-400">
         &ldquo;{passage.title}&rdquo; · {passage.lexile}L · {level.grade}
@@ -508,7 +508,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
 
   if (!word) {
     return (
-      <div className="flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 text-center">
+      <div className="flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-4 text-center">
         <div className="text-6xl">🎉</div>
         <h2 className="text-2xl font-extrabold">Nothing to practice!</h2>
         <button
@@ -524,7 +524,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
   const greens = Object.values(results).filter((r) => r === "green").length;
 
   return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center justify-between">
         <button
           onClick={() => {
@@ -563,8 +563,8 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         Let&apos;s practice this word
       </h2>
 
-      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-3xl bg-gradient-to-br from-[#1C6B49] to-[#0D4A34] px-6 py-10 text-white shadow-xl">
-        <span className="text-6xl font-black lowercase tracking-wide drop-shadow">
+      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#D3EBFF] to-[#A4D6FF] px-6 py-10 text-sky-900 shadow-lg ring-4 ring-white/60">
+        <span className="text-6xl font-black lowercase tracking-wide text-sky-700 drop-shadow-sm">
           {word}
         </span>
 
@@ -579,19 +579,19 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         <div className="flex flex-wrap justify-center gap-3">
           <button
             onClick={() => speak(word, 0.85)}
-            className="rounded-full bg-white/25 px-5 py-3 font-bold backdrop-blur active:scale-95"
+            className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             🔊 Sound
           </button>
           <button
             onClick={() => speak(word, 0.4)}
-            className="rounded-full bg-white/25 px-5 py-3 font-bold backdrop-blur active:scale-95"
+            className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             🐢 Slowly
           </button>
           <button
             onClick={() => setShowMeaning((v) => !v)}
-            className="rounded-full bg-white/25 px-5 py-3 font-bold backdrop-blur active:scale-95"
+            className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
             📖 Meaning
           </button>
@@ -599,14 +599,14 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
             (listening ? (
               <button
                 onClick={stop}
-                className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold active:scale-95"
+                className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold text-white active:scale-95"
               >
                 ⏹ Listening…
               </button>
             ) : (
               <button
                 onClick={start}
-                className="rounded-full bg-white px-5 py-3 font-bold text-brand-600 active:scale-95"
+                className="rounded-full bg-sky-600 px-5 py-3 font-bold text-white shadow-md active:scale-95"
               >
                 🎤 Say it
               </button>
