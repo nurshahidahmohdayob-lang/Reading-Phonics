@@ -165,10 +165,10 @@ export default function BalloonPop({
             {balloons.map((b) => (
               <div
                 key={b.id}
-                className="absolute -bottom-28"
+                className="absolute -top-28"
                 style={{
                   left: `${b.x}%`,
-                  animation: `balloon-rise ${b.duration}s linear ${b.delay}s`,
+                  animation: `balloon-fall ${b.duration}s linear ${b.delay}s`,
                   animationPlayState: b.popped ? "paused" : "running",
                 }}
                 onAnimationEnd={() => respawn(b.id)}
@@ -212,7 +212,7 @@ export default function BalloonPop({
             ))}
           </div>
           <p className="text-xs text-zinc-400">
-            Misses: {missCount} · Let the other letters float up, up and away!
+            Misses: {missCount} · Let the other letters float on by!
           </p>
         </>
       )}

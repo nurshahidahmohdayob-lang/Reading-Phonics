@@ -148,11 +148,11 @@ const GAME_MODES: Record<
     },
   },
   pop: {
-    prompt: "How fast should the balloons float up?",
+    prompt: "How fast should the balloons fall?",
     blurbs: {
       easy: "Pop 10 floaty balloons",
       medium: "Pop 14 in a breeze",
-      hard: "Pop 18 — they zoom up fast!",
+      hard: "Pop 18 — they drop fast!",
     },
   },
   rhyme: {

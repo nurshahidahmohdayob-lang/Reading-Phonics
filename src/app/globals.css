@@ -53,13 +53,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Balloon Pop: balloons float up from below the play area and out the top. */
-@keyframes balloon-rise {
+/* Balloon Pop: balloons drop in from above the play area and fall through. */
+@keyframes balloon-fall {
   from {
     transform: translateY(0);
   }
   to {
-    transform: translateY(-760px);
+    transform: translateY(760px);
   }
 }
 
