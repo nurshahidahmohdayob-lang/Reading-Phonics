@@ -46,9 +46,9 @@ function buildGrid(target: string, cellCount: number, targetCount: number) {
 export type HuntDifficulty = "easy" | "medium" | "hard";
 
 const HUNT_SETTINGS = {
-  easy: { cells: 12, targets: 4 },   // small board
-  medium: { cells: 16, targets: 6 }, // more to search
-  hard: { cells: 24, targets: 8 },   // a big busy board
+  easy: { cells: 12, targets: 4, boards: 3 },   // small board
+  medium: { cells: 16, targets: 6, boards: 3 }, // more to search
+  hard: { cells: 24, targets: 8, boards: 2 },   // a big busy board
 } as const;
 
 export default function LetterHunt({
@@ -63,22 +63,34 @@ export default function LetterHunt({
   const target = lesson.letter;
   const cellCount = HUNT_SETTINGS[difficulty].cells;
   const targetCount = HUNT_SETTINGS[difficulty].targets;
+  const boards = HUNT_SETTINGS[difficulty].boards;
 
   const [{ cells, total }, setGrid] = useState(() =>
     buildGrid(target, cellCount, targetCount),
   );
+  const [boardNum, setBoardNum] = useState(0);
   const [found, setFound] = useState<Set<number>>(new Set());
   const [shaking, setShaking] = useState<number | null>(null);
   const [missCount, setMissCount] = useState(0);
 
   const done = found.size === total;
 
+  // A cleared board deals a fresh one until all boards are done.
   useEffect(() => {
-    if (done && onDone) {
-      const t = setTimeout(onDone, 900);
-      return () => clearTimeout(t);
-    }
-  }, [done, onDone]);
+    if (!done) return;
+    const t = setTimeout(() => {
+      if (boardNum + 1 < boards) {
+        setGrid(buildGrid(target, cellCount, targetCount));
+        setFound(new Set());
+        setShaking(null);
+        setBoardNum((b) => b + 1);
+      } else if (onDone) {
+        onDone();
+      }
+    }, 1100);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   function tap(cell: Cell) {
     if (found.has(cell.id) || done) return;
@@ -141,7 +153,7 @@ export default function LetterHunt({
               </span>
             ))}
             <span className="ml-1 text-sm font-bold text-zinc-500">
-              {found.size}/{total}
+              {found.size}/{total} · board {boardNum + 1}/{boards}
             </span>
           </div>
 

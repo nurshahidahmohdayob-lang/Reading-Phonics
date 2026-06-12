@@ -12,31 +12,40 @@ type Round = { word: Word; options: string[] };
 function buildRounds(lesson: Lesson, rounds: number, options: number): Round[] {
   // Mix lesson words with words from other lessons so the answer varies.
   const pool = shuffle([
-    ...sample(lesson.words, Math.ceil(rounds / 2)),
-    ...sample(otherWords(lesson), Math.ceil(rounds / 2)),
+    ...sample(lesson.words, lesson.words.length),
+    ...sample(otherWords(lesson), rounds),
   ]);
-  return pool.slice(0, rounds).map((word) => {
+  return Array.from({ length: rounds }, (_, i) => pool[i % pool.length]).map(
+    (word) => {
     const answer = word.text[0];
     const decoys = sample(
       ALPHABET.filter((c) => c !== answer),
       options - 1,
     );
-    return { word, options: shuffle([answer, ...decoys]) };
-  });
+      return { word, options: shuffle([answer, ...decoys]) };
+    },
+  );
 }
+
+export type FirstDifficulty = "easy" | "medium" | "hard";
+
+const FIRST_SETTINGS = {
+  easy: { rounds: 8, options: 3 },
+  medium: { rounds: 10, options: 4 },
+  hard: { rounds: 12, options: 5 },
+} as const;
 
 export default function FirstLetter({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: FirstDifficulty;
   onDone?: () => void;
 }) {
-  // Higher levels: more rounds and more letters to choose from.
-  const roundCount = 4 + (level > 25 ? 2 : level > 10 ? 1 : 0);
-  const optionCount = 3 + Math.min(2, Math.floor((level - 1) / 16));
+  const roundCount = FIRST_SETTINGS[difficulty].rounds;
+  const optionCount = FIRST_SETTINGS[difficulty].options;
   const [rounds, setRounds] = useState<Round[]>(() =>
     buildRounds(lesson, roundCount, optionCount),
   );

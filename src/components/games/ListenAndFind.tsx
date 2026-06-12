@@ -8,7 +8,12 @@ import { otherWords, sample, shuffle } from "@/lib/random";
 type Round = { target: Word; options: Word[] };
 
 function buildRounds(lesson: Lesson, rounds: number, options: number): Round[] {
-  const targets = sample(lesson.words, Math.min(rounds, lesson.words.length));
+  const base = sample(lesson.words, lesson.words.length);
+  // Cycle through the lesson words so rounds can outnumber them.
+  const targets = Array.from(
+    { length: rounds },
+    (_, i) => base[i % base.length],
+  );
   const distractorPool = otherWords(lesson);
   return targets.map((target) => {
     const distractors = sample(distractorPool, options - 1);
@@ -16,18 +21,25 @@ function buildRounds(lesson: Lesson, rounds: number, options: number): Round[] {
   });
 }
 
+export type FindDifficulty = "easy" | "medium" | "hard";
+
+const FIND_SETTINGS = {
+  easy: { rounds: 8, options: 3 },
+  medium: { rounds: 10, options: 4 },
+  hard: { rounds: 12, options: 6 },
+} as const;
+
 export default function ListenAndFind({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: FindDifficulty;
   onDone?: () => void;
 }) {
-  // Higher levels: more rounds and more pictures to choose between.
-  const roundCount = 4 + (level > 30 ? 2 : level > 12 ? 1 : 0);
-  const optionCount = 3 + Math.min(3, Math.floor((level - 1) / 12));
+  const roundCount = FIND_SETTINGS[difficulty].rounds;
+  const optionCount = FIND_SETTINGS[difficulty].options;
 
   const [rounds, setRounds] = useState<Round[]>(() =>
     buildRounds(lesson, roundCount, optionCount),

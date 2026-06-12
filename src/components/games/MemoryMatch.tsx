@@ -14,30 +14,49 @@ function buildCards(lesson: Lesson, pairs: number): Card[] {
   ).map((c, id) => ({ ...c, id }));
 }
 
+export type MatchDifficulty = "easy" | "medium" | "hard";
+
+const MATCH_SETTINGS = {
+  easy: { pairs: 3, boards: 3 },
+  medium: { pairs: 4, boards: 3 },
+  hard: { pairs: 6, boards: 2 },
+} as const;
+
 export default function MemoryMatch({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: MatchDifficulty;
   onDone?: () => void;
 }) {
-  // Higher levels: more pairs to remember.
-  const pairs = 3 + Math.min(3, Math.floor((level - 1) / 16));
+  const pairs = MATCH_SETTINGS[difficulty].pairs;
+  const boards = MATCH_SETTINGS[difficulty].boards;
   const [cards, setCards] = useState<Card[]>(() => buildCards(lesson, pairs));
+  const [boardNum, setBoardNum] = useState(0);
   const [open, setOpen] = useState<number[]>([]);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [tries, setTries] = useState(0);
 
   const done = matched.size > 0 && matched.size * 2 === cards.length;
 
+  // A finished board deals a fresh one until all boards are done.
   useEffect(() => {
-    if (done && onDone) {
-      const t = setTimeout(onDone, 900);
-      return () => clearTimeout(t);
-    }
-  }, [done, onDone]);
+    if (!done) return;
+    const t = setTimeout(() => {
+      if (boardNum + 1 < boards) {
+        setCards(buildCards(lesson, pairs));
+        setOpen([]);
+        setMatched(new Set());
+        setBoardNum((b) => b + 1);
+      } else if (onDone) {
+        onDone();
+      }
+    }, 1100);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   function flip(card: Card) {
     if (open.includes(card.id) || matched.has(card.word.text) || open.length === 2)
@@ -86,7 +105,8 @@ export default function MemoryMatch({
       ) : (
         <>
           <p className="text-sm text-zinc-400">
-            {matched.size} of {cards.length / 2} pairs
+            Board {boardNum + 1} of {boards} · {matched.size} of{" "}
+            {cards.length / 2} pairs
           </p>
           <div className="grid grid-cols-3 gap-3">
             {cards.map((card) => {

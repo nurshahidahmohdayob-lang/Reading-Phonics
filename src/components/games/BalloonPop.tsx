@@ -6,20 +6,22 @@ import { speak, praise, playSoundClip, popSound } from "@/lib/speak";
 
 const FLYING = 6; // balloons in the air at once
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+/* Bright, glossy party-balloon colours. */
 const COLORS = [
-  "bg-[#FFD9EA]", // pink
-  "bg-[#FFE8C9]", // peach
-  "bg-[#CFF5E1]", // mint
-  "bg-[#FFF4BD]", // lemon
-  "bg-[#D3EBFF]", // sky
-  "bg-[#E9DFFF]", // lilac
+  { from: "#FF8A80", to: "#E5304C" }, // red
+  { from: "#FFD180", to: "#FF8F00" }, // orange
+  { from: "#FFF176", to: "#F9A825" }, // yellow
+  { from: "#7DEB8E", to: "#1DB954" }, // green
+  { from: "#81D4FA", to: "#1E88E5" }, // blue
+  { from: "#CE93D8", to: "#8E24AA" }, // purple
+  { from: "#FF9EC8", to: "#E91E8C" }, // pink
 ];
 
 type Balloon = {
   id: number;
   label: string;
   isTarget: boolean;
-  color: string;
+  color: { from: string; to: string };
   x: number; // left position in %
   duration: number; // fall time in s
   delay: number; // start delay in s
@@ -43,7 +45,7 @@ function makeBalloon(
     label: Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase(),
     isTarget: letter === target,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    x: 4 + Math.random() * 78,
+    x: 4 + Math.random() * 84,
     duration: Math.max(1.6, 6 - speedup) + Math.random() * Math.max(0.8, 5 - speedup),
     delay,
     sway: 1.6 + Math.random() * 1.4,
@@ -60,9 +62,9 @@ function firstWave(target: string, speedup = 0): Balloon[] {
 export type BalloonDifficulty = "easy" | "medium" | "hard";
 
 const DIFFICULTY = {
-  easy: { goal: 6, speedup: 0 },     // slow, floaty balloons
-  medium: { goal: 8, speedup: 2 },   // a steady drift
-  hard: { goal: 10, speedup: 4.2 },  // they drop FAST
+  easy: { goal: 10, speedup: 0 },     // slow, floaty balloons
+  medium: { goal: 14, speedup: 2 },   // a steady drift
+  hard: { goal: 18, speedup: 4.2 },   // they drop FAST
 } as const;
 
 export default function BalloonPop({
@@ -153,19 +155,20 @@ export default function BalloonPop({
           <p className="text-sm text-zinc-400">
             Popped {popCount} of {GOAL} 🎈 {done && "🎉"}
           </p>
-          <div className="relative h-[420px] w-full max-w-md overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#D3EBFF] to-[#EAF7FF] shadow-inner ring-4 ring-white/60 dark:from-zinc-800 dark:to-zinc-900">
-            {/* A few clouds for scenery */}
-            <span className="absolute left-4 top-6 text-4xl opacity-70">☁️</span>
-            <span className="absolute right-8 top-20 text-3xl opacity-60">☁️</span>
-            <span className="absolute left-1/3 top-40 text-3xl opacity-50">☁️</span>
+          <div className="relative h-[540px] w-full overflow-hidden">
+            {/* Open sky — no box, just a few drifting clouds */}
+            <span className="absolute left-4 top-6 text-6xl opacity-60">☁️</span>
+            <span className="absolute right-8 top-24 text-5xl opacity-50">☁️</span>
+            <span className="absolute left-1/3 top-52 text-5xl opacity-40">☁️</span>
+            <span className="absolute right-1/4 top-80 text-4xl opacity-40">☁️</span>
 
             {balloons.map((b) => (
               <div
                 key={b.id}
-                className="absolute -top-24"
+                className="absolute -bottom-28"
                 style={{
                   left: `${b.x}%`,
-                  animation: `balloon-fall ${b.duration}s linear ${b.delay}s`,
+                  animation: `balloon-rise ${b.duration}s linear ${b.delay}s`,
                   animationPlayState: b.popped ? "paused" : "running",
                 }}
                 onAnimationEnd={() => respawn(b.id)}
@@ -181,15 +184,27 @@ export default function BalloonPop({
                   }
                 >
                   {b.popped ? (
-                    <span className="text-5xl">💥</span>
+                    <span className="text-7xl">💥</span>
                   ) : (
                     <>
                       <span
-                        className={`flex h-16 w-14 items-center justify-center rounded-full ${b.color} text-3xl font-black text-zinc-700 shadow-md`}
+                        className="relative flex h-24 w-20 items-center justify-center rounded-full text-5xl font-black text-white"
+                        style={{
+                          background: `radial-gradient(circle at 32% 28%, ${b.color.from}, ${b.color.to})`,
+                          boxShadow: "inset -6px -8px 14px rgba(0,0,0,.18), 0 10px 18px rgba(0,0,0,.18)",
+                          textShadow: "0 2px 4px rgba(0,0,0,.35)",
+                        }}
                       >
+                        {/* shine */}
+                        <span className="absolute left-3 top-3 h-6 w-4 -rotate-12 rounded-full bg-white/50 blur-[1px]" />
                         {b.label}
                       </span>
-                      <span className="h-5 w-px bg-zinc-400/70" />
+                      {/* knot + string */}
+                      <span
+                        className="-mt-0.5 h-3 w-3 rotate-45"
+                        style={{ background: b.color.to }}
+                      />
+                      <span className="h-8 w-px rotate-3 bg-zinc-500/60" />
                     </>
                   )}
                 </button>
@@ -197,7 +212,7 @@ export default function BalloonPop({
             ))}
           </div>
           <p className="text-xs text-zinc-400">
-            Misses: {missCount} · Let the other letters float away!
+            Misses: {missCount} · Let the other letters float up, up and away!
           </p>
         </>
       )}

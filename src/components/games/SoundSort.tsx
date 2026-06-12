@@ -18,22 +18,31 @@ function buildBoard(lesson: Lesson, matches: number, decoys: number): Item[] {
   return shuffle([...m, ...d]);
 }
 
+export type SortDifficulty = "easy" | "medium" | "hard";
+
+const SORT_SETTINGS = {
+  easy: { matches: 3, decoys: 3, boards: 3 },
+  medium: { matches: 4, decoys: 5, boards: 3 },
+  hard: { matches: 5, decoys: 7, boards: 3 },
+} as const;
+
 export default function SoundSort({
   lesson,
-  level = 1,
+  difficulty = "medium",
   onDone,
 }: {
   lesson: Lesson;
-  level?: number;
+  difficulty?: SortDifficulty;
   onDone?: () => void;
 }) {
-  // Higher levels: more matches to find among more decoys.
-  const matches = 3 + Math.min(2, Math.floor((level - 1) / 20));
-  const decoys = 3 + Math.min(4, Math.floor((level - 1) / 12));
+  const matches = SORT_SETTINGS[difficulty].matches;
+  const decoys = SORT_SETTINGS[difficulty].decoys;
+  const boards = SORT_SETTINGS[difficulty].boards;
 
   const [board, setBoard] = useState<Item[]>(() =>
     buildBoard(lesson, matches, decoys),
   );
+  const [boardNum, setBoardNum] = useState(0);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [missed, setMissed] = useState<Set<string>>(new Set());
 
@@ -43,12 +52,22 @@ export default function SoundSort({
   ).length;
   const done = correctCount === totalMatches;
 
+  // A cleared board deals a fresh one until all boards are done.
   useEffect(() => {
-    if (done && onDone) {
-      const t = setTimeout(onDone, 900);
-      return () => clearTimeout(t);
-    }
-  }, [done, onDone]);
+    if (!done) return;
+    const t = setTimeout(() => {
+      if (boardNum + 1 < boards) {
+        setBoard(buildBoard(lesson, matches, decoys));
+        setPicked(new Set());
+        setMissed(new Set());
+        setBoardNum((b) => b + 1);
+      } else if (onDone) {
+        onDone();
+      }
+    }, 1100);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   function tap(item: Item) {
     if (picked.has(item.text) || done) return;
@@ -100,7 +119,8 @@ export default function SoundSort({
       ) : (
         <>
           <p className="text-sm text-zinc-400">
-            {correctCount} of {totalMatches} found {done && "🎉"}
+            Board {boardNum + 1} of {boards} · {correctCount} of {totalMatches}{" "}
+            found {done && "🎉"}
           </p>
           <div className="grid grid-cols-3 gap-4">
             {board.map((item) => {

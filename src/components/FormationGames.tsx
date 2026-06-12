@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { speak, playClip, praise } from "@/lib/speak";
 import { sample, shuffle } from "@/lib/random";
+import SoundSimon from "@/components/games/SoundSimon";
 
 /** Letters whose mirror image is clearly "backwards" (and never looks like
     another real letter, the way a mirrored b looks like d). */
@@ -13,7 +14,7 @@ function sayLetter(letter: string) {
   playClip(letter, () => speak(letter, 0.85));
 }
 
-type GameId = "mirror" | "case" | "order";
+type GameId = "mirror" | "case" | "order" | "simon";
 
 const GAMES: {
   id: GameId;
@@ -46,6 +47,14 @@ const GAMES: {
     emoji: "🔤",
     color: "from-[#FFD9EA] to-[#FFC0DB]",
     text: "text-pink-700",
+  },
+  {
+    id: "simon",
+    title: "Sound Simon",
+    blurb: "Echo the growing chain of sounds",
+    emoji: "🔔",
+    color: "from-[#FFF4BD] to-[#FFE88C]",
+    text: "text-amber-700",
   },
 ];
 
@@ -81,7 +90,7 @@ export default function FormationGames({ onClose }: { onClose: () => void }) {
             <p className="mb-6 text-zinc-500">
               Letter shapes, big and small, and alphabet order
             </p>
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
               {GAMES.map((g) => (
                 <button
                   key={g.id}
@@ -107,6 +116,7 @@ export default function FormationGames({ onClose }: { onClose: () => void }) {
             {game === "mirror" && <MirrorSpot />}
             {game === "case" && <CaseMatch />}
             {game === "order" && <AlphabetOrder />}
+            {game === "simon" && <SoundSimon />}
           </div>
         )}
       </div>
