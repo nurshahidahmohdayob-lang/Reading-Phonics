@@ -16,10 +16,18 @@ export default function SoundPrimer() {
     initSpeech();
     setNeedsTap(true);
 
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const onAudio = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail === "ok") setFailed(false);
-      else if (detail === "fail") setFailed(true);
+      if (detail === "ok") {
+        setFailed(false);
+        clearTimeout(hideTimer);
+      } else if (detail === "fail") {
+        setFailed(true);
+        // A one-off hiccup shouldn't nag forever — hide after a few seconds.
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => setFailed(false), 6000);
+      }
     };
     window.addEventListener("phonics-audio", onAudio);
 

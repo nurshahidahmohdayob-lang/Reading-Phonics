@@ -1,304 +1,248 @@
-import type { Story } from "@/app/stories";
+import type { Story, StoryQuiz } from "@/app/stories";
 
-/* A deterministic story generator. Each level gets 50+ single-page stories of
-   roughly 100–150 words, built from a shared cast of characters, places, and
-   tiered story "frames" plus a pool of filler beats that pad each story to the
-   target length. Generation is pure (no randomness/time) so server and client
-   render identically and indexes stay stable. */
+/* Hand-written stories — every one has its own plot, title and quiz.
+   Eight per level, with sentence length and vocabulary stepping up
+   through the years. */
 
-type Subject = { name: string; animal: string; emoji: string };
-type Place = { name: string; emoji: string };
-type Sentence = (s: Subject, p: Place) => string;
-type Frame = { prefix: string; plot: Sentence[] };
-
-const SUBJECTS: Subject[] = [
-  { name: "Sam", animal: "cat", emoji: "🐱" },
-  { name: "Pip", animal: "dog", emoji: "🐶" },
-  { name: "Pog", animal: "pig", emoji: "🐷" },
-  { name: "Hetty", animal: "hen", emoji: "🐔" },
-  { name: "Rusty", animal: "fox", emoji: "🦊" },
-  { name: "Fred", animal: "frog", emoji: "🐸" },
-  { name: "Dot", animal: "duck", emoji: "🦆" },
-  { name: "Ollie", animal: "owl", emoji: "🦉" },
-  { name: "Bo", animal: "bear", emoji: "🐻" },
-  { name: "Finn", animal: "fish", emoji: "🐟" },
-  { name: "Bea", animal: "bird", emoji: "🐦" },
-  { name: "Roo", animal: "rabbit", emoji: "🐰" },
-  { name: "Coco", animal: "cow", emoji: "🐮" },
-  { name: "Max", animal: "mouse", emoji: "🐭" },
-];
-
-const PLACES_A: Place[] = [
-  { name: "park", emoji: "🏞️" },
-  { name: "pond", emoji: "🪷" },
-  { name: "hill", emoji: "⛰️" },
-  { name: "garden", emoji: "🌻" },
-  { name: "barn", emoji: "🛖" },
-  { name: "beach", emoji: "🏖️" },
-];
-const PLACES_B: Place[] = [
-  { name: "forest", emoji: "🌲" },
-  { name: "river", emoji: "🌊" },
-  { name: "market", emoji: "🏪" },
-  { name: "castle", emoji: "🏰" },
-  { name: "meadow", emoji: "🌾" },
-  { name: "cave", emoji: "🕳️" },
-];
-const PLACES_C: Place[] = [
-  { name: "valley", emoji: "🏞️" },
-  { name: "harbour", emoji: "⚓" },
-  { name: "museum", emoji: "🏛️" },
-  { name: "island", emoji: "🏝️" },
-  { name: "mountain", emoji: "🏔️" },
-  { name: "observatory", emoji: "🔭" },
-];
-
-/* ---- Tier A (Years 1–2): short, simple sentences ---- */
-const FRAMES_A: Frame[] = [
-  {
-    prefix: "at the",
-    plot: [
-      (s, p) => `${s.name} the ${s.animal} went to the ${p.name}.`,
-      () => `It was a bright and happy day.`,
-      (s) => `${s.name} could not wait to play.`,
-    ],
-  },
-  {
-    prefix: "and the",
-    plot: [
-      (s, p) => `${s.name} the ${s.animal} saw a big ${p.name}.`,
-      () => `So many fun things to do!`,
-      (s) => `${s.name} skipped along with joy.`,
-    ],
-  },
-  {
-    prefix: "by the",
-    plot: [
-      (s, p) => `${s.name} the ${s.animal} sat by the ${p.name}.`,
-      () => `The day was calm and warm.`,
-      (s) => `${s.name} looked all around.`,
-    ],
-  },
-  {
-    prefix: "in the",
-    plot: [
-      (s, p) => `${s.name} the ${s.animal} played in the ${p.name}.`,
-      () => `Hide and seek is the best game.`,
-      (s) => `Can you find ${s.name}?`,
-    ],
-  },
-];
-const POOL_A: Sentence[] = [
-  (s, p) => `${s.name} ran fast in the ${p.name}.`,
-  (s) => `${s.name} saw a little bird hop by.`,
-  (s) => `${s.name} had a big red ball.`,
-  () => `The warm sun was bright and gold.`,
-  (s) => `${s.name} liked to jump up high.`,
-  () => `A green frog sat on a rock.`,
-  (s) => `${s.name} ate a yummy snack.`,
-  (s) => `${s.name} met a kind new friend.`,
-  () => `They played a fun game together.`,
-  (s) => `${s.name} sang a happy little song.`,
-  () => `A duck swam in the cool pond.`,
-  (s) => `${s.name} did a silly dance.`,
-  (s) => `${s.name} found a soft, fluffy feather.`,
-  () => `The wind blew the tall grass.`,
-  (s) => `${s.name} ran around and around.`,
-  (s) => `${s.name} gave a big, happy grin.`,
-  (s) => `A bee buzzed past ${s.name}.`,
-  (s) => `${s.name} rolled down the green hill.`,
-  (s) => `${s.name} clapped two little paws.`,
-  () => `Everyone laughed and had lots of fun.`,
-];
-
-/* ---- Tier B (Years 3–4): longer sentences ---- */
-const FRAMES_B: Frame[] = [
-  {
-    prefix: "and the",
-    plot: [
-      (s, p) => `One morning, ${s.name} the ${s.animal} set off to explore the ${p.name}.`,
-      () => `The path wound between mossy rocks and ferns.`,
-      (s) => `${s.name} felt a little nervous but very excited.`,
-    ],
-  },
-  {
-    prefix: "at the",
-    plot: [
-      (s, p) => `There was a big event at the ${p.name} today.`,
-      (s) => `${s.name} the ${s.animal} arrived bright and early.`,
-      () => `Everyone was buzzing with excitement.`,
-    ],
-  },
-  {
-    prefix: "near the",
-    plot: [
-      (s, p) => `Dark clouds gathered slowly near the ${p.name}.`,
-      (s) => `${s.name} the ${s.animal} hurried to find some shelter.`,
-      () => `Soon the storm would surely pass.`,
-    ],
-  },
-  {
-    prefix: "by the",
-    plot: [
-      (s, p) => `By the ${p.name}, ${s.name} the ${s.animal} spotted something unusual.`,
-      () => `It was small, shiny, and half hidden.`,
-      (s) => `${s.name} crept closer to take a look.`,
-    ],
-  },
-];
-const POOL_B: Sentence[] = [
-  (s, p) => `Tall trees swayed gently around the ${p.name}.`,
-  (s) => `${s.name} the ${s.animal} felt brave and curious.`,
-  () => `A friendly voice called out from far away.`,
-  () => `Bright sunshine sparkled on the cool water.`,
-  (s) => `${s.name} carefully climbed over a fallen log.`,
-  () => `A wise old owl watched from a branch.`,
-  (s) => `${s.name} discovered a shiny stone on the path.`,
-  () => `Soft rain began to patter on the leaves.`,
-  (s) => `${s.name} laughed and splashed in a puddle.`,
-  () => `A colourful rainbow stretched across the sky.`,
-  (s) => `${s.name} shared a tasty snack with a friend.`,
-  () => `The gentle breeze smelled of fresh flowers.`,
-  (s) => `${s.name} ran quickly along the winding trail.`,
-  () => `Together they built a little den from sticks.`,
-  (s) => `${s.name} felt proud of working so hard.`,
-  () => `Birds sang a cheerful tune in the trees.`,
-  (s) => `${s.name} waved goodbye and headed home.`,
-  () => `The adventure had been wonderful and fun.`,
-];
-
-/* ---- Tier C (Years 5–6): complex sentences, rich vocabulary ---- */
-const FRAMES_C: Frame[] = [
-  {
-    prefix: "and the",
-    plot: [
-      (s, p) => `Beyond the misty ${p.name}, an enormous mountain rose towards the clouds.`,
-      (s) => `${s.name} the ${s.animal} resolved to reach its distant, snowy summit.`,
-      () => `The climb would test every ounce of courage and strength.`,
-    ],
-  },
-  {
-    prefix: "below the",
-    plot: [
-      (s, p) => `Far below the ${p.name} lay a forgotten and dusty library.`,
-      (s) => `${s.name} the ${s.animal} discovered it behind a crumbling stone wall.`,
-      () => `Thousands of ancient books waited silently in the gloom.`,
-    ],
-  },
-  {
-    prefix: "at the",
-    plot: [
-      (s, p) => `A wild and sudden storm swept across the ${p.name} at night.`,
-      (s) => `${s.name} the ${s.animal} gripped the wheel with steady, fearless hands.`,
-      () => `Thunder rolled while lightning lit the churning sea.`,
-    ],
-  },
-  {
-    prefix: "near the",
-    plot: [
-      (s, p) => `Near the ${p.name}, ${s.name} the ${s.animal} tinkered with peculiar inventions.`,
-      () => `One evening, an extraordinary idea sparked vividly to life.`,
-      () => `After hours of work, the strange machine was finally ready.`,
-    ],
-  },
-];
-const POOL_C: Sentence[] = [
-  (s, p) => `The ${p.name} stretched out beneath a wide and endless sky.`,
-  (s) => `${s.name} the ${s.animal} paused to admire the breathtaking, distant view.`,
-  (s) => `Determination glowed brightly in ${s.name}'s heart with every careful step.`,
-  () => `A cool breeze carried the faint scent of adventure and discovery.`,
-  (s) => `${s.name} remembered the old stories whispered by the village elders.`,
-  () => `Shadows danced across the ground as the golden sun began to set.`,
-  (s) => `${s.name} gathered courage and pressed onward through the unknown.`,
-  (s) => `Curiosity pulled ${s.name} towards a mysterious, glittering light.`,
-  () => `The journey was difficult, yet every challenge taught something new.`,
-  (s) => `${s.name} marvelled at the wonders hidden in such a quiet place.`,
-  (s) => `With patience and care, ${s.name} solved each tricky puzzle.`,
-  (s) => `A deep sense of pride and wonder filled ${s.name} completely.`,
-  () => `The world felt enormous, beautiful, and full of endless possibility.`,
-  (s) => `${s.name} promised to return and explore even more one day.`,
-];
-
-const TIERS = [
-  { places: PLACES_A, frames: FRAMES_A, pool: POOL_A },
-  { places: PLACES_B, frames: FRAMES_B, pool: POOL_B },
-  { places: PLACES_C, frames: FRAMES_C, pool: POOL_C },
-];
-
-function cap(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
-function countWords(text: string): number {
-  return text.trim().split(/\s+/).length;
+function S(
+  id: string,
+  title: string,
+  emoji: string,
+  lexile: number,
+  text: string,
+  question: string,
+  options: [string, string][],
+  answer: number,
+): Story {
+  const quiz: StoryQuiz = {
+    question,
+    options: options.map(([e, l]) => ({ emoji: e, label: l })),
+    answer,
+  };
+  return { id, title, emoji, lexile, pages: [{ text, emoji }], quiz };
 }
 
-/**
- * Assemble a single-page story of `target` words (never exceeding 150): the
- * frame's plot sentences first, then filler beats from the pool, padding until
- * the word target is reached.
- */
-function assemble(
-  frame: Frame,
-  pool: Sentence[],
-  subject: Subject,
-  place: Place,
-  offset: number,
-  target: number,
-): string {
-  const out = frame.plot.map((fn) => fn(subject, place));
-  let words = countWords(out.join(" "));
-  const used = new Set<number>();
-  for (let j = 0; j < pool.length && words < target; j++) {
-    const idx = (offset + j) % pool.length;
-    if (used.has(idx)) continue;
-    const sentence = pool[idx](subject, place);
-    const w = countWords(sentence);
-    if (words + w > 150) break; // keep every story at or under 150 words
-    used.add(idx);
-    out.push(sentence);
-    words += w;
-  }
-  return out.join(" ");
-}
+const YEAR1: Story[] = [
+  S("y1-red-hat", "The Red Hat", "🎩", 200,
+    "Sam the cat has a red hat. The wind blows. Off goes the hat! It lands on a hen. The hen looks so funny. Sam laughs and laughs.",
+    "Where did the hat land?",
+    [["🐔", "On a hen"], ["🪵", "On a log"], ["🛏️", "On a bed"]], 0),
+  S("y1-big-bus", "The Big Bus", "🚌", 240,
+    "Here comes the big bus. Pip the dog hops on. The bus goes up the hill. It goes down the hill. Wheee! Pip loves the bus.",
+    "What did Pip hop on?",
+    [["🚌", "A bus"], ["🚂", "A train"], ["⛵", "A boat"]], 0),
+  S("y1-mud-pig", "Pig in the Mud", "🐷", 260,
+    "Pog the pig sees mud. In he jumps! Splat, splat, splat. Now Pog is brown, not pink. Mum says, time for a bath! Pog runs away fast.",
+    "What colour was Pog after the mud?",
+    [["🟤", "Brown"], ["💗", "Pink"], ["💚", "Green"]], 0),
+  S("y1-lost-sock", "The Lost Sock", "🧦", 280,
+    "Roo cannot find one sock. She looks under the bed. She looks in the box. Where is it? The cat has it! It is his new toy.",
+    "Who had the sock?",
+    [["🐱", "The cat"], ["🐶", "The dog"], ["👧", "Mum"]], 0),
+  S("y1-egg", "The Little Egg", "🥚", 320,
+    "Hetty the hen has an egg. She sits on it all day. Tap, tap, tap! A crack! Out pops a tiny chick. It says peep, peep. Hetty is so happy.",
+    "What came out of the egg?",
+    [["🐤", "A chick"], ["🐸", "A frog"], ["🐍", "A snake"]], 0),
+  S("y1-wet-day", "The Wet Day", "🌧️", 360,
+    "Drip, drop! Rain falls all day. Dot the duck is glad. Ducks love rain! She splashes in a puddle. Splash, splash! Her friends hide inside. Not Dot!",
+    "How did Dot feel about the rain?",
+    [["😄", "Glad"], ["😢", "Sad"], ["😡", "Cross"]], 0),
+  S("y1-jam-tarts", "Six Jam Tarts", "🥧", 400,
+    "Bo the bear bakes six jam tarts. Sniff, sniff — yum! He eats one. Then two more. Oh no, only three left! He gives them to his friends. They love them.",
+    "How many tarts were left for friends?",
+    [["3️⃣", "Three"], ["6️⃣", "Six"], ["1️⃣", "One"]], 0),
+  S("y1-moon-trip", "A Trip to the Moon", "🌙", 480,
+    "Max the mouse has a box. He sits in it. Zoom! He is off to the moon — in his head! He waves to the stars. Then Mum calls. Dinner time, space mouse!",
+    "What was Max's rocket really?",
+    [["📦", "A box"], ["🚀", "A real rocket"], ["🛏️", "A bed"]], 0),
+];
 
-/**
- * Build `count` single-page stories (~100–150 words) for a level. `levelIndex`
- * (0–5) selects the difficulty tier and an offset so sibling years differ.
- */
+const YEAR2: Story[] = [
+  S("y2-kite", "The Runaway Kite", "🪁", 440,
+    "Bea made a kite with paper and string. At the park, the wind grabbed it and pulled hard. The string slipped from her hand! The kite danced over the trees. A kind man on a ladder caught it. Bea said thank you and held on tight after that.",
+    "Who caught the kite?",
+    [["🧑‍🔧", "A man on a ladder"], ["🐦", "A bird"], ["👮", "A police officer"]], 0),
+  S("y2-snail-race", "The Great Snail Race", "🐌", 470,
+    "On Sunday the garden held a snail race. Shelly was the smallest snail, and everyone giggled at her. But Shelly did not stop once. The big snails napped in the sun. Slowly, slowly, she slid past them all and crossed the line first!",
+    "Why did Shelly win?",
+    [["🐢", "She never stopped"], ["💨", "She was fastest"], ["🍀", "She was lucky"]], 0),
+  S("y2-new-tooth", "The Wobbly Tooth", "🦷", 500,
+    "Finn had a wobbly tooth. He wiggled it at breakfast. He wiggled it at school. At lunch he bit a crunchy apple and — pop! — out it came. He put it under his pillow that night, and in the morning he found a shiny coin.",
+    "What made the tooth come out?",
+    [["🍎", "A crunchy apple"], ["🥕", "A carrot"], ["🍞", "Soft bread"]], 0),
+  S("y2-sandcastle", "The Sandcastle King", "🏰", 520,
+    "At the beach, Ollie built a giant sandcastle with four towers and a moat. A wave crept closer and closer. Crash! Half the castle washed away. Ollie did not cry. He laughed and shouted, now I will build it even bigger!",
+    "What knocked the castle down?",
+    [["🌊", "A wave"], ["🐶", "A dog"], ["💨", "The wind"]], 0),
+  S("y2-honey", "Where Is the Honey?", "🍯", 540,
+    "Bo the bear looked in the cupboard for honey, but the pot was empty. He followed a line of sticky paw prints across the floor. They led to his little sister, fast asleep with the pot in her arms and honey on her nose!",
+    "Who took the honey?",
+    [["🐻", "Bo's little sister"], ["🐝", "The bees"], ["🐭", "A mouse"]], 0),
+  S("y2-rainbow", "The Rainbow Hunt", "🌈", 560,
+    "After the rain, Roo saw a rainbow over the hill. She raced to find where it touched the ground. Over the bridge, past the barn, through the wet grass! The rainbow faded away — but Roo found a field full of golden sunflowers instead.",
+    "What did Roo find at the end?",
+    [["🌻", "Sunflowers"], ["💰", "Gold coins"], ["🦄", "A unicorn"]], 0),
+  S("y2-night-light", "The Brave Night Light", "🔦", 580,
+    "Thunder boomed and the lights went out. Pip felt scared in the dark. Then he remembered his torch under the pillow. Click! A warm circle of light filled the room. Pip made shadow bunnies on the wall until the storm rolled away.",
+    "What did Pip use in the dark?",
+    [["🔦", "A torch"], ["🕯️", "A candle"], ["📱", "A phone"]], 0),
+  S("y2-seed", "The Mystery Seed", "🌱", 600,
+    "Dot planted a mystery seed and watered it every day. A green shoot appeared, then leaves as big as plates! By summer it was a pumpkin vine with one enormous pumpkin. Dot's whole family carved it together for the autumn fair.",
+    "What grew from the seed?",
+    [["🎃", "A pumpkin"], ["🌹", "A rose"], ["🌳", "An oak tree"]], 0),
+];
+
+const YEAR3: Story[] = [
+  S("y3-library", "The Midnight Library", "📚", 540,
+    "Mia was sure she heard whispering from her bookshelf at night. One evening she kept her lamp on and watched. At midnight, the storybook characters stretched, yawned, and began tidying their own pages! A tiny knight bowed to her. Keep our secret, he said, and we will always give you the best dreams. Mia promised, and she has slept happily ever since.",
+    "What did the tiny knight ask Mia to do?",
+    [["🤫", "Keep the secret"], ["⚔️", "Fight a dragon"], ["📖", "Read aloud"]], 0),
+  S("y3-robot", "The Robot Who Sneezed", "🤖", 580,
+    "Grandpa built a helper robot named Click. Click could sweep, cook, and sing — but whenever it dusted, it sneezed sparks! Achoo! One sneeze toasted the curtains. Grandpa scratched his head, then fitted Click with a tiny vacuum nose. Now Click hoovers the dust before it can tickle, and the only sparks are in his happy robot eyes.",
+    "What made Click sneeze?",
+    [["🌫️", "Dust"], ["🌶️", "Pepper"], ["🌸", "Flowers"]], 0),
+  S("y3-penguin", "The Penguin Post", "🐧", 620,
+    "Percy the penguin delivered letters across the ice by sliding on his tummy. One stormy day the wind scattered his whole mailbag! Percy did not give up. He chased every envelope — over snowdrifts, around seals, under the frozen bridge — until each letter reached its home. The town gave him a medal shaped like a snowflake.",
+    "How did Percy travel across the ice?",
+    [["🛷", "Sliding on his tummy"], ["🚲", "Riding a bike"], ["🛶", "Paddling a canoe"]], 0),
+  S("y3-garden", "The Upside-Down Garden", "🌷", 660,
+    "Nia's grandma grew flowers from hanging baskets, so the garden seemed to bloom from the sky. Bees held meetings under the floating roses, and butterflies used the petunias as swings. When the summer fair came, the judges had never seen anything like it. Grandma won first prize, and Nia won something better — the seeds for next year.",
+    "Where did Grandma's flowers grow?",
+    [["🧺", "In hanging baskets"], ["🛁", "In a bathtub"], ["👢", "In old boots"]], 0),
+  S("y3-cave", "The Echo in the Cave", "🦇", 700,
+    "On a school trip, Leo discovered that the cave answered him. Hello! he called, and Hello-lo-lo rolled back. He tried a riddle, and the echo finished it. The guide explained how sound bounces off rock walls, but Leo grinned all the way home. Science or not, he had spent the morning talking with a mountain.",
+    "What did Leo talk with?",
+    [["⛰️", "The echo in the cave"], ["🦜", "A parrot"], ["📻", "A radio"]], 0),
+  S("y3-baker", "The Baker's Mistake", "🥐", 740,
+    "Baker Ben grabbed the wrong jar and put chilli powder in the cinnamon buns. The first customer turned red and gulped a whole jug of milk! Ben wanted to hide, but the customer laughed and asked for another. Soon the whole town queued for fire buns. Sometimes, Ben learned, a mistake is just a recipe nobody has tried yet.",
+    "What went into the buns by mistake?",
+    [["🌶️", "Chilli powder"], ["🧂", "Salt"], ["🧄", "Garlic"]], 0),
+  S("y3-lighthouse", "The Littlest Lighthouse", "🗼", 780,
+    "The old lighthouse was too short to be seen over the new tall buildings, and the keeper worried ships would be lost. The town's children had an idea: every evening they carried mirrors to the rooftops and bounced the small light high across the bay. The fishing boats came home safely, guided by a lighthouse made taller by helping hands.",
+    "How did the children help the lighthouse?",
+    [["🪞", "They bounced light with mirrors"], ["🧱", "They built it taller"], ["🔥", "They lit a bonfire"]], 0),
+  S("y3-tortoise", "The Tortoise Taxi", "🐢", 820,
+    "When the ants' picnic ground flooded, Tully the tortoise offered rides on her shell. Back and forth she paddled, ferrying crumbs, teapots, and three hundred passengers to dry land. It took all afternoon, and the ants repaid her with a garden of her favourite dandelions planted in a ring around her pond.",
+    "What did the ants give Tully?",
+    [["🌼", "A dandelion garden"], ["🍰", "A cake"], ["👑", "A crown"]], 0),
+];
+
+const YEAR4: Story[] = [
+  S("y4-map", "The Map in the Attic", "🗺️", 640,
+    "While helping clear the attic, Zara found a map of her own town — but drawn a hundred years ago. The supermarket was an orchard; the bus stop was a bandstand. She followed the old paths after school, and at the spot marked with a tiny bell she dug up a rusted tin. Inside lay letters from children long grown, asking whoever found them to write back. Zara is still writing her reply, and it keeps getting longer.",
+    "What did Zara dig up?",
+    [["📦", "A tin of letters"], ["💎", "A box of jewels"], ["🔔", "A church bell"]], 0),
+  S("y4-orchestra", "The Kitchen Orchestra", "🥁", 690,
+    "Rehearsal rooms cost money, so Marcus practised drums on saucepans, and his sister played flute along with the kettle's whistle. Their neighbour complained — until the night of the blackout, when the whole street gathered in their garden. The kitchen orchestra played by candlelight, neighbours sang, and the complaint was officially withdrawn with a plate of biscuits.",
+    "When did the neighbours change their minds?",
+    [["🕯️", "During the blackout"], ["🎄", "At Christmas"], ["☀️", "In summer"]], 0),
+  S("y4-glacier", "Letters to a Glacier", "🧊", 740,
+    "For a class project, Tom wrote a letter to a glacier, joking that it should write back. His teacher posted it to a research station in Iceland. Months later an envelope arrived containing a photograph of his letter frozen a metre deep in blue ice, and a note from a scientist: Your letter will travel inside the glacier for fifty years. Write to us in 2076 and we will tell you where it came out.",
+    "Where was Tom's letter placed?",
+    [["🧊", "Inside a glacier"], ["🌋", "Inside a volcano"], ["🌊", "In the sea"]], 0),
+  S("y4-fox", "The Fox Who Read the News", "📰", 780,
+    "Every morning the fox stole one newspaper from the village shop — only one, and always the same kind. Curious, the shopkeeper followed the paw prints to a hollow oak. Inside, the fox had lined a nest for her cubs with crosswords and comics. The shopkeeper smiled, and from then on left yesterday's unsold papers at the foot of the tree.",
+    "What did the fox use the newspapers for?",
+    [["🛏️", "Lining her cubs' nest"], ["📖", "Reading the sport"], ["🔥", "Starting a fire"]], 0),
+  S("y4-postbox", "The Singing Postbox", "📮", 820,
+    "The postbox on Harbour Lane hummed sea shanties, and nobody knew why. Letters posted there arrived smelling of salt. Old sailors tipped their caps to it. When engineers finally opened it, they found nothing but a curl of wind trapped since the great storm of 1932 — or so the harbour master says, with a wink that suggests he oils its hinges himself.",
+    "What did letters from the postbox smell of?",
+    [["🌊", "Salt"], ["🌹", "Roses"], ["☕", "Coffee"]], 0),
+  S("y4-comet", "The Comet Watchers", "☄️", 860,
+    "The comet would pass only once in their lifetimes, and clouds covered the whole valley. Most people went to bed disappointed. But Asha and her grandfather drove up the mountain road, above the weather, and watched the sky split open with silver light. The photograph they took hangs in the school hall, captioned: The sky rewards those who climb.",
+    "Why did Asha drive up the mountain?",
+    [["☁️", "To get above the clouds"], ["⛽", "To buy fuel"], ["🦌", "To see deer"]], 0),
+  S("y4-bridge", "The Bridge of Buttons", "🧵", 900,
+    "When the footbridge rotted away, the village had no money for steel. The tailor suggested something strange: a rope bridge woven through thousands of donated buttons, each one threaded by a different villager. It took a winter of evenings around the fire. Now visitors come from far away to cross it, and every villager can point to a button and say, that one is mine.",
+    "What was woven into the bridge?",
+    [["🔘", "Buttons"], ["🐚", "Seashells"], ["🪙", "Coins"]], 0),
+  S("y4-whale", "The Whale's Library", "🐋", 940,
+    "Marine scientists discovered that the old whale sang differently near the sunken cargo ship. Diving down, they found the hold full of waterlogged books, their pages long dissolved. Yet the whale returned each season to sing where the stories had been. Perhaps, wrote the youngest scientist in her log, some readers never need the words at all.",
+    "Where did the whale sing differently?",
+    [["🚢", "Near the sunken ship"], ["🏝️", "Near the island"], ["🧊", "Near the ice"]], 0),
+];
+
+const YEAR5: Story[] = [
+  S("y5-clockmaker", "The Clockmaker's Apprentice", "🕰️", 730,
+    "Every clock in Master Aurelio's shop told a different time, and Lena, his new apprentice, itched to correct them. Each is right for somewhere, the old man said. This one keeps time for Tokyo, that one for her sister in Lima. On her last day of training, Lena found a small brass clock labelled with her own name, already ticking. It keeps the time, Aurelio explained, of wherever you are needed most. It has never once agreed with the clock on her wall — and following it has never led her wrong.",
+    "What was special about Lena's brass clock?",
+    [["🧭", "It kept time for where she was needed"], ["⏰", "It was always fast"], ["💰", "It was made of gold"]], 0),
+  S("y5-island", "The Island That Moved", "🏝️", 780,
+    "The chart said the island should be two miles east, yet there it lay, dead ahead. Captain Reyes checked her instruments twice before the lookout started laughing: the island was breathing. They had anchored beside a sleeping whale so ancient that grass and even small trees grew along its back. The crew spent one impossible afternoon ashore, then slipped away quietly at dusk, leaving no anchor mark — only a logbook entry that no museum has ever agreed to believe.",
+    "Why did the island seem to move?",
+    [["🐋", "It was a sleeping whale"], ["🌊", "The tide carried it"], ["🗺️", "The map was torn"]], 0),
+  S("y5-violin", "The Violin in the Wall", "🎻", 830,
+    "Renovating the oldest house on Mill Street, builders found a violin sealed behind the plaster, wrapped in a shawl with a note: For whoever finds her — she is shy, but she sings. The town's music teacher restrung it and gave it to Priya, her quietest student. At the spring concert, Priya played a melody nobody could place, in a key that made the audience think of rain ending. The note, experts later said, was written in 1891. The melody has still not been found in any songbook.",
+    "Where was the violin hidden?",
+    [["🧱", "Behind a wall"], ["🛏️", "Under a bed"], ["🌳", "Inside a tree"]], 0),
+  S("y5-garden-night", "The Night Gardeners", "🌙", 880,
+    "The roses on Cathedral Green were pruned each night, though the council employed no gardener. Suspecting students, the caretaker set up a camera. The footage showed three badgers, working in shifts, snipping deadheads with their teeth and patting the soil flat afterwards. A wildlife professor confirmed it was learned behaviour, passed down for generations — the green had been a monastery garden, and someone, centuries ago, must have gardened with badgers at his heel.",
+    "Who was pruning the roses?",
+    [["🦡", "Badgers"], ["🧑‍🎓", "Students"], ["👻", "A ghost"]], 0),
+  S("y5-storm-chef", "The Storm Chef", "⛈️", 930,
+    "Chef Amara's tiny café stood on the cliff road, and on storm nights she refused to close. Fishermen, coastguards, and stranded travellers crowded in, and she fed every one of them, payment or not. Her recipe book had a chapter the others lacked, titled For Weather. Lightning soup. Fog pudding. Bread for the homesick. Food critics never understood her menu, she said, because they only ever visited in sunshine.",
+    "When did Chef Amara refuse to close?",
+    [["⛈️", "On storm nights"], ["🎄", "On holidays"], ["🌅", "At sunrise"]], 0),
+  S("y5-atlas", "The Atlas of Small Places", "📖", 980,
+    "Most atlases map continents; Iris mapped the territories of her street. The gap in the fence where cats held parliament. The puddle that reflected the bakery sign perfectly at four o'clock. The corner where lost gloves gathered as though migrating. Her notebook filled, then a second, then a ninth. Years later, urban planners consulted her pages before changing a single kerb — because nobody else had ever recorded what the street actually was.",
+    "What did Iris map?",
+    [["🏘️", "Small places on her street"], ["🌍", "The continents"], ["🏔️", "Mountain ranges"]], 0),
+  S("y5-radio", "The Frequency of Owls", "📻", 1030,
+    "Tuning his grandfather's radio between stations, Sol found a band of soft, rhythmic hooting. The signal strengthened at dusk and vanished by dawn. An ornithologist explained, with delight, that a pair of owls had nested on the old transmission mast, and the microphone left from wartime still worked. All winter, half the town fell asleep to the broadcast. The station never aired an advertisement, and its listeners agree it remains the finest programme ever made.",
+    "What was making the radio sounds?",
+    [["🦉", "Owls on the mast"], ["👽", "A satellite"], ["🎙️", "A late-night DJ"]], 0),
+  S("y5-door", "The Door at Low Tide", "🚪", 1080,
+    "Twice a day the sea drew back to reveal a weathered door standing upright in the sand, frame and all, attached to nothing. Tourists photographed it; scientists measured it; the town simply painted it a fresh blue each spring. Old Mrs Penhallow said her grandmother used to knock before beachcombing, out of politeness. Nobody has ever opened it. This is not because it is locked, the harbour sign explains, but because some questions are better kept as neighbours.",
+    "What did the sea reveal at low tide?",
+    [["🚪", "A standing door"], ["⚓", "An anchor"], ["🏛️", "A temple"]], 0),
+];
+
+const YEAR6: Story[] = [
+  S("y6-archivist", "The Archivist of Sounds", "🎧", 830,
+    "Before the old market was demolished, Ms Okafor walked its aisles with a recorder: the fishmonger's banter, the squeal of the third trolley, rain on the corrugated roof. People thought the project sentimental until the new mall opened, efficient and silent, and a strange grief settled on the town. Her archive became the most requested collection in the library's history. We preserve photographs of how things looked, she told the council, accepting their apology and a small grant. Somebody must keep how things sounded, or half of every memory is lost.",
+    "What did Ms Okafor preserve?",
+    [["🔊", "The sounds of the market"], ["📷", "Photographs"], ["🧱", "The market bricks"]], 0),
+  S("y6-chess", "The Postal Chess Match", "♟️", 880,
+    "In 1962, two lighthouse keepers began a chess match by post, one move per letter, their boards forty miles of sea apart. Storms delayed moves for months; one knight travelled via three sorting offices and a fishing trawler. Both men retired, then their children continued the game, then a granddaughter and a grandson who had never met. The fifty-eighth move was played last spring, at a small ceremony where the two families finally shared a table. The game, everyone agreed, must on no account be allowed to finish.",
+    "How was the chess match played?",
+    [["✉️", "By letters in the post"], ["💻", "Over the internet"], ["📞", "By telephone"]], 0),
+  S("y6-cartographer", "The Cartographer's Error", "🧭", 930,
+    "The 1851 survey of the county contains a famous mistake: a lake, two miles wide, where there has only ever been pasture. Historians blamed brandy or boredom, until a researcher noticed the surveyor's diary entry for that week: My daughter asks why maps never show the places we wish existed. Reader, I have given her one. The error was reprinted for ninety years before anyone dared correct it, and the field is called The Lake to this day by everyone local.",
+    "Why did the surveyor draw a lake?",
+    [["👧", "For his daughter's wish"], ["🥃", "He drank brandy"], ["🌫️", "He saw a mirage"]], 0),
+  S("y6-beekeeper", "Telling the Bees", "🐝", 980,
+    "There is an old custom that bees must be told the news of the house, or they will leave. When the orchard changed owners, young Mr Webb thought the ritual nonsense — until the hives emptied within a week. His neighbour, ninety and unsurprised, walked him to the empty boxes and had him introduce himself aloud, apologise for the delay, and describe his plans for the apple trees. The bees returned eleven days later. Science offers several explanations. Mr Webb, who now tells the hives everything, has stopped asking for one.",
+    "What happened when the bees were not told the news?",
+    [["🐝", "They left the hives"], ["🍯", "They made more honey"], ["😴", "They fell asleep"]], 0),
+  S("y6-trains", "The Timetable Poet", "🚂", 1030,
+    "Nobody knew who amended the station's departure boards, but each delay announcement arrived with a line of verse: The 8.14 is late, as spring is late — worth waiting for. Commuters began missing earlier trains on purpose. The rail company, after a brief investigation, discovered the culprit was the announcer herself, a retired literature teacher, and faced a difficult decision: passenger satisfaction had risen forty percent. She was issued a formal warning and, in the same envelope, a request for a Christmas special.",
+    "Who was writing the poems?",
+    [["🎙️", "The announcer"], ["🧑‍✈️", "A train driver"], ["🕵️", "A passenger"]], 0),
+  S("y6-glassmaker", "The Colour That Has No Name", "🪟", 1080,
+    "The cathedral's west window holds a blue that restorers cannot reproduce. The medieval glassmakers left recipes for every other pane, but for this one only a note: as the sky, the third morning after grief. Chemists have analysed it; artists have approximated it; tourists photograph it and find their pictures turn out merely blue. The head restorer keeps the original fragment in a velvet drawer and has concluded, after thirty years, that some instructions are not measurements but memories — and that the window is best mended by people who have had such mornings.",
+    "What could the restorers not reproduce?",
+    [["🟦", "The blue colour"], ["🖼️", "The window's shape"], ["⛪", "The stone arch"]], 0),
+  S("y6-island-school", "The School Boat", "⛵", 1130,
+    "For sixty years, the children of the scattered islands were rowed to school by Mr Brand, in fair weather and foul, his boat doubling as library, infirmary, and confession box for unfinished homework. When he retired, the council proposed a bridge. The islanders voted instead to train four young boat keepers, reasoning that a bridge carries bodies but a boatman carries childhoods. The first of the four is Mr Brand's granddaughter, who keeps a tin of barley sugar under the stern seat, exactly where it has always been.",
+    "What did the islanders choose instead of a bridge?",
+    [["🚣", "Training new boat keepers"], ["🌉", "A smaller bridge"], ["🚁", "A helicopter"]], 0),
+  S("y6-museum-night", "The Unfinished Symphony Room", "🎼", 1180,
+    "The music museum's strangest exhibit is an empty room. On the walls hang manuscripts abandoned mid-bar: a symphony stopped by war, a lullaby interrupted by good news, a quartet whose composer simply went out for bread and never wrote another note. Visitors are given a pencil at the door. The guest books are full of endings — clumsy, brilliant, heartfelt — and once a year the city orchestra performs the best of them. The originals remain unfinished. That, says the curator, is the exhibit.",
+    "What are visitors given at the door?",
+    [["✏️", "A pencil"], ["🎻", "A violin"], ["🎟️", "A ticket"]], 0),
+];
+
+const BY_INDEX: Story[][] = [YEAR1, YEAR2, YEAR3, YEAR4, YEAR5, YEAR6];
+
+/** Hand-picked stories for a level. Extra arguments are kept so the old
+    generator's call site stays unchanged. */
 export function buildStories(
-  levelId: string,
+  _levelId: string,
   levelIndex: number,
-  lexileLow: number,
-  lexileHigh: number,
-  count: number,
-  wordTarget: number,
+  _lexLow: number,
+  _lexHigh: number,
+  _count?: number,
+  _targetWords?: number,
 ): Story[] {
-  const tier = TIERS[Math.floor(levelIndex / 2)];
-  const base = (levelIndex % 2) * 112; // distinct slice for the sibling year
-  const { places, frames, pool } = tier;
-  const nSub = SUBJECTS.length;
-  const nPlace = places.length;
-
-  const stories: Story[] = [];
-  for (let k = 0; k < count; k++) {
-    const idx = base + k;
-    const subject = SUBJECTS[idx % nSub];
-    const rem = Math.floor(idx / nSub);
-    const place = places[rem % nPlace];
-    const frame = frames[Math.floor(rem / nPlace) % frames.length];
-
-    const text = assemble(frame, pool, subject, place, k * 7, wordTarget);
-    const span = lexileHigh - lexileLow;
-    const lexile =
-      lexileLow + Math.round((count > 1 ? (k / (count - 1)) * span : 0) / 10) * 10;
-
-    stories.push({
-      id: `${levelId}-g${k}`,
-      title: `${subject.name} ${frame.prefix} ${cap(place.name)}`,
-      emoji: subject.emoji,
-      lexile,
-      pages: [{ text, emoji: subject.emoji }],
-    });
-  }
-  return stories;
+  return BY_INDEX[levelIndex] ?? BY_INDEX[BY_INDEX.length - 1];
 }

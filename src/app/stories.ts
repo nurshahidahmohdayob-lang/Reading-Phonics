@@ -5,6 +5,13 @@ export type StoryPage = {
   emoji: string;
 };
 
+export type StoryQuiz = {
+  question: string;
+  options: { emoji: string; label: string }[];
+  /** Index of the right option. */
+  answer: number;
+};
+
 export type Story = {
   id: string;
   title: string;
@@ -12,6 +19,8 @@ export type Story = {
   /** Approximate Lexile measure for this text, e.g. 350 => "350L". */
   lexile: number;
   pages: StoryPage[];
+  /** A quick comprehension question asked after reading. */
+  quiz?: StoryQuiz;
 };
 
 export type AccuracyBand = { min: number; max: number };
