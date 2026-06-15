@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
-import { lookup, POS_BADGE } from "@/app/dictionary";
+import { describe, POS_BADGE } from "@/app/dictionary";
 import {
   alignReading,
   rateAttempt,
@@ -371,7 +371,7 @@ function ReadAloud({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [grading, setGrading] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
-  const pickedEntry = picked ? lookup(picked) : null;
+  const pickedEntry = picked ? describe(picked) : null;
 
   // A new passage closes the word card.
   useEffect(() => setPicked(null), [passage.id]);
@@ -758,7 +758,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
 
   const word = index !== null ? words[index] : null;
   const rating = index !== null ? results[index] : undefined;
-  const entry = word ? lookup(word) : null;
+  const entry = word ? describe(word) : null;
   const greens = Object.values(results).filter((r) => r === "green").length;
   const justRated = useRef(false);
 

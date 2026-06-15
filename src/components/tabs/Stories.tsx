@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import { levels, type Level } from "@/app/stories";
-import { lookup, POS_BADGE } from "@/app/dictionary";
+import { describe, POS_BADGE } from "@/app/dictionary";
 import { speak, stopSpeech, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import StoryGames from "@/components/StoryGames";
@@ -195,7 +195,7 @@ function Reader({
   const isLast = index === level.stories.length - 1;
   const [playing, setPlaying] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
-  const entry = picked ? lookup(picked) : null;
+  const entry = picked ? describe(picked) : null;
   const [quizPick, setQuizPick] = useState<number | null>(null);
 
   // Changing story closes the word card, resets the quiz, stops the voice.
