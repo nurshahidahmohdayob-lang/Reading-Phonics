@@ -908,6 +908,44 @@ export const POS_BADGE: Record<
   article: { label: "🔹 little helper word · article", chip: "bg-zinc-100 text-zinc-600" },
 };
 
+/** Text colour per part of speech, for colour-coding words as they're read.
+    Mirrors the POS_BADGE palette so a word's colour matches the grammar badge
+    shown when it's tapped. */
+export const POS_COLOR: Record<PartOfSpeech, string> = {
+  noun: "text-sky-600",
+  verb: "text-emerald-600",
+  adjective: "text-pink-600",
+  adverb: "text-amber-600",
+  pronoun: "text-violet-600",
+  preposition: "text-orange-600",
+  conjunction: "text-teal-600",
+  article: "text-zinc-400",
+};
+
+/** Short grammar name, for the colour legend. */
+export const POS_SHORT: Record<PartOfSpeech, string> = {
+  noun: "noun",
+  verb: "verb",
+  adjective: "adjective",
+  adverb: "adverb",
+  pronoun: "pronoun",
+  preposition: "preposition",
+  conjunction: "conjunction",
+  article: "article",
+};
+
+/** The parts of speech in a sensible teaching order, for legends. */
+export const POS_ORDER: PartOfSpeech[] = [
+  "noun",
+  "verb",
+  "adjective",
+  "adverb",
+  "pronoun",
+  "preposition",
+  "conjunction",
+  "article",
+];
+
 /** Look up a word's meaning + picture, ignoring case and punctuation.
     Understands common word forms: cats -> cat, hopped -> hop, stories ->
     story, Sam's -> sam, running -> run. */

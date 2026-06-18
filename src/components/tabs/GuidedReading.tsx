@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
-import { describe, POS_BADGE } from "@/app/dictionary";
+import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
+import GrammarLegend from "@/components/GrammarLegend";
 import {
   alignReading,
   rateAttempt,
@@ -372,11 +373,17 @@ function ReadAloud({
   const [grading, setGrading] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const pickedEntry = picked ? describe(picked) : null;
+  const [colors, setColors] = useState(true);
 
   // A new passage closes the word card.
   useEffect(() => setPicked(null), [passage.id]);
 
   const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
+  // The part of speech of each word, computed once per passage.
+  const wordPos = useMemo(
+    () => words.map((w) => describe(w.replace(/[.,!?;:"]/g, "")).pos),
+    [words],
+  );
   const spoken = useMemo(
     () => (transcript ? transcript.split(/\s+/) : []),
     [transcript],
@@ -471,15 +478,19 @@ function ReadAloud({
                   sayWord(clean);
                   setPicked(clean.toLowerCase());
                 }}
-                className={`rounded-lg px-1 text-zinc-800 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
-                  picked === clean.toLowerCase() ? "bg-amber-200/80" : ""
-                }`}
+                className={`rounded-lg px-1 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
+                  colors ? POS_COLOR[wordPos[i]] : "text-zinc-800"
+                } ${picked === clean.toLowerCase() ? "bg-amber-200/80" : ""}`}
               >
                 {w}
               </button>
             );
           })}
         </p>
+      </div>
+
+      <div className="mt-4">
+        <GrammarLegend on={colors} onToggle={() => setColors((v) => !v)} />
       </div>
 
       {/* Picture dictionary for the tapped word */}

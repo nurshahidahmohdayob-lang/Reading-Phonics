@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { levels, type Level } from "@/app/stories";
-import { describe, POS_BADGE } from "@/app/dictionary";
+import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
 import { speak, stopSpeech, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import StoryGames from "@/components/StoryGames";
+import GrammarLegend from "@/components/GrammarLegend";
 
 const PER_PAGE = 10;
 
@@ -197,6 +198,17 @@ function Reader({
   const [picked, setPicked] = useState<string | null>(null);
   const entry = picked ? describe(picked) : null;
   const [quizPick, setQuizPick] = useState<number | null>(null);
+  const [colors, setColors] = useState(true);
+
+  // Work out each word's part of speech once, so colouring is free on re-render.
+  const tokens = useMemo(
+    () =>
+      text.split(" ").map((word) => {
+        const clean = word.replace(/[.,!?;:"]/g, "");
+        return { word, clean, pos: describe(clean).pos };
+      }),
+    [text],
+  );
 
   // Changing story closes the word card, resets the quiz, stops the voice.
   useEffect(() => {
@@ -341,9 +353,7 @@ function Reader({
             <div className="flex flex-col items-center gap-5 px-6 py-7">
               {/* Tap any word to hear it */}
               <p className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-center text-xl font-semibold leading-relaxed text-zinc-800 sm:text-2xl">
-          {text.split(" ").map((word, i) => {
-            const clean = word.replace(/[.,!?;:"]/g, "");
-            return (
+          {tokens.map(({ word, clean, pos }, i) => (
               <button
                 key={i}
                 onClick={() => {
@@ -351,14 +361,16 @@ function Reader({
                   setPicked(clean.toLowerCase());
                 }}
                 className={`rounded-md px-0.5 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
-                  picked === clean.toLowerCase() ? "bg-amber-200/80" : ""
-                }`}
+                  colors ? POS_COLOR[pos] : ""
+                } ${picked === clean.toLowerCase() ? "bg-amber-200/80" : ""}`}
               >
                 {word}
               </button>
-            );
-          })}
+          ))}
         </p>
+
+              <GrammarLegend on={colors} onToggle={() => setColors((v) => !v)} />
+
 
 
               {/* Quick quiz after the story */}

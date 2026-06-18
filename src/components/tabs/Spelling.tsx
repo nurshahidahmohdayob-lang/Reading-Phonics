@@ -285,6 +285,10 @@ export default function Spelling() {
 
   return (
     <PlayLevel
+      // Remount on every level change so the new level starts fresh — without
+      // this, "Level N+1 →" keeps the finished level's state and the next
+      // level opens already showing the complete screen.
+      key={level}
       level={level}
       onExit={() => setLevel(null)}
       onComplete={() => markDone(level)}
