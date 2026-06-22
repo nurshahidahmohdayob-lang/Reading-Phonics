@@ -8,6 +8,7 @@ import TrickyWords from "@/components/tabs/TrickyWords";
 import Stories from "@/components/tabs/Stories";
 import GuidedReading from "@/components/tabs/GuidedReading";
 import SoundItOut from "@/components/tabs/SoundItOut";
+import Flashcards from "@/components/tabs/Flashcards";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
 import { stopSpeech } from "@/lib/speak";
@@ -15,6 +16,7 @@ import { stopSpeech } from "@/lib/speak";
 type SectionId =
   | "phonics"
   | "soundout"
+  | "flashcards"
   | "formation"
   | "spelling"
   | "tricky"
@@ -44,6 +46,14 @@ const SECTIONS: {
     emoji: "🔤",
     color: "from-[#DCE3FF] to-[#BFCBFF]", // periwinkle
     text: "text-indigo-700",
+  },
+  {
+    id: "flashcards",
+    label: "Flashcards",
+    blurb: "Flip cards: sounds then words",
+    emoji: "🎴",
+    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
+    text: "text-teal-700",
   },
   {
     id: "formation",
@@ -168,6 +178,7 @@ export default function Home() {
           <div className="mt-6 flex w-full flex-1 flex-col items-center">
             {section === "phonics" && <Phonics />}
             {section === "soundout" && <SoundItOut />}
+            {section === "flashcards" && <Flashcards />}
             {section === "formation" && <LetterFormation />}
             {section === "spelling" && <Spelling />}
             {section === "tricky" && <TrickyWords />}
