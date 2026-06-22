@@ -8,6 +8,23 @@ import { openFlashcards } from "@/lib/flashcardPrint";
 
 type Mode = "menu" | "sounds" | "words";
 
+/* A single, soft pastel for each phonics group (cycled for word families).
+   `card` = the flip-card background (one solid tone, no gradient),
+   `pick` = the selected picker chip, `bgHex` = the same colour as a hex so the
+   printed card matches the screen. Pastels are light, so cards use dark text. */
+const COLORS = [
+  { card: "bg-[#FFEAF2]", pick: "bg-pink-200 text-pink-900", bgHex: "#FFEAF2" },
+  { card: "bg-[#FFEEDD]", pick: "bg-orange-200 text-orange-900", bgHex: "#FFEEDD" },
+  { card: "bg-[#FFF8D6]", pick: "bg-amber-200 text-amber-900", bgHex: "#FFF8D6" },
+  { card: "bg-[#E5F7EC]", pick: "bg-emerald-200 text-emerald-900", bgHex: "#E5F7EC" },
+  { card: "bg-[#E3F5F6]", pick: "bg-teal-200 text-teal-900", bgHex: "#E3F5F6" },
+  { card: "bg-[#E8F2FF]", pick: "bg-sky-200 text-sky-900", bgHex: "#E8F2FF" },
+  { card: "bg-[#ECEFFF]", pick: "bg-indigo-200 text-indigo-900", bgHex: "#ECEFFF" },
+  { card: "bg-[#F2EAFF]", pick: "bg-violet-200 text-violet-900", bgHex: "#F2EAFF" },
+  { card: "bg-[#FFECE6]", pick: "bg-rose-200 text-rose-900", bgHex: "#FFECE6" },
+];
+const colorFor = (i: number) => COLORS[i % COLORS.length];
+
 export default function Flashcards() {
   const [mode, setMode] = useState<Mode>("menu");
 
@@ -86,7 +103,7 @@ function FlipCard({
         }`}
       >
         <div
-          className={`flip-face flex flex-col items-center justify-center gap-4 rounded-[2rem] bg-gradient-to-br ${accent} px-6 text-center text-white shadow-lg ring-4 ring-white/60`}
+          className={`flip-face flex flex-col items-center justify-center gap-4 rounded-[2rem] ${accent} px-6 text-center text-zinc-800 shadow-lg ring-4 ring-white/60 print:text-zinc-900 print:shadow-none print:ring-1 print:ring-zinc-300 print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact]`}
         >
           {front}
         </div>
@@ -172,6 +189,7 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
           { text: `starts with “${s.label}”`, cls: "sub" as const },
         ],
       })),
+      colorFor(g).bgHex,
     );
   }
 
@@ -200,7 +218,7 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
             onClick={() => pickGroup(idx)}
             className={`h-9 w-9 rounded-full text-sm font-extrabold shadow-sm transition-all active:scale-90 ${
               idx === g
-                ? "bg-brand-600 text-white"
+                ? colorFor(idx).pick
                 : "bg-white text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300"
             }`}
           >
@@ -216,14 +234,14 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
         <FlipCard
           flipped={flipped}
           onFlip={() => setFlipped((v) => !v)}
-          accent="from-brand-400 to-brand-600"
+          accent={colorFor(g).card}
           front={
             <>
               <span className="text-8xl font-black lowercase drop-shadow-sm">
                 {card.label}
               </span>
               {card.note && (
-                <span className="rounded-full bg-white/25 px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-white/60 px-3 py-1 text-sm font-bold text-zinc-700">
                   {card.note}
                 </span>
               )}
@@ -233,7 +251,7 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
               >
                 🔊 Hear sound
               </button>
-              <span className="text-sm font-semibold text-white/80">
+              <span className="text-sm font-semibold text-zinc-500">
                 tap the card to flip 🔄
               </span>
             </>
@@ -345,6 +363,7 @@ function WordDeck({ onBack }: { onBack: () => void }) {
           { text: w.sounds.join(" · "), cls: "sub" as const },
         ],
       })),
+      colorFor(f).bgHex,
     );
   }
 
@@ -373,7 +392,7 @@ function WordDeck({ onBack }: { onBack: () => void }) {
             onClick={() => pickFamily(idx)}
             className={`rounded-full px-3 py-1.5 text-sm font-bold shadow-sm transition-all active:scale-95 ${
               idx === f
-                ? "bg-teal-600 text-white"
+                ? colorFor(idx).pick
                 : "bg-white text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300"
             }`}
           >
@@ -386,14 +405,14 @@ function WordDeck({ onBack }: { onBack: () => void }) {
         <FlipCard
           flipped={flipped}
           onFlip={() => setFlipped((v) => !v)}
-          accent="from-teal-400 to-teal-600"
+          accent={colorFor(f).card}
           front={
             <>
               <span className="text-[7rem] leading-none">{card.emoji}</span>
-              <span className="text-lg font-bold text-white/90">
+              <span className="text-lg font-bold text-zinc-600">
                 What is this word?
               </span>
-              <span className="text-sm font-semibold text-white/80">
+              <span className="text-sm font-semibold text-zinc-500">
                 tap the card to flip 🔄
               </span>
             </>
