@@ -174,6 +174,12 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
     stopSpeech();
     playSoundClip(card.label, card.say);
   }
+  /** Tap the picture or the word to hear the whole word (no flip). */
+  function sayWord(e: React.MouseEvent) {
+    e.stopPropagation();
+    stopSpeech();
+    speak(card.word, 0.8);
+  }
   function printDeck() {
     stopSpeech();
     openFlashcards(
@@ -258,10 +264,20 @@ function SoundDeck({ onBack }: { onBack: () => void }) {
           }
           back={
             <>
-              <span className="text-8xl">{card.emoji}</span>
-              <span className="whitespace-nowrap text-5xl font-black lowercase text-zinc-700 dark:text-zinc-100">
+              <button
+                onClick={sayWord}
+                className="text-8xl transition-transform active:scale-90"
+                aria-label={`Hear the word ${card.word}`}
+              >
+                {card.emoji}
+              </button>
+              <button
+                onClick={sayWord}
+                className="whitespace-nowrap text-5xl font-black lowercase text-zinc-700 transition-transform active:scale-95 dark:text-zinc-100"
+                aria-label={`Hear the word ${card.word}`}
+              >
                 {card.word}
-              </span>
+              </button>
               <span className="text-base font-semibold text-zinc-400">
                 {card.word} starts with “{card.label}”
               </span>
@@ -324,6 +340,14 @@ function WordDeck({ onBack }: { onBack: () => void }) {
     e.stopPropagation();
     stopBlend();
     playSoundClip(card.sounds[idx] ?? card.say[idx], card.say[idx]);
+  }
+
+  /** Tap the picture or the word to hear the whole word (no flip). */
+  function sayWord(e: React.MouseEvent) {
+    e.stopPropagation();
+    stopBlend();
+    stopSpeech();
+    speak(card.text, 0.8);
   }
 
   /** Light each sound in turn, then say the whole word. */
@@ -408,20 +432,30 @@ function WordDeck({ onBack }: { onBack: () => void }) {
           accent={colorFor(f).card}
           front={
             <>
-              <span className="text-[7rem] leading-none">{card.emoji}</span>
+              <button
+                onClick={sayWord}
+                className="text-[7rem] leading-none transition-transform active:scale-90"
+                aria-label={`Hear the word ${card.text}`}
+              >
+                {card.emoji}
+              </button>
               <span className="text-lg font-bold text-zinc-600">
                 What is this word?
               </span>
               <span className="text-sm font-semibold text-zinc-500">
-                tap the card to flip 🔄
+                tap the picture 🔊 · tap the card to flip 🔄
               </span>
             </>
           }
           back={
             <>
-              <span className="whitespace-nowrap text-6xl font-black lowercase text-zinc-700 dark:text-zinc-100">
+              <button
+                onClick={sayWord}
+                className="whitespace-nowrap text-6xl font-black lowercase text-zinc-700 transition-transform active:scale-95 dark:text-zinc-100"
+                aria-label={`Hear the word ${card.text}`}
+              >
                 {card.text}
-              </span>
+              </button>
               <div className="flex flex-wrap items-end justify-center gap-2">
                 {card.sounds.map((s, idx) => (
                   <button
