@@ -77,6 +77,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
 function SignIn({ onSignedIn }: { onSignedIn: (name: string) => void }) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,7 +90,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (name: string) => void }) {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.ok) {
@@ -132,6 +133,14 @@ function SignIn({ onSignedIn }: { onSignedIn: (name: string) => void }) {
             placeholder="your.name@school email"
             autoFocus
             autoComplete="email"
+            className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="staff password"
+            autoComplete="current-password"
             className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           />
           {error && (

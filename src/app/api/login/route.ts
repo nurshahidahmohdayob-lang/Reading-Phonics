@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import {
   findActiveStaffByEmail,
@@ -6,11 +7,20 @@ import {
 } from "@/lib/staffApi";
 import { createToken, SESSION_COOKIE } from "@/lib/session";
 
+/** Constant-time string compare (hash first so length never leaks). */
+function safeEqual(a: string, b: string): boolean {
+  const ha = createHash("sha256").update(a).digest();
+  const hb = createHash("sha256").update(b).digest();
+  return timingSafeEqual(ha, hb);
+}
+
 export async function POST(request: Request) {
   let email = "";
+  let password = "";
   try {
     const body = await request.json();
     email = typeof body?.email === "string" ? body.email.trim() : "";
+    password = typeof body?.password === "string" ? body.password : "";
   } catch {
     /* fall through to validation below */
   }
@@ -19,6 +29,22 @@ export async function POST(request: Request) {
     return Response.json(
       { ok: false, error: "Please enter a valid email address." },
       { status: 400 },
+    );
+  }
+
+  // Shared staff password — checked BEFORE the directory lookup so outsiders
+  // can't probe which emails are active staff without knowing the password.
+  const expected = process.env.STAFF_PASSWORD;
+  if (!expected) {
+    return Response.json(
+      { ok: false, error: "Sign-in isn't set up yet. Ask your administrator." },
+      { status: 503 },
+    );
+  }
+  if (!password || !safeEqual(password, expected)) {
+    return Response.json(
+      { ok: false, error: "Incorrect password." },
+      { status: 401 },
     );
   }
 
