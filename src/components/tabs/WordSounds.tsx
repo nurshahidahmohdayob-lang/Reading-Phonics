@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { wordFamilies, type WordCard } from "@/app/words";
 import { playSoundClip, speak } from "@/lib/speak";
+import BlendingGames from "@/components/BlendingGames";
 
 export default function WordSounds() {
   const [familyIndex, setFamilyIndex] = useState(0);
@@ -10,6 +11,7 @@ export default function WordSounds() {
     wordFamilies[0].words[0],
   );
   const [active, setActive] = useState(-1); // highlighted sound during blend
+  const [playing, setPlaying] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const family = wordFamilies[familyIndex];
@@ -54,11 +56,22 @@ export default function WordSounds() {
     );
   }
 
+  // Games made from THIS word family open as their own page.
+  if (playing) {
+    return <BlendingGames family={family} onClose={() => setPlaying(false)} />;
+  }
+
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <p className="text-zinc-500 dark:text-zinc-400">
         Sound out each letter, then blend it into a word!
       </p>
+      <button
+        onClick={() => setPlaying(true)}
+        className="mt-3 flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-base font-extrabold text-white shadow-md active:scale-95"
+      >
+        🎮 Play {family.family} games
+      </button>
 
       {/* Word family picker */}
       <div className="mt-4 flex flex-wrap justify-center gap-2">
