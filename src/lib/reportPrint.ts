@@ -92,29 +92,25 @@ ul.tips li { margin: 5px 0; font-weight: 600; }
 .stats { font-weight: 700; font-size: 13px; color: #3f3f46; margin: 0; }
 @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; } }
 @media print {
-  @page { size: A4; margin: 9mm; }
+  @page { size: A4; margin: 12mm; }
   html, body { background: #fff; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bar { display: none; }
-  .page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; padding: 0; font-size: 11px; }
-  h1 { font-size: 17px; }
-  .name { font-size: 20px; margin-top: 2px; }
-  .sub { font-size: 11px; }
-  .row { gap: 8px; margin-top: 8px; }
-  .card { padding: 7px 10px; border-radius: 10px; }
-  .card .v { font-size: 15px; } .card .k { font-size: 9px; } .card .vs { font-size: 10px; }
-  .section { margin-top: 10px; }
-  .section h2 { font-size: 12px; margin: 0 0 5px; }
-  .cols2 { gap: 10px; }
-  .strand { margin: 4px 0; } .strand .lab { width: 130px; font-size: 11px; }
-  .track { height: 8px; } .strand .pct { font-size: 11px; }
-  .stats { font-size: 11px; }
-  .bandrow { padding: 4px 8px; margin-top: 4px; border-radius: 8px; }
-  .bandrow .bl { font-size: 11px; } .bandrow .ba { font-size: 9.5px; margin-top: 1px; }
-  .bandrow .br, .bandrow .curtag { font-size: 9.5px; }
-  ul.tips { margin: 2px 0 0; padding-left: 16px; } ul.tips li { margin: 2px 0; font-size: 10.5px; }
-  .chip { font-size: 11px; padding: 2px 7px; }
-  .foot { margin-top: 8px; font-size: 9px; padding-top: 6px; }
+  /* Fill the whole A4 page (297mm − 2×12mm margins = 273mm printable). */
+  .page {
+    box-shadow: none; margin: 0; border-radius: 0; max-width: none; padding: 0;
+    min-height: 273mm; display: flex; flex-direction: column;
+  }
+  h1 { font-size: 26px; }
+  .name { font-size: 32px; }
+  .row { margin-top: 18px; }
+  .card { padding: 16px 18px; }
+  .section { margin-top: 26px; }
+  .bandrow { padding: 11px 14px; margin-top: 10px; }
+  .bandrow .ba { font-size: 13px; }
+  .strand { margin: 13px 0; } .track { height: 14px; }
+  ul.tips li { margin: 8px 0; font-size: 14px; }
+  .support { flex: 1; }
   .section, .row, .cols2 { break-inside: avoid; }
 }
 `;
@@ -140,19 +136,24 @@ export function openReport(d: ReportData): void {
     })
     .join("");
 
+  const bandRow = (
+    b: { label: string; range: string; about: string },
+    cur: boolean,
+  ) =>
+    `<div class="bandrow${cur ? " cur" : ""}">
+      <span class="bl">${b.label}</span><span class="br">${b.range}</span>${cur ? '<span class="curtag">★ this child</span>' : ""}
+      <div class="ba">${esc(b.about)}</div>
+    </div>`;
+
   const READER_BANDS = [
     { label: "Emerging Reader", range: "below 60%", about: "Just beginning — learning letter sounds and first words. Needs lots of support and very easy, decodable books." },
     { label: "Developing Reader", range: "60–74%", about: "Building decoding and fluency. Reads simple texts with guided practice and still meets many tricky words." },
     { label: "Instructional Reader", range: "75–89%", about: "Reads well with a little teaching support. The ideal zone for guided reading and learning new skills." },
     { label: "Independent Reader", range: "90–100%", about: "Reads this level smoothly and on their own, with strong understanding. Ready for more challenging books." },
   ];
-  const readerLegend = READER_BANDS.map((b) => {
-    const cur = b.label === d.categoryLabel;
-    return `<div class="bandrow${cur ? " cur" : ""}">
-          <span class="bl">${b.label}</span><span class="br">${b.range}</span>${cur ? '<span class="curtag">★ this child</span>' : ""}
-          <div class="ba">${esc(b.about)}</div>
-        </div>`;
-  }).join("");
+  const readerLegend = READER_BANDS.map((b) =>
+    bandRow(b, b.label === d.categoryLabel),
+  ).join("");
 
   const ACC_BANDS = [
     { label: "Independent", range: "98–100%", about: "Reads accurately on their own — ready for harder books." },
@@ -160,13 +161,7 @@ export function openReport(d: ReportData): void {
     { label: "Frustration", range: "below 95%", about: "Too many words missed — this text is too hard, so step down a level." },
   ];
   const accLegend = d.accuracyBand
-    ? ACC_BANDS.map((b) => {
-        const cur = b.label === d.accuracyBand!.label;
-        return `<div class="bandrow${cur ? " cur" : ""}">
-          <span class="bl">${b.label}</span><span class="br">${b.range}</span>${cur ? '<span class="curtag">★ this child</span>' : ""}
-          <div class="ba">${esc(b.about)}</div>
-        </div>`;
-      }).join("")
+    ? ACC_BANDS.map((b) => bandRow(b, b.label === d.accuracyBand!.label)).join("")
     : "";
 
   const tips = d.support.map((t) => `<li>${esc(t)}</li>`).join("");
@@ -228,17 +223,12 @@ export function openReport(d: ReportData): void {
       ${d.running ? `<div class="section"><h2>Running record</h2>${running}</div>` : "<div></div>"}
     </div>
 
-    <div class="section">
+    <div class="section support">
       <h2>How to support ${esc(d.studentName)}</h2>
       <ul class="tips">${tips}</ul>
       ${chips ? `<div style="font-weight:800;margin-top:8px;font-size:13px">Practise these words:</div><div class="chips">${chips}</div>` : ""}
     </div>
 
-    <div class="foot">
-      Informal classroom assessment — read as a guide (±1 term). Accuracy 40% ·
-      Fluency 30% · Comprehension 30% (incl. vocabulary). For a firm level, run a
-      second passage at this level and compare.
-    </div>
   </div>
 
   <script>
