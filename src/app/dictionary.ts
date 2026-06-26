@@ -142,6 +142,15 @@ const DICTIONARY: Record<string, DictEntry> = {
   scared: { emoji: "😨", meaning: "Feeling afraid.", pos: "adjective" },
   proud: { emoji: "🏅", meaning: "Pleased about something good you did.", pos: "adjective" },
   kind: { emoji: "🤗", meaning: "Friendly and caring to others.", pos: "adjective" },
+  love: { emoji: "❤️", meaning: "To care about someone very, very much.", pos: "verb" },
+  hug: { emoji: "🤗", meaning: "To hold someone close with your arms.", pos: "verb" },
+  smile: { emoji: "😊", meaning: "To turn your mouth up when you are happy.", pos: "verb" },
+  cry: { emoji: "😢", meaning: "To let tears fall when you are sad or hurt.", pos: "verb" },
+  hope: { emoji: "🤞", meaning: "To wish for something good to happen.", pos: "verb" },
+  dream: { emoji: "💭", meaning: "Pictures or wishes in your mind, often when asleep.", pos: "noun" },
+  sad: { emoji: "😢", meaning: "Feeling unhappy.", pos: "adjective" },
+  angry: { emoji: "😠", meaning: "Feeling cross or upset.", pos: "adjective" },
+  safe: { emoji: "🛟", meaning: "Not in any danger.", pos: "adjective" },
   golden: { emoji: "🟡", meaning: "Shiny yellow, like gold.", pos: "adjective" },
   enormous: { emoji: "🐳", meaning: "Extremely big.", pos: "adjective" },
   ancient: { emoji: "🏺", meaning: "Very, very old.", pos: "adjective" },
@@ -1026,10 +1035,11 @@ function deriveFallback(word: string): DictEntry {
       meaning: "A doing word — an action that already happened.",
       pos: "verb",
     };
-  // Catch-all: treat as a naming word.
+  // Catch-all: unknown word. Use a NEUTRAL "letters" symbol — never a picture
+  // like a book that would wrongly suggest a meaning (e.g. for "love").
   return {
-    emoji: "📖",
-    meaning: "A word from our story. Look at the picture, then sound it out!",
+    emoji: "🔤",
+    meaning: "A word from our story — let's sound it out together!",
     pos: "noun",
   };
 }

@@ -338,6 +338,10 @@ export type PlacementAction = "up" | "stay" | "down";
 export type BenchmarkBand = {
   label: "Independent" | "Instructional" | "Frustration";
   meaning: string;
+  /** The accuracy range this band covers, e.g. "95–97%". */
+  range: string;
+  /** A fuller explanation of what the band means for teaching. */
+  note: string;
   /** Tailwind classes for a coloured pill. */
   tone: string;
 };
@@ -353,17 +357,23 @@ export function benchmarkBand(accuracy: number): BenchmarkBand {
     return {
       label: "Independent",
       meaning: "Can read this alone 🎉",
+      range: "98–100%",
+      note: "Reads this level accurately on their own — the text is comfortable, so they are ready for harder books.",
       tone: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
     };
   if (accuracy >= 95)
     return {
       label: "Instructional",
       meaning: "Great with a little help 💪",
+      range: "95–97%",
+      note: "Reads most words but needs a little teaching support — this is the ideal level for guided reading.",
       tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
     };
   return {
     label: "Frustration",
     meaning: "Let's try an easier text 🌱",
+    range: "below 95%",
+    note: "Too many words were missed for this text — it is too hard right now, so step down to an easier level.",
     tone: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
   };
 }

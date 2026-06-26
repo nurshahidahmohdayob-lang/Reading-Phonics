@@ -16,6 +16,7 @@ import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { rateAttempt, alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
+import { openReport } from "@/lib/reportPrint";
 
 /* ---------- Stage 1: a 50-word ladder from easiest to ~Lexile 1050 ---------- */
 const LADDER: { w: string; lvl: number }[] = [
@@ -98,6 +99,7 @@ type Comp = CompResult | "skipped" | null;
 
 export default function ReadingAssessment() {
   const [phase, setPhase] = useState<Phase>("intro");
+  const [studentName, setStudentName] = useState("");
   const [wordRatings, setWordRatings] = useState<Record<string, Rating>>({});
   const [suggestIdx, setSuggestIdx] = useState(0);
   const [read, setRead] = useState<ReadResult | null>(null);
@@ -210,6 +212,7 @@ export default function ReadingAssessment() {
   if (phase === "report") {
     return (
       <Report
+        studentName={studentName.trim() || "Student"}
         wordRatings={wordRatings}
         suggestIdx={suggestIdx}
         read={read}
@@ -237,14 +240,25 @@ export default function ReadingAssessment() {
           <span className="rounded-full bg-white/70 px-3 py-1">⏱️ Fluency 30%</span>
           <span className="rounded-full bg-white/70 px-3 py-1">💡 Comprehension 30%</span>
         </div>
+        <input
+          type="text"
+          value={studentName}
+          onChange={(e) => setStudentName(e.target.value)}
+          placeholder="Student's name"
+          autoComplete="off"
+          className="w-full max-w-xs rounded-2xl border-4 border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold text-zinc-700 shadow-sm outline-none focus:border-rose-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+        />
         <button
           onClick={() => setPhase("words")}
-          className="mt-1 rounded-full bg-rose-500 px-10 py-3.5 text-xl font-extrabold text-white shadow-lg active:scale-95"
+          disabled={!studentName.trim()}
+          className="mt-1 rounded-full bg-rose-500 px-10 py-3.5 text-xl font-extrabold text-white shadow-lg active:scale-95 disabled:opacity-50"
         >
           ▶ Start
         </button>
         <p className="text-xs font-semibold opacity-70">
-          Best in Chrome or Edge for the microphone — or mark each item by hand.
+          {studentName.trim()
+            ? "Best in Chrome or Edge for the microphone — or mark each item by hand."
+            : "Enter the student's name to begin."}
         </p>
       </div>
 
@@ -486,6 +500,11 @@ function PassageReader({
     useSpeechRecognition();
   const [page, setPage] = useState(0);
   const [sc, setSc] = useState(0); // self-corrections (teacher-entered)
+  const [wrong, setWrong] = useState(0); // misread words — seeded by the mic, adjusted by teacher
+  const [didMic, setDidMic] = useState(false); // has the mic produced a starting count?
+  const [micErrorCount, setMicErrorCount] = useState(0); // mic's original misread count
+  const [micWpm, setMicWpm] = useState<number | null>(null);
+  const micMissed = useRef<string[]>([]); // read only in finishCount (event handler)
   const startedAt = useRef<number | null>(null);
   const pages = passage.pages;
   const fullText = pages.map((p) => p.text).join(" ");
@@ -493,25 +512,43 @@ function PassageReader({
   const isLast = page === pages.length - 1;
   const cur = pages[page];
 
-  function finishMic() {
+  // The student finished reading aloud: take the mic's best guess at the misread
+  // count + timing, and SEED the teacher counter with it (to adjust), rather
+  // than finalising — so the result combines the mic and the teacher's ear.
+  function reviewMic() {
     stop();
     const spoken = transcript.split(/\s+/).filter(Boolean);
     const status = alignReading(words, spoken);
     const correct = status.filter((s) => s === "correct").length;
-    const errors = words.length - correct;
-    const accuracy = Math.round((correct / words.length) * 100);
     const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
-    const wpm = elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
-    const missed = words
+    setMicWpm(elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null);
+    micMissed.current = words
       .filter((_, i) => status[i] !== "correct")
       .map((w) => w.replace(/[.,!?;:"]/g, ""))
       .filter(Boolean);
-    onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm }, missed);
+    const micErr = words.length - correct;
+    setMicErrorCount(micErr);
+    setWrong(micErr);
+    setDidMic(true);
   }
 
   function finishManual(accuracy: number) {
     const errors = Math.round(words.length * (1 - accuracy / 100));
     onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm: null }, []);
+  }
+
+  // Finalise: accuracy from the (mic-seeded, teacher-adjusted) misread count.
+  // Keeps the mic's timing, and trims its missed-word list to the final count.
+  function finishCount() {
+    const errors = Math.min(words.length, Math.max(0, wrong));
+    const accuracy = Math.round(((words.length - errors) / words.length) * 100);
+    let wpm = micWpm;
+    if (wpm == null && startedAt.current) {
+      const elapsed = (Date.now() - startedAt.current) / 1000;
+      wpm = elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
+    }
+    const missed = micMissed.current.slice(0, errors);
+    onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm }, missed);
   }
 
   return (
@@ -640,16 +677,57 @@ function PassageReader({
             </button>
           </div>
 
+          {/* Read aloud first — the mic produces a starting misread count */}
           {supported && listening && (
             <button
-              onClick={finishMic}
+              onClick={reviewMic}
               className="mt-4 animate-pulse rounded-full bg-rose-600 px-8 py-3.5 text-lg font-extrabold text-white shadow-lg active:scale-95"
             >
-              ✓ Done reading
+              ✓ Done reading aloud
             </button>
           )}
+
+          {/* Misread count — seeded by the mic, then adjusted by the teacher's ear */}
+          <div className="mt-4 w-full max-w-md rounded-2xl bg-rose-50 p-4 text-center shadow-sm ring-2 ring-rose-100 dark:bg-rose-950/30 dark:ring-rose-900/40">
+            <p className="text-sm font-extrabold text-rose-700 dark:text-rose-300">
+              ✍️ Words read wrongly
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              {didMic
+                ? `The mic marked ${micErrorCount} of ${words.length}. Adjust it to what you actually heard — slang and accents can fool the mic.`
+                : `Out of ${words.length} words, how many did the student read wrongly?`}
+            </p>
+            <div className="mt-2 flex items-center justify-center gap-4">
+              <button
+                onClick={() => setWrong((n) => Math.max(0, n - 1))}
+                className="grid h-9 w-9 place-items-center rounded-full bg-white font-black text-rose-600 shadow-sm active:scale-90 dark:bg-zinc-800"
+              >
+                −
+              </button>
+              <span className="w-12 text-center text-3xl font-black text-zinc-700 dark:text-zinc-100">
+                {wrong}
+              </span>
+              <button
+                onClick={() => setWrong((n) => Math.min(words.length, n + 1))}
+                className="grid h-9 w-9 place-items-center rounded-full bg-white font-black text-rose-600 shadow-sm active:scale-90 dark:bg-zinc-800"
+              >
+                +
+              </button>
+            </div>
+            <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400">
+              = {Math.round(((words.length - Math.min(words.length, wrong)) / words.length) * 100)}% accuracy
+              {didMic && micWpm != null && ` · ${micWpm} wpm`}
+            </p>
+            <button
+              onClick={finishCount}
+              className="mt-3 rounded-full bg-rose-600 px-7 py-3 text-base font-extrabold text-white shadow-lg active:scale-95"
+            >
+              ✓ Confirm result
+            </button>
+          </div>
+
           <p className="mt-4 text-sm font-bold text-zinc-400">
-            {supported ? "…or mark how it went:" : "How did the reading go?"}
+            …or a quick estimate:
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2.5">
             <button onClick={() => finishManual(98)} className="rounded-full bg-green-500 px-5 py-3 font-bold text-white shadow-sm active:scale-95">
@@ -881,6 +959,77 @@ function ReaderGuide({ currentLabel }: { currentLabel?: string }) {
         <p className="mt-1 text-center text-[11px] font-semibold text-zinc-400">
           The overall score blends accuracy (40%), fluency (30%) and
           comprehension (30%, including vocabulary).
+        </p>
+      </div>
+    </details>
+  );
+}
+
+/* The three accuracy bands from the Reading Level Placement Guide (98 / 95). */
+export const ACCURACY_BANDS = [
+  {
+    label: "Independent",
+    range: "98–100%",
+    emoji: "🦅",
+    tone: "from-[#CFF5E1] to-[#A7E9C8] text-emerald-800",
+    about:
+      "Reads this text accurately and on their own — it is comfortable, so they are ready for harder books.",
+  },
+  {
+    label: "Instructional",
+    range: "95–97%",
+    emoji: "📘",
+    tone: "from-[#D3EBFF] to-[#ABD9FF] text-sky-800",
+    about:
+      "Reads most words but needs a little teaching support — the ideal level for guided reading.",
+  },
+  {
+    label: "Frustration",
+    range: "below 95%",
+    emoji: "🌱",
+    tone: "from-[#FFE3E0] to-[#FFC9C2] text-rose-800",
+    about:
+      "Too many words were missed — this text is too hard right now, so step down to an easier level.",
+  },
+];
+
+/** Collapsible legend explaining each accuracy band, current one highlighted. */
+function AccuracyGuide({ currentLabel }: { currentLabel?: string }) {
+  return (
+    <details className="mt-3 w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+      <summary className="flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-extrabold text-zinc-600 select-none dark:text-zinc-200">
+        <span>🎯 What do the accuracy levels mean?</span>
+        <span className="text-xs font-bold text-zinc-400">tap to open</span>
+      </summary>
+      <div className="flex flex-col gap-2 px-4 pb-4">
+        {ACCURACY_BANDS.map((c) => {
+          const isCurrent = c.label === currentLabel;
+          return (
+            <div
+              key={c.label}
+              className={`rounded-xl bg-gradient-to-br ${c.tone} p-3 ${
+                isCurrent ? "ring-4 ring-rose-300" : "opacity-80"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{c.emoji}</span>
+                <span className="font-extrabold">{c.label}</span>
+                <span className="ml-auto rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-bold">
+                  {c.range}
+                </span>
+                {isCurrent && (
+                  <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-extrabold text-rose-600">
+                    ★ This child
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs font-semibold opacity-90">{c.about}</p>
+            </div>
+          );
+        })}
+        <p className="mt-1 text-center text-[11px] font-semibold text-zinc-400">
+          Accuracy = words read correctly ÷ total words. Bands follow the
+          Reading Level Placement Guide (98% / 95%).
         </p>
       </div>
     </details>
@@ -1280,6 +1429,7 @@ function BookReader({
 }
 
 function Report({
+  studentName,
   wordRatings,
   suggestIdx,
   read,
@@ -1288,6 +1438,7 @@ function Report({
   onRetry,
   onHome,
 }: {
+  studentName: string;
   wordRatings: Record<string, Rating>;
   suggestIdx: number;
   read: ReadResult | null;
@@ -1363,9 +1514,78 @@ function Report({
     { label: "Comprehension", weight: 30, score: understandingScore },
   ];
 
+  // ----- how-to-support tips (teacher-facing, also printed) -----
+  const support: string[] = [];
+  if (!read)
+    support.push(
+      "Run the full read-aloud (not just the word check) for a complete picture.",
+    );
+  if (accuracy != null && accuracy < 95)
+    support.push(
+      "Decoding: re-read decodable texts, blend sounds left-to-right, and pre-teach the practice words below.",
+    );
+  if (read && fluencyScore < 75)
+    support.push(
+      "Fluency: repeated reading of one short passage 3×, plus echo and choral reading to model smooth phrasing.",
+    );
+  if (understandingScore != null && understandingScore < 80)
+    support.push(
+      `Comprehension: pause to ask who / what / why, and have ${studentName} retell the story in their own words.`,
+    );
+  if (vocabScore != null && vocabScore < 80)
+    support.push(
+      "Vocabulary: talk about new words before reading and use them in sentences together.",
+    );
+  if (support.length === 0)
+    support.push(
+      "Strong across the board — extend with longer texts and more inferential (“why do you think…”) questions.",
+    );
+
+  function printReport() {
+    openReport({
+      studentName,
+      dateStr: new Date().toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      categoryLabel: category.label,
+      categoryNote: category.note,
+      categoryRange: category.range,
+      categoryAbout: category.about,
+      composite,
+      accuracyBand:
+        accuracy != null && band
+          ? { pct: accuracy, label: band.label, range: band.range, note: band.note }
+          : null,
+      levelGrade: finalLevel.grade,
+      term,
+      lexile,
+      lexileBand: lexileBand(lexile),
+      age: finalLevel.age,
+      strands,
+      support,
+      practice,
+      running: read
+        ? {
+            words: read.totalWords,
+            errors: read.errors,
+            selfCorrections: read.selfCorrections,
+            accuracy: read.accuracy,
+            wpm: read.wpm,
+            wpmGoal: `${level.wpmLow}–${level.wpmHigh}`,
+            band: band?.label ?? "",
+          }
+        : null,
+    });
+  }
+
   return (
     <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
       <h2 className="text-2xl font-extrabold">Reading report 📋</h2>
+      <p className="mt-0.5 text-lg font-extrabold text-rose-600 dark:text-rose-300">
+        {studentName}
+      </p>
 
       {/* Reader category + composite */}
       <div
@@ -1373,9 +1593,11 @@ function Report({
       >
         <p className="text-3xl font-extrabold">{category.label}</p>
         <p className="mt-1 text-sm font-bold opacity-80">
-          Overall reading score {composite}%
+          Overall score {composite}% — in the {category.range} band
         </p>
-        <p className="mt-1 text-sm font-semibold opacity-80">{category.note}</p>
+        <p className="mt-1 text-sm font-semibold opacity-90">
+          Why: {category.about}
+        </p>
       </div>
 
       {/* Guide: what each reader level means */}
@@ -1441,6 +1663,24 @@ function Report({
         </p>
       </div>
 
+      {/* How to support */}
+      <div className="mt-4 w-full max-w-xl rounded-2xl bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+        <h3 className="font-extrabold text-zinc-700 dark:text-zinc-200">
+          🤝 How to support {studentName}
+        </h3>
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {support.map((s, i) => (
+            <li
+              key={i}
+              className="flex gap-2 text-sm font-semibold text-zinc-600 dark:text-zinc-300"
+            >
+              <span className="text-rose-400">•</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {/* Running record */}
       {read && (
         <div className="mt-4 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1456,6 +1696,26 @@ function Report({
           {read.wpm != null && <Stat label="Words / min" value={`${read.wpm}`} sub={`goal ${level.wpmLow}–${level.wpmHigh}`} />}
         </div>
       )}
+
+      {/* Accuracy explanation */}
+      {read && band && (
+        <div className="mt-4 w-full max-w-xl rounded-2xl bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-extrabold text-zinc-700 dark:text-zinc-200">
+              Accuracy {read.accuracy}%
+            </h3>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${band.tone}`}>
+              {band.label} level · {band.range}
+            </span>
+          </div>
+          <p className="mt-2 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+            {band.note}
+          </p>
+        </div>
+      )}
+
+      {/* Accuracy-level guide */}
+      {read && band && <AccuracyGuide currentLabel={band.label} />}
 
       {/* Practice words */}
       {practice.length > 0 && (
@@ -1482,7 +1742,14 @@ function Report({
         scores should be similar.
       </p>
 
-      <div className="mt-4 flex w-full max-w-xl gap-3">
+      <button
+        onClick={printReport}
+        className="mt-5 w-full max-w-xl rounded-full bg-emerald-600 px-6 py-3.5 text-lg font-extrabold text-white shadow-lg active:scale-95"
+      >
+        🖨️ Open / print {studentName}&apos;s report
+      </button>
+
+      <div className="mt-3 flex w-full max-w-xl gap-3">
         <button
           onClick={onRetry}
           className="flex-1 rounded-full bg-white px-6 py-3 font-bold text-zinc-700 shadow-sm active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
