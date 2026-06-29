@@ -13,27 +13,48 @@ import {
   type QKind,
 } from "@/app/assessment";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { rateAttempt, alignReading, type Rating } from "@/lib/reading";
+import { alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { openReport } from "@/lib/reportPrint";
 
-/* ---------- Stage 1: a 50-word ladder from easiest to ~Lexile 1050 ---------- */
+/* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
+   Words and their Lexile measures come straight from the Cambridge reading
+   word list; `lvl` (0 = Year 1 … 5 = Year 6) is the year each word's Lexile
+   falls in, so reading a word right suggests starting at that passage level.
+   Lexile shown in the trailing comment; "BR99" = Beginning Reader. */
 const LADDER: { w: string; lvl: number }[] = [
-  { w: "is", lvl: 0 }, { w: "at", lvl: 0 }, { w: "cat", lvl: 0 }, { w: "dog", lvl: 0 },
-  { w: "pin", lvl: 0 }, { w: "sun", lvl: 0 }, { w: "hat", lvl: 0 }, { w: "bed", lvl: 0 },
-  { w: "run", lvl: 0 },
-  { w: "ship", lvl: 1 }, { w: "rain", lvl: 1 }, { w: "hand", lvl: 1 }, { w: "jump", lvl: 1 },
-  { w: "fish", lvl: 1 }, { w: "with", lvl: 1 }, { w: "that", lvl: 1 }, { w: "must", lvl: 1 },
-  { w: "sing", lvl: 1 },
-  { w: "green", lvl: 2 }, { w: "dream", lvl: 2 }, { w: "sport", lvl: 2 }, { w: "happy", lvl: 2 },
-  { w: "found", lvl: 2 }, { w: "little", lvl: 2 }, { w: "around", lvl: 2 }, { w: "garden", lvl: 2 },
-  { w: "brave", lvl: 3 }, { w: "strange", lvl: 3 }, { w: "follow", lvl: 3 }, { w: "family", lvl: 3 },
-  { w: "animal", lvl: 3 }, { w: "suddenly", lvl: 3 }, { w: "remember", lvl: 3 }, { w: "important", lvl: 3 },
-  { w: "planted", lvl: 4 }, { w: "powerful", lvl: 4 }, { w: "wonderful", lvl: 4 }, { w: "dangerous", lvl: 4 },
-  { w: "carefully", lvl: 4 }, { w: "treasure", lvl: 4 }, { w: "discover", lvl: 4 }, { w: "mountain", lvl: 4 },
-  { w: "whispering", lvl: 5 }, { w: "determined", lvl: 5 }, { w: "mysterious", lvl: 5 }, { w: "magnificent", lvl: 5 },
-  { w: "imagination", lvl: 5 }, { w: "curiosity", lvl: 5 }, { w: "responsibility", lvl: 5 }, { w: "extraordinary", lvl: 5 },
+  // Year 1 · BR99–418L
+  { w: "Mom", lvl: 0 }, { w: "Dad", lvl: 0 }, { w: "my", lvl: 0 }, { w: "is", lvl: 0 }, // BR99
+  { w: "here", lvl: 0 }, { w: "and", lvl: 0 }, // BR99
+  { w: "went", lvl: 0 }, { w: "are", lvl: 0 }, // 190
+  { w: "they", lvl: 0 }, { w: "with", lvl: 0 }, // 247
+  { w: "came", lvl: 0 }, { w: "saw", lvl: 0 }, // 304
+  { w: "one", lvl: 0 }, { w: "then", lvl: 0 }, // 361
+  { w: "opened", lvl: 0 }, { w: "must", lvl: 0 }, // 418
+  // Year 2 · 470–570L
+  { w: "know", lvl: 1 }, { w: "most", lvl: 1 }, // 475
+  { w: "could", lvl: 1 }, { w: "really", lvl: 1 }, // 530/420
+  { w: "moment", lvl: 1 }, { w: "suddenly", lvl: 1 }, // 470
+  { w: "important", lvl: 1 }, { w: "searched", lvl: 1 }, // 520
+  { w: "courage", lvl: 1 }, { w: "especially", lvl: 1 }, // 570
+  // Year 3 · 620–687L
+  { w: "measure", lvl: 2 }, { w: "silence", lvl: 2 }, // 620
+  { w: "attempt", lvl: 2 }, { w: "exclaimed", lvl: 2 }, // 687
+  // Year 4 · 754–830L
+  { w: "species", lvl: 3 }, { w: "figure", lvl: 3 }, // 754
+  { w: "delicious", lvl: 3 }, { w: "timid", lvl: 3 }, // 820/740
+  { w: "incredibly", lvl: 3 }, { w: "exaggerated", lvl: 3 }, // 785
+  { w: "vacant", lvl: 3 }, { w: "moisture", lvl: 3 }, // 830
+  // Year 5 · 875–920L
+  { w: "dissatisfied", lvl: 4 }, { w: "contribution", lvl: 4 }, // 875
+  { w: "tolerance", lvl: 4 }, { w: "acknowledge", lvl: 4 }, // 920
+  // Year 6 · 965–1050L
+  { w: "multitude", lvl: 5 }, { w: "consequences", lvl: 5 }, // 965
+  { w: "treachery", lvl: 5 }, { w: "belligerent", lvl: 5 }, // 1010/925
+  { w: "loathe", lvl: 5 }, { w: "ingenuous", lvl: 5 }, // 967
+  { w: "quench", lvl: 5 }, { w: "catastrophe", lvl: 5 }, // 1009
+  { w: "simultaneous", lvl: 5 }, { w: "vengeance", lvl: 5 }, // 1050
 ];
 const STOP_AFTER_MISSES = 3;
 
@@ -101,6 +122,7 @@ export default function ReadingAssessment() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [studentName, setStudentName] = useState("");
   const [wordRatings, setWordRatings] = useState<Record<string, Rating>>({});
+  const [wordWrong, setWordWrong] = useState(0); // words read wrongly in Stage 1
   const [suggestIdx, setSuggestIdx] = useState(0);
   const [read, setRead] = useState<ReadResult | null>(null);
   const [missed, setMissed] = useState<string[]>([]);
@@ -112,6 +134,7 @@ export default function ReadingAssessment() {
 
   function restart() {
     setWordRatings({});
+    setWordWrong(0);
     setRead(null);
     setMissed([]);
     setComp(null);
@@ -131,8 +154,9 @@ export default function ReadingAssessment() {
           stopSpeech();
           setPhase("intro");
         }}
-        onDone={(r) => {
+        onDone={(r, wrong) => {
           setWordRatings(r);
+          setWordWrong(wrong);
           setSuggestIdx(Math.max(0, wordLevel(r)));
           setPhase("suggest");
         }}
@@ -214,6 +238,7 @@ export default function ReadingAssessment() {
       <Report
         studentName={studentName.trim() || "Student"}
         wordRatings={wordRatings}
+        wordWrong={wordWrong}
         suggestIdx={suggestIdx}
         read={read}
         missed={missed}
@@ -257,7 +282,7 @@ export default function ReadingAssessment() {
         </button>
         <p className="text-xs font-semibold opacity-70">
           {studentName.trim()
-            ? "Best in Chrome or Edge for the microphone — or mark each item by hand."
+            ? "The child reads each word aloud — you mark it ✓ or ✗ by hand."
             : "Enter the student's name to begin."}
         </p>
       </div>
@@ -268,72 +293,57 @@ export default function ReadingAssessment() {
   );
 }
 
-/* ---------- Stage 1 runner: graded word list, mic-scored ---------- */
+/* ---------- Stage 1 runner: graded word list, teacher-scored ----------
+   No microphone here — the child reads each word aloud and the teacher marks
+   it by hand with ✓ / ✗. */
 
 function WordRunner({
   onDone,
   onExit,
 }: {
-  onDone: (r: Record<string, Rating>) => void;
+  onDone: (r: Record<string, Rating>, wrong: number) => void;
   onExit: () => void;
 }) {
-  const { supported, listening, transcript, start, stop, reset } =
-    useSpeechRecognition();
   const [idx, setIdx] = useState(0);
   const [rated, setRated] = useState<Rating | null>(null);
+  // Count of words read wrongly — auto-bumped on each ✗, but the teacher can
+  // type over it in the box below.
+  const [wrong, setWrong] = useState(0);
+  const wrongRef = useRef(0);
   const ratings = useRef<Record<string, Rating>>({});
   const consecutiveMiss = useRef(0);
   const justRated = useRef(false);
   const item = LADDER[idx];
+
+  function setWrongCount(n: number) {
+    const v = Math.max(0, Math.round(n) || 0);
+    wrongRef.current = v;
+    setWrong(v);
+  }
 
   function record(r: Rating) {
     if (justRated.current) return;
     justRated.current = true;
     ratings.current[item.w] = r;
     setRated(r);
-    stop();
     chime(r === "green");
     if (r === "green") {
       praise();
       consecutiveMiss.current = 0;
     } else {
       consecutiveMiss.current += 1;
+      setWrongCount(wrongRef.current + 1);
     }
     setTimeout(() => {
       if (idx + 1 >= LADDER.length || consecutiveMiss.current >= STOP_AFTER_MISSES) {
-        onDone({ ...ratings.current });
+        onDone({ ...ratings.current }, wrongRef.current);
       } else {
+        justRated.current = false;
+        setRated(null);
         setIdx(idx + 1);
       }
     }, 850);
   }
-
-  useEffect(() => {
-    justRated.current = false;
-    setRated(null);
-    reset();
-    if (supported) {
-      const t = setTimeout(start, 250);
-      return () => clearTimeout(t);
-    }
-  }, [idx, supported, start, reset]);
-
-  useEffect(() => {
-    if (!supported || justRated.current) return;
-    if (!listening || !transcript.trim()) return;
-    record(rateAttempt(item.w, transcript.split(/\s+/)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transcript, listening, supported]);
-
-  useEffect(() => {
-    if (!supported || justRated.current) return;
-    if (!listening || transcript.trim()) return;
-    const t = setTimeout(() => {
-      stop();
-      setTimeout(start, 300);
-    }, 8000);
-    return () => clearTimeout(t);
-  }, [listening, transcript, supported, start, stop]);
 
   return (
     <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
@@ -370,27 +380,16 @@ function WordRunner({
           <span className="font-bold">
             {rated === "green" ? "✓ Got it!" : rated === "yellow" ? "Almost" : "Not yet"}
           </span>
-        ) : supported ? (
-          <span
-            className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-              listening ? "animate-pulse bg-rose-500 text-white" : "bg-white/70 text-rose-700"
-            }`}
-          >
-            {listening ? "👂 Listening…" : "🎤 starting…"}
-          </span>
         ) : (
           <span className="rounded-full bg-white/70 px-4 py-1.5 text-sm font-bold text-rose-700">
-            Mark it by hand
+            Child reads aloud — teacher marks ✓ or ✗
           </span>
         )}
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
         <button
-          onClick={() => {
-            stop();
-            sayWord(item.w, 0.85);
-          }}
+          onClick={() => sayWord(item.w, 0.85)}
           className="rounded-full bg-white px-5 py-3 font-bold text-rose-700 shadow-sm active:scale-95 dark:bg-zinc-800 dark:text-rose-300"
         >
           🔊 Hear it
@@ -408,6 +407,20 @@ function WordRunner({
           ✗ Not yet
         </button>
       </div>
+
+      {/* Wrongly-read tally — auto-counts each ✗, type to override */}
+      <label className="mt-5 flex items-center gap-3 rounded-full bg-white/70 px-5 py-2.5 text-sm font-bold text-rose-700 shadow-sm dark:bg-zinc-800 dark:text-rose-300">
+        Words read wrongly
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={wrong}
+          onChange={(e) => setWrongCount(Number(e.target.value))}
+          className="w-16 rounded-xl bg-white px-2 py-1.5 text-center text-lg font-extrabold text-rose-700 shadow-inner ring-1 ring-rose-200 dark:bg-zinc-900 dark:text-rose-300 dark:ring-rose-900"
+        />
+        <span className="font-semibold text-zinc-400">of {idx + 1} read</span>
+      </label>
     </div>
   );
 }
@@ -1431,6 +1444,7 @@ function BookReader({
 function Report({
   studentName,
   wordRatings,
+  wordWrong,
   suggestIdx,
   read,
   missed,
@@ -1440,6 +1454,7 @@ function Report({
 }: {
   studentName: string;
   wordRatings: Record<string, Rating>;
+  wordWrong: number;
   suggestIdx: number;
   read: ReadResult | null;
   missed: string[];
@@ -1501,6 +1516,7 @@ function Report({
   // but the same report stays stable across re-renders (pure during render).
   const bookSeed = (read?.totalWords ?? 0) + (read?.errors ?? 0) + suggestIdx;
 
+  const wordsAttempted = Object.keys(wordRatings).length;
   const ladderMissed = LADDER.filter(
     (x) => wordRatings[x.w] && wordRatings[x.w] !== "green",
   ).map((x) => x.w);
@@ -1628,6 +1644,19 @@ function Report({
           Age {finalLevel.age} · {finalLevel.grade} band {finalLevel.lexileRange}
         </p>
       </div>
+
+      {/* Stage 1 word check — words read wrongly */}
+      {wordsAttempted > 0 && (
+        <div className="mt-3 flex w-full max-w-xl items-center justify-between rounded-2xl bg-white px-5 py-3 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+          <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
+            Word check
+          </span>
+          <span className="text-sm font-bold text-zinc-500">
+            <span className="text-rose-600 dark:text-rose-300">{wordWrong}</span> of{" "}
+            {wordsAttempted} read wrongly
+          </span>
+        </div>
+      )}
 
       {/* Four-strand breakdown */}
       <div className="mt-4 w-full max-w-xl rounded-2xl bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
