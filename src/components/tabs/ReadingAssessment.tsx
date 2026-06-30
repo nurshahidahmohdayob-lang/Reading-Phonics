@@ -19,61 +19,66 @@ import { sayWord } from "@/lib/sayWord";
 import { openReport } from "@/lib/reportPrint";
 
 /* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
-   Words and their Lexile measures come straight from the Cambridge reading
-   word list; `lvl` (0 = Year 1 … 5 = Year 6) is the year each word's Lexile
-   falls in, so reading a word right suggests starting at that passage level.
-   Lexile shown in the trailing comment; "BR99" = Beginning Reader. */
-const LADDER: { w: string; lvl: number }[] = [
+   Words, Lexiles and `lvl` (0 = Year 1 … 5 = Year 6) come from the Cambridge
+   reading word list. `lex` is each word's Lexile measure — the reader is placed
+   at the Lexile of the hardest word they read correctly (BR99 is stored as 50
+   so it sorts as the easiest). */
+const LADDER: { w: string; lvl: number; lex: number }[] = [
   // Year 1 · BR99–418L
-  { w: "Mom", lvl: 0 }, { w: "Dad", lvl: 0 }, { w: "my", lvl: 0 }, { w: "is", lvl: 0 }, // BR99
-  { w: "here", lvl: 0 }, { w: "and", lvl: 0 }, // BR99
-  { w: "went", lvl: 0 }, { w: "are", lvl: 0 }, // 190
-  { w: "they", lvl: 0 }, { w: "with", lvl: 0 }, // 247
-  { w: "came", lvl: 0 }, { w: "saw", lvl: 0 }, // 304
-  { w: "one", lvl: 0 }, { w: "then", lvl: 0 }, // 361
-  { w: "opened", lvl: 0 }, { w: "must", lvl: 0 }, // 418
+  { w: "Mom", lvl: 0, lex: 50 }, { w: "Dad", lvl: 0, lex: 50 }, // BR99
+  { w: "my", lvl: 0, lex: 50 }, { w: "is", lvl: 0, lex: 50 }, // BR99
+  { w: "here", lvl: 0, lex: 50 }, { w: "and", lvl: 0, lex: 50 }, // BR99
+  { w: "went", lvl: 0, lex: 190 }, { w: "are", lvl: 0, lex: 190 },
+  { w: "they", lvl: 0, lex: 247 }, { w: "with", lvl: 0, lex: 247 },
+  { w: "came", lvl: 0, lex: 304 }, { w: "saw", lvl: 0, lex: 304 },
+  { w: "one", lvl: 0, lex: 361 }, { w: "then", lvl: 0, lex: 361 },
+  { w: "opened", lvl: 0, lex: 418 }, { w: "must", lvl: 0, lex: 418 },
   // Year 2 · 470–570L
-  { w: "know", lvl: 1 }, { w: "most", lvl: 1 }, // 475
-  { w: "could", lvl: 1 }, { w: "really", lvl: 1 }, // 530/420
-  { w: "moment", lvl: 1 }, { w: "suddenly", lvl: 1 }, // 470
-  { w: "important", lvl: 1 }, { w: "searched", lvl: 1 }, // 520
-  { w: "courage", lvl: 1 }, { w: "especially", lvl: 1 }, // 570
+  { w: "know", lvl: 1, lex: 475 }, { w: "most", lvl: 1, lex: 475 },
+  { w: "could", lvl: 1, lex: 530 }, { w: "really", lvl: 1, lex: 530 }, // 530/420
+  { w: "moment", lvl: 1, lex: 470 }, { w: "suddenly", lvl: 1, lex: 470 },
+  { w: "important", lvl: 1, lex: 520 }, { w: "searched", lvl: 1, lex: 520 },
+  { w: "courage", lvl: 1, lex: 570 }, { w: "especially", lvl: 1, lex: 570 },
   // Year 3 · 620–687L
-  { w: "measure", lvl: 2 }, { w: "silence", lvl: 2 }, // 620
-  { w: "attempt", lvl: 2 }, { w: "exclaimed", lvl: 2 }, // 687
+  { w: "measure", lvl: 2, lex: 620 }, { w: "silence", lvl: 2, lex: 620 },
+  { w: "attempt", lvl: 2, lex: 687 }, { w: "exclaimed", lvl: 2, lex: 687 },
   // Year 4 · 754–830L
-  { w: "species", lvl: 3 }, { w: "figure", lvl: 3 }, // 754
-  { w: "delicious", lvl: 3 }, { w: "timid", lvl: 3 }, // 820/740
-  { w: "incredibly", lvl: 3 }, { w: "exaggerated", lvl: 3 }, // 785
-  { w: "vacant", lvl: 3 }, { w: "moisture", lvl: 3 }, // 830
+  { w: "species", lvl: 3, lex: 754 }, { w: "figure", lvl: 3, lex: 754 },
+  { w: "delicious", lvl: 3, lex: 820 }, { w: "timid", lvl: 3, lex: 820 }, // 820/740
+  { w: "incredibly", lvl: 3, lex: 785 }, { w: "exaggerated", lvl: 3, lex: 785 },
+  { w: "vacant", lvl: 3, lex: 830 }, { w: "moisture", lvl: 3, lex: 830 },
   // Year 5 · 875–920L
-  { w: "dissatisfied", lvl: 4 }, { w: "contribution", lvl: 4 }, // 875
-  { w: "tolerance", lvl: 4 }, { w: "acknowledge", lvl: 4 }, // 920
+  { w: "dissatisfied", lvl: 4, lex: 875 }, { w: "contribution", lvl: 4, lex: 875 },
+  { w: "tolerance", lvl: 4, lex: 920 }, { w: "acknowledge", lvl: 4, lex: 920 },
   // Year 6 · 965–1050L
-  { w: "multitude", lvl: 5 }, { w: "consequences", lvl: 5 }, // 965
-  { w: "treachery", lvl: 5 }, { w: "belligerent", lvl: 5 }, // 1010/925
-  { w: "loathe", lvl: 5 }, { w: "ingenuous", lvl: 5 }, // 967
-  { w: "quench", lvl: 5 }, { w: "catastrophe", lvl: 5 }, // 1009
-  { w: "simultaneous", lvl: 5 }, { w: "vengeance", lvl: 5 }, // 1050
+  { w: "multitude", lvl: 5, lex: 965 }, { w: "consequences", lvl: 5, lex: 965 },
+  { w: "treachery", lvl: 5, lex: 1010 }, { w: "belligerent", lvl: 5, lex: 1010 }, // 1010/925
+  { w: "loathe", lvl: 5, lex: 967 }, { w: "ingenuous", lvl: 5, lex: 967 },
+  { w: "quench", lvl: 5, lex: 1009 }, { w: "catastrophe", lvl: 5, lex: 1009 },
+  { w: "simultaneous", lvl: 5, lex: 1050 }, { w: "vengeance", lvl: 5, lex: 1050 },
 ];
-const STOP_AFTER_MISSES = 3;
+// Stop the word check once the child has read this many words wrongly (in
+// total, not in a row) — then suggest the reading level and go to Stage 2.
+const STOP_AFTER_MISSES = 2;
 
-function wordLevel(ratings: Record<string, Rating>): number {
-  let max = -1;
-  for (const it of LADDER) if (ratings[it.w] === "green") max = Math.max(max, it.lvl);
-  return max;
+/** Where the reader stopped in Stage 1: the hardest word read correctly, by
+    Lexile. That Lexile IS the word-check reading level — Stage 2 then decides
+    whether to move up to the next level. Returns null if nothing was read. */
+function wordStop(ratings: Record<string, Rating>): { lvl: number; lex: number } | null {
+  let best: { lvl: number; lex: number } | null = null;
+  for (const it of LADDER) {
+    if (ratings[it.w] === "green" && (best === null || it.lex > best.lex)) {
+      best = { lvl: it.lvl, lex: it.lex };
+    }
+  }
+  return best;
 }
 
-/* ---------- Benchmark Lexile per year and term (Reading Progress) ---------- */
-const TERM_LEXILE: number[][] = [
-  [190, 390, 530], // Year 1
-  [420, 520, 620], // Year 2
-  [620, 720, 820], // Year 3
-  [740, 808, 875], // Year 4
-  [875, 943, 1010], // Year 5
-  [950, 1000, 1050], // Year 6
-];
-const termLexileValue = (levelIdx: number, term: number) => TERM_LEXILE[levelIdx][term - 1];
+/** Show a Lexile measure, using "BR" for Beginning Reader (our stored 50). */
+function lexLabel(lex: number | null): string {
+  if (lex === null) return "Beginning Reader";
+  return lex < 100 ? "BR99L" : `${lex}L`;
+}
 
 /** Place within a year by term (1–3): fluency-band base, comprehension nudge. */
 function placeByTerm(
@@ -123,6 +128,7 @@ export default function ReadingAssessment() {
   const [studentName, setStudentName] = useState("");
   const [wordRatings, setWordRatings] = useState<Record<string, Rating>>({});
   const [wordWrong, setWordWrong] = useState(0); // words read wrongly in Stage 1
+  const [stopLexile, setStopLexile] = useState<number | null>(null); // Lexile of the hardest word read in Stage 1
   const [suggestIdx, setSuggestIdx] = useState(0);
   const [read, setRead] = useState<ReadResult | null>(null);
   const [missed, setMissed] = useState<string[]>([]);
@@ -135,6 +141,7 @@ export default function ReadingAssessment() {
   function restart() {
     setWordRatings({});
     setWordWrong(0);
+    setStopLexile(null);
     setRead(null);
     setMissed([]);
     setComp(null);
@@ -155,9 +162,11 @@ export default function ReadingAssessment() {
           setPhase("intro");
         }}
         onDone={(r, wrong) => {
+          const stop = wordStop(r);
           setWordRatings(r);
           setWordWrong(wrong);
-          setSuggestIdx(Math.max(0, wordLevel(r)));
+          setStopLexile(stop ? stop.lex : null);
+          setSuggestIdx(stop ? stop.lvl : 0);
           setPhase("suggest");
         }}
       />
@@ -166,19 +175,23 @@ export default function ReadingAssessment() {
 
   if (phase === "suggest") {
     const lvl = levels[suggestIdx];
-    const emerging = wordLevel(wordRatings) < 0;
+    const emerging = stopLexile === null;
     return (
       <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
         <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-8 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
           <div className="text-6xl">📚</div>
           <p className="text-sm font-bold uppercase tracking-wide opacity-70">
-            Suggested reading level
+            Reading level from the word check
           </p>
-          <h2 className="text-3xl font-extrabold">{lvl.grade}</h2>
+          <h2 className="text-4xl font-extrabold">{lexLabel(stopLexile)}</h2>
           <p className="font-semibold opacity-80">
             {emerging
               ? "Still building first words — let's read the easiest book together."
-              : `Age ${lvl.age} · Lexile ${lvl.lexileRange}`}
+              : `${lvl.grade} · Age ${lvl.age}`}
+          </p>
+          <p className="rounded-2xl bg-white/60 px-4 py-2 text-sm font-semibold text-rose-800">
+            Now read a story at this level. Only if {studentName.trim() || "the child"}{" "}
+            reads it well do we move up to the next level.
           </p>
           <div className="mt-1 flex flex-col gap-2 sm:flex-row">
             <button
@@ -239,6 +252,7 @@ export default function ReadingAssessment() {
         studentName={studentName.trim() || "Student"}
         wordRatings={wordRatings}
         wordWrong={wordWrong}
+        stopLexile={stopLexile}
         suggestIdx={suggestIdx}
         read={read}
         missed={missed}
@@ -311,7 +325,7 @@ function WordRunner({
   const [wrong, setWrong] = useState(0);
   const wrongRef = useRef(0);
   const ratings = useRef<Record<string, Rating>>({});
-  const consecutiveMiss = useRef(0);
+  const missCount = useRef(0); // total words read wrongly so far
   const justRated = useRef(false);
   const item = LADDER[idx];
 
@@ -329,13 +343,12 @@ function WordRunner({
     chime(r === "green");
     if (r === "green") {
       praise();
-      consecutiveMiss.current = 0;
     } else {
-      consecutiveMiss.current += 1;
+      missCount.current += 1;
       setWrongCount(wrongRef.current + 1);
     }
     setTimeout(() => {
-      if (idx + 1 >= LADDER.length || consecutiveMiss.current >= STOP_AFTER_MISSES) {
+      if (idx + 1 >= LADDER.length || missCount.current >= STOP_AFTER_MISSES) {
         onDone({ ...ratings.current }, wrongRef.current);
       } else {
         justRated.current = false;
@@ -366,7 +379,7 @@ function WordRunner({
         />
       </div>
       <p className="mt-1 text-xs font-bold text-zinc-400">
-        word {idx + 1} · stops when too hard
+        word {idx + 1} · stops after 2 wrong
       </p>
 
       <div className="mt-4 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFD0CB] px-6 py-10 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
@@ -1445,6 +1458,7 @@ function Report({
   studentName,
   wordRatings,
   wordWrong,
+  stopLexile,
   suggestIdx,
   read,
   missed,
@@ -1455,6 +1469,7 @@ function Report({
   studentName: string;
   wordRatings: Record<string, Rating>;
   wordWrong: number;
+  stopLexile: number | null;
   suggestIdx: number;
   read: ReadResult | null;
   missed: string[];
@@ -1504,11 +1519,17 @@ function Report({
       : Math.round(0.4 * accScore + 0.3 * fluencyScore + 0.3 * understandingScore);
   const category = categoryFor(composite);
 
-  // ----- level + term + Lexile -----
+  // ----- reading level: anchored to the Stage 1 word check -----
+  // The reading level IS the Lexile of the hardest word read in the word check.
+  // Stage 2 only drives the move-up / stay / move-down recommendation below — it
+  // never inflates this Lexile. (A child who reads only "is" stays at BR99, not
+  // a Year-1 benchmark.)
   const band = accuracy != null ? benchmarkBand(accuracy) : null;
-  const { levelIdx: finalIdx, term } = placeByTerm(suggestIdx, accuracy, compScore);
+  const { term } = placeByTerm(suggestIdx, accuracy, compScore);
+  const finalIdx = suggestIdx;
   const finalLevel = levels[finalIdx];
-  const lexile = termLexileValue(finalIdx, term);
+  const lexile = stopLexile ?? finalLevel.lexileLow;
+  const lexileText = lexLabel(lexile);
 
   // ----- placement decision (Reading Level Placement Guide) -----
   const placement = placementDecision(accuracy, read ? fluencyScore : null, compScore);
@@ -1576,7 +1597,7 @@ function Report({
           : null,
       levelGrade: finalLevel.grade,
       term,
-      lexile,
+      lexile: lexileText,
       lexileBand: lexileBand(lexile),
       age: finalLevel.age,
       strands,
@@ -1635,21 +1656,24 @@ function Report({
           Reading level
         </p>
         <p className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-300">
-          {finalLevel.grade} · Term {term}
+          {lexileText} · {lexileBand(lexile)}
         </p>
         <p className="mt-0.5 font-extrabold text-zinc-700 dark:text-zinc-200">
-          Lexile {lexile}L · {lexileBand(lexile)}
+          {finalLevel.grade} · Age {finalLevel.age}
         </p>
         <p className="mt-0.5 text-xs font-semibold text-zinc-400">
-          Age {finalLevel.age} · {finalLevel.grade} band {finalLevel.lexileRange}
+          From the word check · {finalLevel.grade} band {finalLevel.lexileRange}
         </p>
       </div>
 
-      {/* Stage 1 word check — words read wrongly */}
+      {/* Stage 1 word check — level reached + words read wrongly */}
       {wordsAttempted > 0 && (
-        <div className="mt-3 flex w-full max-w-xl items-center justify-between rounded-2xl bg-white px-5 py-3 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+        <div className="mt-3 flex w-full max-w-xl flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-2xl bg-white px-5 py-3 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
           <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-            Word check
+            Word check ·{" "}
+            <span className="text-rose-600 dark:text-rose-300">
+              {lexLabel(stopLexile)}
+            </span>
           </span>
           <span className="text-sm font-bold text-zinc-500">
             <span className="text-rose-600 dark:text-rose-300">{wordWrong}</span> of{" "}
