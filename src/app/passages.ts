@@ -1,4 +1,4 @@
-import { levels, type Level } from "@/app/stories";
+import { levels, type Level, type StoryQuiz } from "@/app/stories";
 
 export type Passage = {
   id: string;
@@ -6,6 +6,9 @@ export type Passage = {
   emoji: string;
   lexile: number;
   text: string;
+  /** The story's hand-written multiple-choice question, if it has one. Used as
+      the tap-to-answer item in the story's comprehension questions. */
+  quiz?: StoryQuiz;
 };
 
 export type PassageLevel = {
@@ -41,5 +44,6 @@ export const passageLevels: PassageLevel[] = levels.map((l) => ({
     emoji: s.emoji,
     lexile: s.lexile,
     text: s.pages.map((p) => p.text).join(" "),
+    quiz: s.quiz,
   })),
 }));

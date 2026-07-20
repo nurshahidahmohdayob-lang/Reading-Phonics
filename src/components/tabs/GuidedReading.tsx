@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
+import { storyQuestions, type CompItem } from "@/app/comprehension";
 import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
 import GrammarLegend from "@/components/GrammarLegend";
 import {
@@ -375,8 +376,12 @@ function ReadAloud({
   const pickedEntry = picked ? describe(picked) : null;
   const [colors, setColors] = useState(true);
 
-  // A new passage closes the word card.
-  useEffect(() => setPicked(null), [passage.id]);
+  // A new passage closes the word card (reset during render, not in an effect).
+  const [prevId, setPrevId] = useState(passage.id);
+  if (prevId !== passage.id) {
+    setPrevId(passage.id);
+    setPicked(null);
+  }
 
   const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
   // The part of speech of each word, computed once per passage.
@@ -693,6 +698,8 @@ function Report({
         </div>
       )}
 
+      <StoryQuestions passage={passage} />
+
       <div className="mt-6 flex w-full gap-3">
         <button
           onClick={onRetry}
@@ -705,6 +712,96 @@ function Report({
           className="flex-1 rounded-full bg-zinc-100 px-6 py-3 font-bold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
         >
           New passage
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* Optional comprehension questions for the story — a mix of one tap-to-answer
+   multiple choice and open-ended talking questions. Never scored; the child does
+   not have to answer any of them. */
+function StoryQuestions({ passage }: { passage: Passage }) {
+  const [open, setOpen] = useState(false);
+  const items = useMemo(() => storyQuestions(passage), [passage]);
+  return (
+    <div className="mt-6 w-full">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] px-5 py-3.5 text-left font-extrabold text-amber-800 shadow-sm active:scale-[.99]"
+      >
+        <span>💬 Talk about the story · 10 questions</span>
+        <span className="text-sm font-bold opacity-70">
+          optional {open ? "▲" : "▼"}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-3 flex flex-col gap-2.5">
+          <p className="text-center text-xs font-semibold text-zinc-400">
+            Just for talking — no need to answer them all. 💛
+          </p>
+          {items.map((it, i) => (
+            <QuestionCard key={i} n={i + 1} item={it} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuestionCard({ n, item }: { n: number; item: CompItem }) {
+  const [chosen, setChosen] = useState<number | null>(null);
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-amber-100 dark:bg-zinc-900">
+      <div className="flex items-start gap-2.5">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-extrabold text-amber-800">
+          {n}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:bg-amber-950 dark:text-amber-300">
+              {item.skill}
+            </span>
+            {item.kind === "choice" && (
+              <span className="text-[10px] font-bold text-emerald-600">
+                tap an answer
+              </span>
+            )}
+          </div>
+          <p className="mt-1 font-bold text-zinc-800 dark:text-zinc-100">
+            {item.question}
+          </p>
+          {item.kind === "choice" && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {item.options.map((o, idx) => {
+                const revealed = chosen !== null;
+                const right = idx === item.answer;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setChosen(idx)}
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold shadow-sm active:scale-95 ${
+                      revealed && right
+                        ? "bg-green-100 text-green-800 ring-2 ring-green-300 dark:bg-green-950 dark:text-green-200"
+                        : revealed && idx === chosen
+                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                          : "bg-zinc-50 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                    }`}
+                  >
+                    <span>{o.emoji}</span>
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => speak(item.question, 0.9)}
+          aria-label="Read the question aloud"
+          className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1.5 text-sm active:scale-90 dark:bg-amber-950"
+        >
+          🔊
         </button>
       </div>
     </div>

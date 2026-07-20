@@ -24,6 +24,8 @@ export type LetterSound = {
   /** How to write the lowercase letter. */
   formation: string;
   accent: string;
+  /** Audio-clip id when it differs from the letter — e.g. q sounds "qu". */
+  clip?: string;
 };
 
 /** Letter-formation patter for writing each lowercase letter. */
@@ -68,6 +70,7 @@ const ACCENT: Record<LetterCategory, string> = {
 /** Continuous sounds need an elongated spelling so the TTS sustains the
     fricative/hum rather than reading a short syllable with a vowel. */
 const SAY_OVERRIDE: Record<string, string> = {
+  q: "kwuh", // spoken as "qu" (/kw/); the qu.mp3 clip is used first
   f: "ffffff",
   s: "ssssss",
   h: "hhhhh",
@@ -223,12 +226,14 @@ const DATA: Omit<LetterSound, "hint" | "accent" | "say" | "formation">[] = [
   },
   {
     letter: "q",
-    sound: "kwuh",
+    // q never works alone — its phonic sound is "qu" (/kw/), as in queen.
+    sound: "qu",
     ipa: "/kw/",
     word: "queen",
     category: "Plosive",
     guide:
       "Make a sharp, unvoiced /k/ sound immediately followed by a tight, unvoiced /w/ sound.",
+    clip: "qu",
   },
   {
     letter: "r",

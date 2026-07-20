@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { letterSound, letterSounds } from "@/app/alphabet";
 import { speak, playSoundClip } from "@/lib/speak";
 import FormationGames from "@/components/FormationGames";
+import LetterTrace from "@/components/LetterTrace";
 
 const SIZE = 300;
 
@@ -11,6 +12,7 @@ export default function LetterFormation() {
   const [selected, setSelected] = useState("a");
   const [upper, setUpper] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [runId, setRunId] = useState(0); // bump to replay the stroke animation
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
 
@@ -70,7 +72,8 @@ export default function LetterFormation() {
 
   function chooseLetter(letter: string) {
     setSelected(letter);
-    playSoundClip(letter, letterSound(letter).say);
+    const ls = letterSound(letter);
+    playSoundClip(ls.clip ?? letter, ls.say);
   }
 
   return (
@@ -117,9 +120,31 @@ export default function LetterFormation() {
         ))}
       </div>
 
-      {/* Trace pad: faint guide letter behind a drawing canvas */}
+      {/* Watch it written: the letter draws itself, stroke then fill */}
+      <div className="mt-5 flex flex-col items-center">
+        <span className="text-sm font-bold uppercase tracking-wide text-brand-500/80">
+          ✏️ Watch it written — follow the pencil
+        </span>
+        <div
+          className="relative mt-2 grid place-items-center rounded-3xl bg-brand-50 dark:bg-zinc-900"
+          style={{ width: SIZE, height: SIZE, maxWidth: "90vw" }}
+        >
+          <LetterTrace key={`${glyph}-${runId}`} glyph={glyph} size={SIZE} />
+        </div>
+        <button
+          onClick={() => setRunId((v) => v + 1)}
+          className="mt-3 rounded-full bg-brand-100 px-5 py-2 text-sm font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
+        >
+          ▶ Watch again
+        </button>
+      </div>
+
+      {/* Now your turn — trace pad: faint guide letter behind a drawing canvas */}
+      <span className="mt-6 text-sm font-bold uppercase tracking-wide text-brand-500/80">
+        🖊️ Now you trace it
+      </span>
       <div
-        className="relative mt-5 rounded-3xl border-2 border-dashed border-brand-300 bg-white dark:bg-zinc-900"
+        className="relative mt-2 rounded-3xl border-2 border-dashed border-brand-300 bg-white dark:bg-zinc-900"
         style={{ width: SIZE, height: SIZE, maxWidth: "90vw" }}
       >
         <span
@@ -148,7 +173,7 @@ export default function LetterFormation() {
           🧽 Clear
         </button>
         <button
-          onClick={() => playSoundClip(selected, info.say)}
+          onClick={() => playSoundClip(info.clip ?? selected, info.say)}
           className="rounded-full bg-brand-600 px-5 py-2.5 font-bold text-white active:scale-95"
         >
           🔊 Hear sound
