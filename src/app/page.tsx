@@ -323,11 +323,11 @@ export default function Home() {
       <Backdrop playful={!section} />
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* Full-width brand header bar — Zera green */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[#0A4F29] px-4 py-3 shadow-md sm:px-6">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 sm:h-11 sm:w-11">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[#0A4F29] px-3 py-3 shadow-md sm:gap-3 sm:px-6">
+          <span className="grid h-9 w-9 shrink-0 place-items-center justify-self-start rounded-xl bg-white/15 sm:h-11 sm:w-11">
             <svg
               viewBox="0 0 24 24"
-              className="h-6 w-6"
+              className="h-5 w-5 sm:h-6 sm:w-6"
               fill="none"
               stroke="#fff"
               strokeWidth={2}
@@ -339,17 +339,19 @@ export default function Home() {
               <path d="M12 6v15" />
             </svg>
           </span>
-          <h1 className="whitespace-nowrap text-base font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
+          <h1 className="justify-self-center whitespace-nowrap text-center text-sm font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
             Phonics Pals &amp; Guided Reading
           </h1>
-          {!section && (
-            <button
-              onClick={() => go("guide")}
-              className="ml-auto rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/25 active:scale-95 sm:text-sm"
-            >
-              📖 How to use
-            </button>
-          )}
+          <div className="justify-self-end">
+            {!section && (
+              <button
+                onClick={() => go("guide")}
+                className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/25 active:scale-95 sm:text-sm"
+              >
+                📖 How to use
+              </button>
+            )}
+          </div>
         </div>
         {!section && (
           <p className="mt-2 text-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
