@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  playStories,
-  allPlaySentences,
-  type PlaySentence,
-} from "@/app/storyPlay";
+import { allPlaySentences } from "@/app/storyPlay";
 import { speak, stopSpeech, praise, chime } from "@/lib/speak";
 import PutInOrder from "@/components/tabs/PutInOrder";
 
-type Mode = "menu" | "match" | "order" | "build";
+type Mode = "menu" | "match" | "build";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -52,7 +48,6 @@ export default function StoryPlay() {
     setMode("menu");
   }
   if (mode === "match") return <MatchGame onBack={back} />;
-  if (mode === "order") return <OrderGame onBack={back} />;
   if (mode === "build") return <BuildGame onBack={back} />;
   return <Menu onPick={setMode} />;
 }
@@ -76,18 +71,6 @@ function Menu({ onPick }: { onPick: (m: Mode) => void }) {
           <span className="text-2xl font-extrabold">Match the Picture</span>
           <span className="text-center text-sm font-semibold opacity-90">
             Read the sentence, tap the picture that matches
-          </span>
-        </button>
-        <button
-          onClick={() => onPick("order")}
-          className="group flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br from-violet-400 to-violet-600 px-6 py-10 text-white shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
-        >
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-white/25 text-5xl shadow-sm transition-transform group-hover:scale-110">
-            🔀
-          </span>
-          <span className="text-2xl font-extrabold">Put the Story in Order</span>
-          <span className="text-center text-sm font-semibold opacity-90">
-            Tap the sentences to rebuild the story
           </span>
         </button>
         <button
@@ -265,156 +248,6 @@ function MatchGame({ onBack }: { onBack: () => void }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-/* ---------- Game 2: Put the Story in Order ---------- */
-
-type OrderItem = PlaySentence & { order: number };
-
-function OrderGame({ onBack }: { onBack: () => void }) {
-  const [storyIdx, setStoryIdx] = useState(() =>
-    Math.floor(Math.random() * playStories.length),
-  );
-  const story = playStories[storyIdx];
-  const total = story.sentences.length;
-
-  const [remaining, setRemaining] = useState<OrderItem[]>(() =>
-    shuffle(story.sentences.map((s, i) => ({ ...s, order: i }))),
-  );
-  const [placed, setPlaced] = useState<OrderItem[]>([]);
-  const [checked, setChecked] = useState(false);
-
-  const allPlaced = placed.length === total;
-  const correct = allPlaced && placed.every((it, i) => it.order === i);
-
-  function reset(nextStory = storyIdx) {
-    const s = playStories[nextStory];
-    setStoryIdx(nextStory);
-    setRemaining(shuffle(s.sentences.map((x, i) => ({ ...x, order: i }))));
-    setPlaced([]);
-    setChecked(false);
-  }
-
-  function place(item: OrderItem) {
-    setChecked(false);
-    setRemaining((r) => r.filter((x) => x !== item));
-    setPlaced((p) => [...p, item]);
-  }
-  function unplace(item: OrderItem) {
-    setChecked(false);
-    setPlaced((p) => p.filter((x) => x !== item));
-    setRemaining((r) => [...r, item]);
-  }
-
-  function check() {
-    setChecked(true);
-    if (placed.every((it, i) => it.order === i)) {
-      chime(true);
-      praise();
-    } else {
-      chime(false);
-    }
-  }
-
-  return (
-    <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
-      <GameBar onBack={onBack} title="Put the Story in Order" />
-
-      <h2 className="mt-4 flex items-center gap-2 text-xl font-extrabold text-violet-700 dark:text-violet-300">
-        <span className="text-2xl">{story.emoji}</span> {story.title}
-      </h2>
-      <p className="text-sm font-semibold text-zinc-500">
-        Tap the sentences in the right order to tell the story.
-      </p>
-
-      {/* The story so far */}
-      <div className="mt-4 flex w-full flex-col gap-2 rounded-2xl bg-violet-50 p-3 dark:bg-zinc-900">
-        {placed.length === 0 && (
-          <p className="py-6 text-center text-sm font-semibold text-violet-400">
-            Your story will appear here…
-          </p>
-        )}
-        {placed.map((it, i) => {
-          const right = checked && it.order === i;
-          const bad = checked && it.order !== i;
-          return (
-            <button
-              key={it.text}
-              onClick={() => unplace(it)}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left font-bold shadow-sm transition-all active:scale-[.98] ${
-                right
-                  ? "bg-green-100 text-green-800 ring-2 ring-green-300 dark:bg-green-950 dark:text-green-200"
-                  : bad
-                    ? "bg-rose-100 text-rose-700 ring-2 ring-rose-300 dark:bg-rose-950 dark:text-rose-300"
-                    : "bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-              }`}
-            >
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violet-500 text-sm font-black text-white">
-                {i + 1}
-              </span>
-              <Pic emoji={it.emoji} className="h-9 w-9 shrink-0" />
-              <span>{it.text}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Sentences to choose from */}
-      {remaining.length > 0 && (
-        <div className="mt-4 flex w-full flex-col gap-2">
-          {remaining.map((it) => (
-            <button
-              key={it.text}
-              onClick={() => place(it)}
-              className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-left font-bold text-zinc-700 shadow-sm ring-1 ring-violet-100 transition-all hover:-translate-y-0.5 active:scale-[.98] dark:bg-zinc-800 dark:text-zinc-200"
-            >
-              <Pic emoji={it.emoji} className="h-9 w-9 shrink-0" />
-              <span>{it.text}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-        {allPlaced && !(checked && correct) && (
-          <button
-            onClick={check}
-            className="rounded-full bg-violet-500 px-7 py-3 text-lg font-extrabold text-white shadow-lg active:scale-95"
-          >
-            ✓ Check
-          </button>
-        )}
-        <button
-          onClick={() => reset()}
-          className="rounded-full bg-white px-6 py-3 font-bold text-violet-700 shadow-sm active:scale-95 dark:bg-zinc-800 dark:text-violet-300"
-        >
-          🔀 Shuffle
-        </button>
-        <button
-          onClick={() => reset((storyIdx + 1) % playStories.length)}
-          className="rounded-full bg-zinc-100 px-6 py-3 font-bold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-        >
-          Next story →
-        </button>
-      </div>
-
-      {checked && correct && (
-        <div className="mt-5 flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] px-8 py-5 text-center shadow-lg ring-4 ring-white/60">
-          <div className="text-4xl">⭐⭐⭐</div>
-          <p className="text-lg font-extrabold text-violet-800">
-            Perfect! You told the whole story! 🎉
-          </p>
-          <button
-            onClick={() => reset((storyIdx + 1) % playStories.length)}
-            className="mt-1 rounded-full bg-violet-500 px-7 py-2.5 font-extrabold text-white shadow active:scale-95"
-          >
-            Next story →
-          </button>
-        </div>
-      )}
     </div>
   );
 }
