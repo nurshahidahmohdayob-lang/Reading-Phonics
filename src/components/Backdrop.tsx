@@ -154,6 +154,37 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         </div>
       )}
 
+      {/* A second tree in the back on the right (boy's side), behind the hills */}
+      {playful && (
+        <div className="absolute bottom-[5%] right-3 hidden flex-col items-center sm:flex">
+          <span
+            className="anim-sway block select-none leading-none drop-shadow-md"
+            style={{ fontSize: "140px", animationDuration: "4.5s" }}
+          >
+            🌳
+          </span>
+          <span
+            className="-mt-8 h-24 w-7 rounded-b-md shadow-md"
+            style={{ background: "linear-gradient(to bottom, #8B5A2B, #5C3A1E)" }}
+          />
+          {LEAVES.map((l, i) => (
+            <span
+              key={i}
+              className="leaf-fall select-none"
+              style={{
+                left: l.left,
+                top: l.top,
+                fontSize: `${l.size}px`,
+                animationDuration: `${l.dur}s`,
+                animationDelay: `${l.delay}s`,
+              }}
+            >
+              🍂
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Rolling hills along the bottom */}
       <div
         className="absolute -bottom-28 left-[-12%] h-64 w-[75%] rounded-[50%]"
@@ -201,34 +232,6 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
             className="anim-bob absolute bottom-2 left-8 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
             style={{ animationDelay: "-0.8s" }}
           />
-          {/* Tree behind the boy — tall trunk, canopy swaying, shedding leaves */}
-          <div className="absolute bottom-0 right-3 hidden flex-col items-center sm:flex">
-            <span
-              className="anim-sway block select-none leading-none drop-shadow-md"
-              style={{ fontSize: "156px", animationDuration: "4.5s" }}
-            >
-              🌳
-            </span>
-            <span
-              className="-mt-9 h-28 w-8 rounded-b-md shadow-md"
-              style={{ background: "linear-gradient(to bottom, #8B5A2B, #5C3A1E)" }}
-            />
-            {LEAVES.map((l, i) => (
-              <span
-                key={i}
-                className="leaf-fall select-none"
-                style={{
-                  left: l.left,
-                  top: l.top,
-                  fontSize: `${l.size}px`,
-                  animationDuration: `${l.dur}s`,
-                  animationDelay: `${l.delay}s`,
-                }}
-              >
-                🍂
-              </span>
-            ))}
-          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/reader-boy.png"
