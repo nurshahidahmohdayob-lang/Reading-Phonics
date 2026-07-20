@@ -321,13 +321,13 @@ export default function Home() {
     >
       <SoundPrimer />
       <Backdrop playful={!section} />
-      <header className="relative z-10 flex w-full max-w-5xl shrink-0 flex-col items-center gap-2 text-center">
-        {/* Logo lockup header */}
-        <div className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-2.5 shadow-md ring-1 ring-black/5 backdrop-blur dark:bg-zinc-900/70 dark:ring-white/10 sm:px-6 sm:py-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-violet-500 shadow-sm sm:h-12 sm:w-12">
+      <header className="relative z-10 w-full max-w-5xl shrink-0">
+        {/* Full-width brand header bar — Zera green */}
+        <div className="flex items-center gap-3 rounded-2xl bg-[#0A4F29] px-4 py-3 shadow-md sm:px-6">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 sm:h-11 sm:w-11">
             <svg
               viewBox="0 0 24 24"
-              className="h-6 w-6 sm:h-7 sm:w-7"
+              className="h-6 w-6"
               fill="none"
               stroke="#fff"
               strokeWidth={2}
@@ -339,27 +339,27 @@ export default function Home() {
               <path d="M12 6v15" />
             </svg>
           </span>
-          <h1 className="text-left text-xl font-black leading-none tracking-tight sm:text-2xl">
-            <span className="block bg-gradient-to-r from-pink-500 via-violet-500 to-sky-500 bg-clip-text text-transparent">
+          <h1 className="text-left leading-none">
+            <span className="block text-lg font-black tracking-tight text-white sm:text-xl">
               Phonics Pals
             </span>
-            <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 sm:text-xs">
+            <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 sm:text-xs">
               &amp; Guided Reading
             </span>
           </h1>
-        </div>
-        {!section && (
-          <div className="mt-1 flex flex-col items-center gap-2.5">
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Learn to read, step by step.
-            </p>
+          {!section && (
             <button
               onClick={() => go("guide")}
-              className="rounded-full border border-zinc-200 bg-white/90 px-4 py-1.5 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:border-zinc-300 hover:shadow active:scale-95 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
+              className="ml-auto rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/25 active:scale-95 sm:text-sm"
             >
-              📖 How to use this app
+              📖 How to use
             </button>
-          </div>
+          )}
+        </div>
+        {!section && (
+          <p className="mt-2 text-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            Learn to read, step by step.
+          </p>
         )}
       </header>
 
