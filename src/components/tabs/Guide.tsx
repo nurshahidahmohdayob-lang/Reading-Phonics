@@ -12,7 +12,7 @@ import {
   ASSESSMENT_WALKTHROUGH,
   READER_BANDS,
 } from "@/app/guideContent";
-import { openTutorial } from "@/lib/tutorialPrint";
+import { openTutorial, openAssessmentGuide } from "@/lib/tutorialPrint";
 
 // Band accent colours, written out in full so Tailwind keeps the classes.
 const BAND_TEXT: Record<string, string> = {
@@ -154,8 +154,17 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
       {/* ---------- Guide 2: the Reading Assessment ---------- */}
       {tab === "assessment" && (
         <>
+          <div className="mt-4 flex w-full justify-end">
+            <button
+              onClick={openAssessmentGuide}
+              className="rounded-full bg-rose-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm active:scale-95"
+            >
+              ⬇️ Download / Print
+            </button>
+          </div>
+
           {/* What the assessment is for */}
-          <div className="mt-4 w-full rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
+          <div className="mt-3 w-full rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
             <div className="text-5xl">📋</div>
             <h2 className="mt-2 text-2xl font-extrabold text-rose-900">
               Reading Assessment — step by step
