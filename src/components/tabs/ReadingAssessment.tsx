@@ -531,6 +531,7 @@ function PassageReader({
   const [micSuggested, setMicSuggested] = useState(0); // the mic's original suggested count (shown in the prompt)
   const [micWpm, setMicWpm] = useState<number | null>(null);
   const [missedWords, setMissedWords] = useState<string[]>([]); // the specific words the mic flagged; feeds the results practice list
+  const [missedPos, setMissedPos] = useState<number[]>([]); // 1-based positions of those words in the passage, shown to the teacher
   const startedAt = useRef<number | null>(null);
   const pages = passage.pages;
   const fullText = pages.map((p) => p.text).join(" ");
@@ -547,13 +548,19 @@ function PassageReader({
     const status = alignReading(words, spoken);
     const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
     setMicWpm(elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null);
-    const flagged = words
-      .filter((_, i) => status[i] !== "correct")
-      .map((w) => w.replace(/[.,!?;:"]/g, ""))
-      .filter(Boolean);
-    setMissedWords(flagged);
-    setMicSuggested(flagged.length);
-    setWrong(flagged.length);
+    const flaggedWords: string[] = [];
+    const flaggedPos: number[] = [];
+    words.forEach((w, i) => {
+      if (status[i] === "correct") return;
+      const clean = w.replace(/[.,!?;:"]/g, "");
+      if (!clean) return;
+      flaggedWords.push(clean);
+      flaggedPos.push(i + 1); // 1-based word position in the passage
+    });
+    setMissedWords(flaggedWords);
+    setMissedPos(flaggedPos);
+    setMicSuggested(flaggedWords.length);
+    setWrong(flaggedWords.length);
     setDidMic(true);
   }
 
@@ -712,18 +719,28 @@ function PassageReader({
             </button>
           )}
 
-          {/* Misread count — the mic listens and suggests how many words were read
-              wrongly; the teacher types a correction only if the number looks off. */}
+          {/* Misread words — the mic lists the positions of the words read wrongly;
+              the teacher retypes the total only if the number looks off. */}
           <div className="mt-4 w-full max-w-md rounded-2xl bg-rose-50 p-4 text-center shadow-sm ring-2 ring-rose-100 dark:bg-rose-950/30 dark:ring-rose-900/40">
             <p className="text-sm font-extrabold text-rose-700 dark:text-rose-300">
               ✍️ Words read wrongly
             </p>
             <p className="mt-0.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               {didMic
-                ? `The mic heard ${micSuggested} of ${words.length} word${micSuggested === 1 ? "" : "s"} read wrongly. Type the correct number only if this looks off — slang and accents can fool the mic.`
+                ? missedPos.length > 0
+                  ? `The mic heard ${micSuggested} word${micSuggested === 1 ? "" : "s"} read wrongly. Retype the total only if it looks off — slang and accents can fool the mic.`
+                  : "The mic didn't hear any words read wrongly. Type the number if the student did miss some."
                 : `Out of ${words.length} words, how many did the student read wrongly?`}
             </p>
-            <div className="mt-3 flex justify-center">
+
+            {didMic && missedPos.length > 0 && (
+              <p className="mt-2 text-sm font-bold text-rose-700 dark:text-rose-300">
+                {missedPos.map((n) => `word ${n}`).join(", ")}
+              </p>
+            )}
+
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Total</span>
               <input
                 type="number"
                 min={0}
