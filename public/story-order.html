@@ -1,0 +1,432 @@
+<title>Put the Story in Order</title>
+<style>
+  :root {
+    --paper: #FBF6EC;
+    --card: #FFFFFF;
+    --ink: #2B2740;
+    --ink-soft: #6A6480;
+    --line: #EBE3D4;
+    --grape: #6C4FB6;
+    --grape-soft: #EDE7F8;
+    --sun: #F6B44B;
+    --leaf: #3FA968;
+    --leaf-soft: #E4F4EA;
+    --berry: #DB5A54;
+    --berry-soft: #FBE7E5;
+    --shadow: 24px 32px 60px -32px rgba(43, 39, 64, .35);
+    --serif: Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1B1826;
+      --card: #262233;
+      --ink: #F2EEF9;
+      --ink-soft: #A79FC0;
+      --line: #372F49;
+      --grape: #B79BF2;
+      --grape-soft: #322A47;
+      --sun: #F6B44B;
+      --leaf: #5FC98A;
+      --leaf-soft: #23392E;
+      --berry: #F07B75;
+      --berry-soft: #3A2429;
+      --shadow: 24px 32px 60px -30px rgba(0, 0, 0, .6);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #FBF6EC; --card: #FFFFFF; --ink: #2B2740; --ink-soft: #6A6480;
+    --line: #EBE3D4; --grape: #6C4FB6; --grape-soft: #EDE7F8; --sun: #F6B44B;
+    --leaf: #3FA968; --leaf-soft: #E4F4EA; --berry: #DB5A54; --berry-soft: #FBE7E5;
+    --shadow: 24px 32px 60px -32px rgba(43, 39, 64, .35);
+  }
+  :root[data-theme="dark"] {
+    --paper: #1B1826; --card: #262233; --ink: #F2EEF9; --ink-soft: #A79FC0;
+    --line: #372F49; --grape: #B79BF2; --grape-soft: #322A47; --sun: #F6B44B;
+    --leaf: #5FC98A; --leaf-soft: #23392E; --berry: #F07B75; --berry-soft: #3A2429;
+    --shadow: 24px 32px 60px -30px rgba(0, 0, 0, .6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(120% 90% at 12% 0%, color-mix(in srgb, var(--sun) 16%, transparent) 0%, transparent 42%),
+      radial-gradient(120% 90% at 92% 8%, color-mix(in srgb, var(--grape) 14%, transparent) 0%, transparent 40%),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: clamp(16px, 4vw, 48px);
+    display: flex;
+    justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 720px; }
+
+  header { text-align: center; margin-bottom: 22px; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .22em;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--grape);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(30px, 6.5vw, 46px);
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 15px; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px;
+    width: fit-content;
+    margin: 22px auto 0;
+    box-shadow: var(--shadow);
+  }
+  .tab {
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 15px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color .18s, background .18s;
+  }
+  .tab[aria-selected="true"] { background: var(--grape); color: #fff; }
+  .tab:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    box-shadow: var(--shadow);
+    padding: clamp(18px, 3.5vw, 30px);
+    margin-top: 24px;
+  }
+  .story-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .story-emoji {
+    font-size: 30px;
+    width: 54px; height: 54px;
+    display: grid; place-items: center;
+    background: var(--grape-soft);
+    border-radius: 16px;
+    flex: none;
+  }
+  .story-title { font-family: var(--serif); font-size: clamp(20px, 4vw, 25px); font-weight: 700; margin: 0; }
+  .hint { color: var(--ink-soft); font-size: 14px; margin: 2px 0 0; }
+
+  ol.list { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .item {
+    display: flex; align-items: stretch; gap: 12px;
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 12px 12px 12px 0;
+    cursor: grab;
+    transition: border-color .18s, box-shadow .18s, transform .15s, background .18s;
+  }
+  .item:active { cursor: grabbing; }
+  .item.dragging { opacity: .45; }
+  .item.over { border-color: var(--grape); box-shadow: 0 0 0 3px var(--grape-soft); }
+  .item:focus-within { border-color: var(--grape); }
+
+  .badge {
+    flex: none;
+    width: 44px;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 20px;
+    color: #fff;
+    background: var(--sun);
+    border-radius: 12px;
+    margin: 2px 0 2px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .grip { flex: none; width: 20px; display: grid; place-items: center; color: var(--ink-soft); font-size: 18px; user-select: none; }
+  .sentence { font-family: var(--serif); font-size: clamp(15px, 3.2vw, 17.5px); line-height: 1.5; align-self: center; flex: 1; padding: 2px 0; }
+  .arrows { display: flex; flex-direction: column; gap: 4px; justify-content: center; flex: none; padding-right: 4px; }
+  .arrow {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    width: 30px; height: 26px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px; line-height: 1;
+    display: grid; place-items: center;
+    transition: background .15s, border-color .15s;
+  }
+  .arrow:hover { border-color: var(--grape); color: var(--grape); }
+  .arrow:disabled { opacity: .3; cursor: default; }
+  .arrow:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+  .item.correct { border-color: var(--leaf); background: var(--leaf-soft); }
+  .item.correct .badge { background: var(--leaf); }
+  .item.wrong { border-color: var(--berry); background: var(--berry-soft); }
+  .item.wrong .badge { background: var(--berry); }
+  @keyframes nudge { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .item.shake { animation: nudge .32s ease; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .btn {
+    font-family: var(--sans); font-weight: 700; font-size: 15px;
+    border-radius: 12px; padding: 12px 22px; cursor: pointer;
+    border: 2px solid transparent; transition: transform .12s, filter .18s, background .18s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+  .btn-primary { background: var(--grape); color: #fff; flex: 1; min-width: 180px; }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--grape); color: var(--grape); }
+
+  .feedback {
+    margin-top: 18px; border-radius: 16px; padding: 0 18px;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height .3s ease, opacity .3s ease, padding .3s ease;
+    font-size: 15px;
+  }
+  .feedback.show { max-height: 240px; opacity: 1; padding: 16px 18px; }
+  .feedback.win { background: var(--leaf-soft); color: var(--ink); border: 1px solid var(--leaf); }
+  .feedback.tryagain { background: var(--berry-soft); color: var(--ink); border: 1px solid var(--berry); }
+  .feedback strong { font-family: var(--serif); font-size: 18px; }
+  .feedback .score { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  footer { text-align: center; color: var(--ink-soft); font-size: 13px; margin-top: 26px; }
+
+  @media (max-width: 460px) {
+    .badge { width: 38px; font-size: 18px; margin-left: 8px; }
+    .grip { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Reading &middot; Sequencing</p>
+    <h1>Put the Story in Order</h1>
+    <p class="sub">Read the mixed-up sentences and drag them into the order that tells the story. Use the arrows if you like — then check your work!</p>
+    <div class="tabs" role="tablist" aria-label="Choose a level">
+      <button class="tab" role="tab" id="tab-lower" aria-controls="panel" aria-selected="true" data-level="lower">Lower Primary</button>
+      <button class="tab" role="tab" id="tab-upper" aria-controls="panel" aria-selected="false" data-level="upper">Upper Primary</button>
+    </div>
+  </header>
+
+  <main class="card" id="panel" role="tabpanel" aria-labelledby="tab-lower">
+    <div class="story-head">
+      <div class="story-emoji" id="emoji">🌻</div>
+      <div>
+        <h2 class="story-title" id="story-title">Ravi's Sunflower</h2>
+        <p class="hint" id="hint">5 sentences to put in order</p>
+      </div>
+    </div>
+
+    <ol class="list" id="list" aria-label="Story sentences — drag to reorder"></ol>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="check">Check my order</button>
+      <button class="btn btn-ghost" id="shuffle">Shuffle</button>
+      <button class="btn btn-ghost" id="reveal">Show answer</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+  </main>
+
+  <footer>Drag the cards, or use ▲ ▼. Green means it's in the right spot.</footer>
+</div>
+
+<script>
+  const STORIES = {
+    lower: {
+      title: "Ravi's Sunflower",
+      emoji: "🌻",
+      sentences: [
+        "One sunny morning, Ravi found a tiny brown seed lying in the garden.",
+        "He dug a little hole and gently tucked the seed into the soft, cool soil.",
+        "Every day after that, Ravi gave the seed a drink of water and let the warm sun shine down.",
+        "After about a week, a small green shoot peeked out of the ground to say hello.",
+        "Before long, a tall sunflower opened its bright yellow petals and seemed to smile right at Ravi."
+      ]
+    },
+    upper: {
+      title: "Mei and the Stray Puppy",
+      emoji: "🐶",
+      sentences: [
+        "On her way home from school, Mei heard a faint whimper coming from behind the old bakery.",
+        "Curious, she crept closer and found a shivering puppy tangled up in a torn plastic bag.",
+        "She carefully freed the frightened little animal and wrapped it snugly in her own woolly scarf.",
+        "Because the puppy wore no collar, Mei carried it home and asked her mother if they could help.",
+        "Together they fed the puppy, gave it a warm bath, and put up bright posters all around the neighbourhood.",
+        "A few days later, a grateful family knocked on the door, overjoyed to find the pet they had lost."
+      ]
+    }
+  };
+
+  const listEl = document.getElementById('list');
+  const feedbackEl = document.getElementById('feedback');
+  let level = 'lower';
+  let order = [];      // array of original indices, in current display order
+  let dragFrom = null;
+
+  function shuffled(n) {
+    const a = Array.from({length: n}, (_, i) => i);
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    // make sure it doesn't start already solved
+    const solved = a.every((v, i) => v === i);
+    return solved ? shuffled(n) : a;
+  }
+
+  function loadLevel(next) {
+    level = next;
+    const story = STORIES[level];
+    document.getElementById('emoji').textContent = story.emoji;
+    document.getElementById('story-title').textContent = story.title;
+    document.getElementById('hint').textContent = story.sentences.length + ' sentences to put in order';
+    document.getElementById('panel').setAttribute('aria-labelledby', 'tab-' + level);
+    document.querySelectorAll('.tab').forEach(t =>
+      t.setAttribute('aria-selected', String(t.dataset.level === level)));
+    order = shuffled(story.sentences.length);
+    hideFeedback();
+    render();
+  }
+
+  function render() {
+    const story = STORIES[level];
+    listEl.innerHTML = '';
+    order.forEach((origIndex, pos) => {
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.draggable = true;
+      li.dataset.pos = pos;
+
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = pos + 1;
+
+      const grip = document.createElement('div');
+      grip.className = 'grip';
+      grip.setAttribute('aria-hidden', 'true');
+      grip.textContent = '⠿';
+
+      const sentence = document.createElement('div');
+      sentence.className = 'sentence';
+      sentence.textContent = story.sentences[origIndex];
+
+      const arrows = document.createElement('div');
+      arrows.className = 'arrows';
+      const up = document.createElement('button');
+      up.className = 'arrow'; up.type = 'button';
+      up.innerHTML = '▲'; up.setAttribute('aria-label', 'Move up');
+      up.disabled = pos === 0;
+      up.onclick = () => move(pos, pos - 1);
+      const down = document.createElement('button');
+      down.className = 'arrow'; down.type = 'button';
+      down.innerHTML = '▼'; down.setAttribute('aria-label', 'Move down');
+      down.disabled = pos === order.length - 1;
+      down.onclick = () => move(pos, pos + 1);
+      arrows.append(up, down);
+
+      li.append(badge, grip, sentence, arrows);
+      addDrag(li);
+      listEl.append(li);
+    });
+  }
+
+  function move(from, to) {
+    if (to < 0 || to >= order.length) return;
+    const [item] = order.splice(from, 1);
+    order.splice(to, 0, item);
+    hideFeedback();
+    render();
+  }
+
+  function addDrag(li) {
+    li.addEventListener('dragstart', e => {
+      dragFrom = Number(li.dataset.pos);
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      document.querySelectorAll('.item.over').forEach(x => x.classList.remove('over'));
+    });
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      li.classList.add('over');
+    });
+    li.addEventListener('dragleave', () => li.classList.remove('over'));
+    li.addEventListener('drop', e => {
+      e.preventDefault();
+      li.classList.remove('over');
+      const to = Number(li.dataset.pos);
+      if (dragFrom !== null && dragFrom !== to) move(dragFrom, to);
+      dragFrom = null;
+    });
+  }
+
+  function check() {
+    const items = [...listEl.children];
+    let correct = 0;
+    order.forEach((origIndex, pos) => {
+      const li = items[pos];
+      li.classList.remove('correct', 'wrong', 'shake');
+      if (origIndex === pos) {
+        li.classList.add('correct');
+        correct++;
+      } else {
+        li.classList.add('wrong');
+        void li.offsetWidth;
+        li.classList.add('shake');
+      }
+    });
+    const total = order.length;
+    if (correct === total) {
+      showFeedback('win',
+        '<strong>🎉 You did it!</strong><br>Every sentence is in the right place. The whole story reads perfectly — well done, storyteller!');
+    } else {
+      showFeedback('tryagain',
+        '<strong>Almost there!</strong><br><span class="score">' + correct + ' of ' + total +
+        '</span> sentences are in the right spot (the green ones). Look at the red cards and think about what happens next. Try again!');
+    }
+  }
+
+  function reveal() {
+    order = Array.from({length: STORIES[level].sentences.length}, (_, i) => i);
+    render();
+    [...listEl.children].forEach(li => li.classList.add('correct'));
+    showFeedback('win', '<strong>Here is the story in order.</strong><br>Read it through, then press <em>Shuffle</em> to try it yourself!');
+  }
+
+  function showFeedback(kind, html) {
+    feedbackEl.className = 'feedback show ' + kind;
+    feedbackEl.innerHTML = html;
+  }
+  function hideFeedback() { feedbackEl.className = 'feedback'; feedbackEl.innerHTML = ''; }
+
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => loadLevel(t.dataset.level)));
+  document.getElementById('check').onclick = check;
+  document.getElementById('shuffle').onclick = () => { order = shuffled(STORIES[level].sentences.length); hideFeedback(); render(); };
+  document.getElementById('reveal').onclick = reveal;
+
+  loadLevel('lower');
+</script>
