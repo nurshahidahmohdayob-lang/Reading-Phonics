@@ -22,7 +22,7 @@ const BAND_TEXT: Record<string, string> = {
 
 export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
   return (
-    <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
+    <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       {/* Print / download */}
       <div className="flex w-full justify-end">
         <button
@@ -58,12 +58,12 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
         Suggested order — sounds first, reading last
       </p>
 
-      {/* One card per tool */}
-      <div className="mt-3 flex w-full flex-col gap-3">
+      {/* One card per tool — two side-by-side columns */}
+      <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
         {GUIDE_TOOLS.map((t, i) => (
           <div
             key={t.id}
-            className={`w-full rounded-[1.5rem] bg-gradient-to-br ${t.color} p-5 shadow-md ring-4 ring-white/60`}
+            className={`flex w-full flex-col rounded-[1.5rem] bg-gradient-to-br ${t.color} p-5 shadow-md ring-4 ring-white/60`}
           >
             <div className="flex items-center gap-3">
               <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/70 text-3xl shadow-sm">
@@ -137,7 +137,8 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
             </p>
           </div>
 
-          {ASSESSMENT_WALKTHROUGH.map((s, i) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {ASSESSMENT_WALKTHROUGH.map((s, i) => (
             <div
               key={s.img}
               className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900"
@@ -167,6 +168,7 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
               />
             </div>
           ))}
+          </div>
 
           {/* Reader-level bands */}
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900">
