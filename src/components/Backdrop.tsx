@@ -111,6 +111,18 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         />
       </div>
 
+      {/* Distant mountains rising behind the left of the scene (behind the girl) */}
+      <svg
+        className="absolute bottom-[6%] left-[-4%] w-[54%] max-w-lg"
+        viewBox="0 0 480 220"
+        aria-hidden
+      >
+        <path d="M0 220 L90 70 L150 140 L230 40 L300 130 L370 80 L480 220 Z" fill="#B7C4DC" />
+        <path d="M230 40 L206 78 L254 78 Z" fill="#EEF3FB" />
+        <path d="M-20 220 L70 110 L150 170 L220 95 L300 165 L390 115 L500 220 Z" fill="#93A3C4" />
+        <path d="M220 95 L202 122 L238 122 Z" fill="#EEF3FB" />
+      </svg>
+
       {/* Rolling hills along the bottom */}
       <div
         className="absolute -bottom-28 left-[-12%] h-64 w-[75%] rounded-[50%]"
