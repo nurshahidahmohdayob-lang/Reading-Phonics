@@ -42,11 +42,21 @@ h1 { font-size: 26px; margin: 6px 0 6px; }
 ul { margin: 14px 0 0; padding: 0; list-style: none; }
 li { background: #f8fafc; border-radius: 10px; padding: 8px 12px; margin: 0 0 7px; font-weight: 600; font-size: 14px; }
 li::before { content: "•  "; color: #f59e0b; font-weight: 900; }
+@page { size: A4; margin: 12mm; }
 @media print {
   .bar { display: none; }
   body { background: #fff; }
-  .page { margin: 0 auto; }
-  .tool, .hero { box-shadow: none; border: 1px solid #ececf0; }
+  .page { max-width: none; margin: 0; padding: 0; }
+  .order { display: none; }
+  .hero, .tool {
+    box-shadow: none; border: 0; border-radius: 0; margin: 0;
+    min-height: calc(297mm - 24mm);
+    display: flex; flex-direction: column; justify-content: center;
+    break-after: page; page-break-after: always;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .tool:last-child { break-after: auto; page-break-after: auto; }
+  .shot { max-height: 150mm; width: auto; max-width: 100%; margin: 14px auto 0; }
 }
 `;
 
