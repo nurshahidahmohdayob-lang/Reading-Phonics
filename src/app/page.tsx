@@ -140,7 +140,7 @@ export default function Home() {
     <div
       className={`flex flex-1 flex-col items-center px-4 py-4 font-sans text-zinc-900 dark:text-zinc-50 ${
         !section
-          ? "bg-gradient-to-b from-[#E6F1FD] via-[#F5FAFF] to-[#E1EDFB] pb-16 dark:from-[#0C1322] dark:via-[#111A2C] dark:to-black"
+          ? "h-[100dvh] overflow-hidden bg-gradient-to-b from-[#E6F1FD] via-[#F5FAFF] to-[#E1EDFB] dark:from-[#0C1322] dark:via-[#111A2C] dark:to-black"
           : "bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] py-8 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black"
       }`}
     >
@@ -172,30 +172,25 @@ export default function Home() {
 
       {/* Home menu — a clean, modern 2-column card grid */}
       {!section ? (
-        <main className="relative z-10 mt-6 grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
+        <main className="relative z-10 mt-3 grid min-h-0 w-full max-w-4xl flex-1 grid-cols-2 gap-2.5 [grid-auto-rows:1fr] sm:gap-3">
           {SECTIONS.map((s) => (
             <button
               key={s.id}
               onClick={() => go(s.id)}
-              className={`group flex items-center gap-4 rounded-3xl bg-gradient-to-br ${s.color} p-5 text-left shadow-md ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:shadow-xl active:scale-[.98] sm:gap-5 sm:p-6 dark:ring-white/10`}
+              className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
             >
-              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white/75 text-3xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110 sm:h-20 sm:w-20 sm:text-4xl">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/75 text-2xl shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14 sm:text-3xl">
                 {s.emoji}
               </span>
               <span className="min-w-0 flex-1">
                 <span
-                  className={`block text-lg font-extrabold leading-tight sm:text-xl ${s.text}`}
+                  className={`block text-sm font-extrabold leading-tight sm:text-base ${s.text}`}
                 >
                   {s.label}
                 </span>
-                <span className="mt-1 block text-sm font-semibold leading-snug text-zinc-600/90">
+                <span className="mt-0.5 hidden truncate text-xs font-semibold text-zinc-600/90 sm:block">
                   {s.blurb}
                 </span>
-              </span>
-              <span
-                className={`shrink-0 text-2xl ${s.text} opacity-40 transition-all group-hover:translate-x-0.5 group-hover:opacity-70`}
-              >
-                →
               </span>
             </button>
           ))}
