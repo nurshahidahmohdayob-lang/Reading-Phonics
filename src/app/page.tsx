@@ -324,21 +324,12 @@ export default function Home() {
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* Full-width brand header bar — Zera green */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[#0A4F29] px-3 py-3 shadow-md sm:gap-3 sm:px-6">
-          <span className="grid h-9 w-9 shrink-0 place-items-center justify-self-start rounded-xl bg-white/15 sm:h-11 sm:w-11">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5 sm:h-6 sm:w-6"
-              fill="none"
-              stroke="#fff"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3H9a3 3 0 0 1 3 3 3 3 0 0 1 3-3h5.5A1.5 1.5 0 0 1 22 4.5v13a1.5 1.5 0 0 1-1.5 1.5H15a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3.5A1.5 1.5 0 0 1 2 17.5z" />
-              <path d="M12 6v15" />
-            </svg>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/zera-mark-white.png"
+            alt="Zera Education"
+            className="h-9 w-auto shrink-0 justify-self-start object-contain sm:h-11"
+          />
           <h1 className="justify-self-center whitespace-nowrap text-center text-sm font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
             Phonics Pals &amp; Guided Reading
           </h1>
