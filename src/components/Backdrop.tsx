@@ -123,6 +123,18 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         <path d="M250 90 L228 122 L272 122 Z" fill="#EAF6EA" />
       </svg>
 
+      {/* Distant mountains behind the boy on the right (mirrored) */}
+      <svg
+        className="absolute bottom-[6%] right-[-6%] w-[54%] max-w-lg -scale-x-100"
+        viewBox="0 0 480 300"
+        aria-hidden
+      >
+        <path d="M0 300 L80 60 L150 150 L240 30 L320 140 L400 80 L480 300 Z" fill="#8FBF7F" />
+        <path d="M240 30 L214 74 L266 74 Z" fill="#EAF6EA" />
+        <path d="M-20 300 L70 120 L160 190 L250 90 L340 180 L420 120 L500 300 Z" fill="#5FA06B" />
+        <path d="M250 90 L228 122 L272 122 Z" fill="#EAF6EA" />
+      </svg>
+
       {/* A tree standing back with the mountains (behind the hills) */}
       {playful && (
         <div className="absolute bottom-[6%] left-[36%] z-10 hidden flex-col items-center sm:flex">
