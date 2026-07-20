@@ -138,22 +138,16 @@ export default function Home() {
 
   return (
     <div
-      className={`flex flex-1 flex-col items-center bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] px-4 py-4 font-sans text-zinc-900 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black dark:text-zinc-50 ${
-        !section ? "pb-14" : "py-8"
+      className={`flex flex-1 flex-col items-center px-4 py-4 font-sans text-zinc-900 dark:text-zinc-50 ${
+        !section
+          ? "bg-gradient-to-b from-[#F6F7FB] via-white to-[#EEF1F7] pb-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-black"
+          : "bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] py-8 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black"
       }`}
     >
       <SoundPrimer />
-      <Backdrop playful={!section} />
+      {section && <Backdrop playful={false} />}
       <header className="relative z-10 flex w-full max-w-5xl shrink-0 flex-col items-center gap-1.5 text-center">
         <div className="flex items-center justify-center gap-3">
-          {!section && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src="/images/reader-girl.png"
-              alt="A happy girl reading a book"
-              className="anim-bob h-14 w-auto drop-shadow-md sm:h-20"
-            />
-          )}
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
             <span className="bg-gradient-to-r from-pink-500 via-violet-500 to-sky-500 bg-clip-text text-transparent">
               Phonics Pals & Guided Reading
@@ -162,13 +156,13 @@ export default function Home() {
         </div>
         <div className="h-1.5 w-32 rounded-full bg-gradient-to-r from-pink-300 via-amber-300 via-emerald-300 to-sky-300" />
         {!section && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <p className="rounded-full bg-white/70 px-4 py-1 text-sm font-semibold text-violet-500 shadow-sm backdrop-blur dark:bg-zinc-800/70 dark:text-violet-300">
-              ✨ What would you like to learn today? ✨
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              Learn to read, step by step.
             </p>
             <button
               onClick={() => go("guide")}
-              className="rounded-full bg-amber-400 px-4 py-1 text-sm font-bold text-amber-950 shadow-sm transition-all hover:bg-amber-300 active:scale-95"
+              className="rounded-full border border-zinc-200 bg-white/90 px-4 py-1.5 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:border-zinc-300 hover:shadow active:scale-95 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
             >
               📖 How to use this app
             </button>
@@ -176,67 +170,33 @@ export default function Home() {
         )}
       </header>
 
-      {/* Home menu — a winding learning journey from first sounds to reading aloud */}
+      {/* Home menu — a clean, modern 2-column card grid */}
       {!section ? (
-        <main className="relative z-10 mt-4 w-full max-w-2xl">
-          {/* Start marker */}
-          <div className="flex justify-center">
-            <span className="rounded-full bg-white/80 px-5 py-1.5 text-sm font-extrabold text-violet-600 shadow-sm ring-2 ring-white/70 backdrop-blur dark:bg-zinc-800/80 dark:text-violet-300">
-              🚩 Start your reading journey
-            </span>
-          </div>
-
-          {/* The winding path */}
-          <div className="relative mt-4 flex flex-col gap-5">
-            {/* dashed spine down the middle */}
-            <div className="pointer-events-none absolute bottom-8 left-1/2 top-8 -translate-x-1/2 border-l-4 border-dashed border-violet-300/70 dark:border-violet-400/25" />
-
-            {SECTIONS.map((s, i) => {
-              const left = i % 2 === 0;
-              const card = (
-                <span
-                  className={`inline-flex flex-col rounded-2xl bg-white/85 px-4 py-2.5 shadow-sm ring-2 ring-white/70 backdrop-blur transition-transform group-hover:-translate-y-0.5 dark:bg-zinc-800/85 ${
-                    left ? "items-end text-right" : "items-start text-left"
-                  }`}
-                >
-                  <span
-                    className={`text-sm font-extrabold leading-tight sm:text-base ${s.text}`}
-                  >
-                    {s.label}
-                  </span>
-                  <span className="text-[11px] font-semibold leading-tight text-zinc-500 dark:text-zinc-400">
-                    {s.blurb}
-                  </span>
+        <main className="relative z-10 mt-6 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => go(s.id)}
+              className="group flex items-center gap-4 rounded-2xl border border-black/5 bg-white/90 p-4 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[.99] dark:border-white/10 dark:bg-zinc-900/70"
+            >
+              <span
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${s.color} text-2xl shadow-sm`}
+              >
+                {s.emoji}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold leading-tight text-zinc-800 dark:text-zinc-100">
+                  {s.label}
                 </span>
-              );
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => go(s.id)}
-                  aria-label={`${i + 1}. ${s.label} — ${s.blurb}`}
-                  className="group relative z-10 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4"
-                >
-                  <span className="flex justify-end">{left ? card : null}</span>
-                  <span
-                    className={`relative grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br ${s.color} text-3xl shadow-lg ring-4 ring-white/80 transition-transform group-hover:scale-110 group-active:scale-95 dark:ring-zinc-900/50 sm:h-20 sm:w-20`}
-                  >
-                    {s.emoji}
-                    <span className="absolute -left-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-white text-xs font-black text-zinc-700 shadow ring-1 ring-black/5">
-                      {i + 1}
-                    </span>
-                  </span>
-                  <span className="flex justify-start">{!left ? card : null}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Finish marker */}
-          <div className="mt-5 flex justify-center">
-            <span className="rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-5 py-1.5 text-sm font-extrabold text-amber-950 shadow-sm">
-              🏆 You&apos;re a reader!
-            </span>
-          </div>
+                <span className="block truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                  {s.blurb}
+                </span>
+              </span>
+              <span className="shrink-0 text-lg text-zinc-300 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-400 dark:text-zinc-600">
+                →
+              </span>
+            </button>
+          ))}
         </main>
       ) : (
         <div className="relative z-10 mt-6 flex w-full max-w-4xl flex-1 flex-col items-center">
