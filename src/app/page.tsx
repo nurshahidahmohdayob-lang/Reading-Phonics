@@ -10,6 +10,9 @@ import GuidedReading from "@/components/tabs/GuidedReading";
 import SoundItOut from "@/components/tabs/SoundItOut";
 import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
+import StoryPlay from "@/components/tabs/StoryPlay";
+import PutInOrder from "@/components/tabs/PutInOrder";
+import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
 import { stopSpeech } from "@/lib/speak";
@@ -23,7 +26,10 @@ type SectionId =
   | "tricky"
   | "stories"
   | "guided"
-  | "assessment";
+  | "assessment"
+  | "storyplay"
+  | "putinorder"
+  | "guide";
 
 const SECTIONS: {
   id: SectionId;
@@ -105,6 +111,22 @@ const SECTIONS: {
     color: "from-[#FFE3E0] to-[#FFC9C2]", // coral
     text: "text-rose-700",
   },
+  {
+    id: "storyplay",
+    label: "Story Play",
+    blurb: "Match pictures & order stories",
+    emoji: "🧩",
+    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
+    text: "text-teal-700",
+  },
+  {
+    id: "putinorder",
+    label: "Put in Order",
+    blurb: "Drag sentences to build a story",
+    emoji: "🔀",
+    color: "from-[#E7DBFF] to-[#CDB4FF]", // grape
+    text: "text-purple-700",
+  },
 ];
 
 export default function Home() {
@@ -150,9 +172,17 @@ export default function Home() {
         </div>
         <div className="h-1.5 w-32 rounded-full bg-gradient-to-r from-pink-300 via-amber-300 via-emerald-300 to-sky-300" />
         {!section && (
-          <p className="rounded-full bg-white/70 px-4 py-1 text-sm font-semibold text-violet-500 shadow-sm backdrop-blur dark:bg-zinc-800/70 dark:text-violet-300">
-            ✨ What would you like to learn today? ✨
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <p className="rounded-full bg-white/70 px-4 py-1 text-sm font-semibold text-violet-500 shadow-sm backdrop-blur dark:bg-zinc-800/70 dark:text-violet-300">
+              ✨ What would you like to learn today? ✨
+            </p>
+            <button
+              onClick={() => go("guide")}
+              className="rounded-full bg-amber-400 px-4 py-1 text-sm font-bold text-amber-950 shadow-sm transition-all hover:bg-amber-300 active:scale-95"
+            >
+              📖 How to use this app
+            </button>
+          </div>
         )}
       </header>
 
@@ -199,6 +229,11 @@ export default function Home() {
             {section === "stories" && <Stories />}
             {section === "guided" && <GuidedReading />}
             {section === "assessment" && <ReadingAssessment />}
+            {section === "storyplay" && <StoryPlay />}
+            {section === "putinorder" && <PutInOrder />}
+            {section === "guide" && (
+              <Guide onOpen={(id) => go(id as SectionId)} />
+            )}
           </div>
         </div>
       )}
