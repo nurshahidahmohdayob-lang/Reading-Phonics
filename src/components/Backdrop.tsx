@@ -128,12 +128,12 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         <div className="absolute bottom-[6%] left-[36%] z-10 hidden flex-col items-center sm:flex">
           <span
             className="anim-sway block select-none leading-none drop-shadow-md"
-            style={{ fontSize: "150px", animationDuration: "5s" }}
+            style={{ fontSize: "108px", animationDuration: "5s" }}
           >
             🌳
           </span>
           <span
-            className="-mt-9 h-28 w-8 rounded-b-md shadow-md"
+            className="-mt-7 h-20 w-6 rounded-b-md shadow-md"
             style={{ background: "linear-gradient(to bottom, #8B5A2B, #5C3A1E)" }}
           />
           {LEAVES.map((l, i) => (
