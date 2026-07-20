@@ -355,7 +355,7 @@ export const levels: Level[] = baseLevels.map((level, i) => ({
 }));
 
 export type AccuracyVerdict = {
-  label: "Independent" | "Instructional" | "Frustration";
+  label: "Independent" | "Instructional" | "Developing";
   meaning: string;
   tone: string; // Tailwind classes for a coloured pill
 };
@@ -380,7 +380,7 @@ export function classifyAccuracy(
     };
   }
   return {
-    label: "Frustration",
+    label: "Developing",
     meaning: "Let's try an easier text 🌱",
     tone: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
   };

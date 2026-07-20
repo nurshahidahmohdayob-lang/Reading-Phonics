@@ -336,7 +336,7 @@ export function passagesForLevel(level: number): AssessPassage[] {
 export type PlacementAction = "up" | "stay" | "down";
 
 export type BenchmarkBand = {
-  label: "Independent" | "Instructional" | "Frustration";
+  label: "Independent" | "Instructional" | "Developing";
   meaning: string;
   /** The accuracy range this band covers, e.g. "95–97%". */
   range: string;
@@ -350,7 +350,7 @@ export type BenchmarkBand = {
  * Classify one accuracy reading by the Reading Level Placement Guide's fixed
  * cut-offs — the benchmark used everywhere in the assessment, the same for
  * every year so a trial at any level is judged on the same scale:
- *   98–100% Independent · 95–97% Instructional · below 95% Frustration.
+ *   98–100% Independent · 95–97% Instructional · below 95% Developing.
  */
 export function benchmarkBand(accuracy: number): BenchmarkBand {
   if (accuracy >= 98)
@@ -370,7 +370,7 @@ export function benchmarkBand(accuracy: number): BenchmarkBand {
       tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
     };
   return {
-    label: "Frustration",
+    label: "Developing",
     meaning: "Let's try an easier text 🌱",
     range: "below 95%",
     note: "Too many words were missed for this text — it is too hard right now, so step down to an easier level.",
@@ -381,7 +381,7 @@ export function benchmarkBand(accuracy: number): BenchmarkBand {
 export type Placement = {
   action: PlacementAction;
   /** The placement band that produced this decision. */
-  band: "Independent" | "Instructional" | "Frustration";
+  band: "Independent" | "Instructional" | "Developing";
   /** A short reason, phrased for a teacher. */
   reason: string;
 };
@@ -406,14 +406,14 @@ export function placementDecision(
   if (accuracy < 95) {
     return {
       action: "down",
-      band: "Frustration",
+      band: "Developing",
       reason: `Accuracy ${accuracy}% is below 95% — this text is too hard.`,
     };
   }
   if (compScore != null && compScore < 70) {
     return {
       action: "down",
-      band: "Frustration",
+      band: "Developing",
       reason: `Comprehension ${compScore}% is below 70% — meaning isn't coming through.`,
     };
   }

@@ -90,7 +90,7 @@ function placeByTerm(
   let term = 2;
   if (accuracy !== null) {
     const label = benchmarkBand(accuracy).label;
-    if (label === "Frustration") {
+    if (label === "Developing") {
       levelIdx = Math.max(0, suggestIdx - 1);
       term = 3;
     } else if (label === "Independent") term = 3;
@@ -1025,7 +1025,7 @@ export const ACCURACY_BANDS = [
       "Reads most words but needs a little teaching support — the ideal level for guided reading.",
   },
   {
-    label: "Frustration",
+    label: "Developing",
     range: "below 95%",
     emoji: "🌱",
     tone: "from-[#FFE3E0] to-[#FFC9C2] text-rose-800",
@@ -1133,7 +1133,7 @@ type Step =
  * After a trial book is read, decide what happens next, using the Reading Level
  * Placement Guide cut-offs (98% / 95%):
  *  • exploring up   — Independent (≥98%) → climb higher; Instructional (95–97%)
- *    → this level is the right fit; Frustration (<95%) → drop to the level below
+ *    → this level is the right fit; Developing (<95%) → drop to the level below
  *    (i.e. stay at the current level).
  *  • exploring down — can read it (≥95%) → settle here; still too hard (<95%) →
  *    ease down again.
@@ -1141,14 +1141,14 @@ type Step =
 function nextStep(label: BenchmarkBand["label"], trialIdx: number, mode: StepMode): Step {
   const maxIdx = levels.length - 1;
   if (mode === "down") {
-    if (label === "Frustration")
+    if (label === "Developing")
       return trialIdx > 0
         ? { kind: "advance", levelIdx: trialIdx - 1, mode: "down" }
         : { kind: "settle", levelIdx: 0 };
     return { kind: "settle", levelIdx: trialIdx };
   }
   // mode "up"
-  if (label === "Frustration") return { kind: "settle", levelIdx: Math.max(0, trialIdx - 1) };
+  if (label === "Developing") return { kind: "settle", levelIdx: Math.max(0, trialIdx - 1) };
   if (label === "Independent")
     return trialIdx < maxIdx
       ? { kind: "advance", levelIdx: trialIdx + 1, mode: "up" }

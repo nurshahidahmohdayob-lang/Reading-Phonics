@@ -158,7 +158,7 @@ export function openReport(d: ReportData): void {
   const ACC_BANDS = [
     { label: "Independent", range: "98–100%", about: "Reads accurately on their own — ready for harder books." },
     { label: "Instructional", range: "95–97%", about: "Reads with a little teaching support — the ideal level for guided reading." },
-    { label: "Frustration", range: "below 95%", about: "Too many words missed — this text is too hard, so step down a level." },
+    { label: "Developing", range: "below 95%", about: "Too many words missed — this text is too hard, so step down a level." },
   ];
   const accLegend = d.accuracyBand
     ? ACC_BANDS.map((b) => bandRow(b, b.label === d.accuracyBand!.label)).join("")
