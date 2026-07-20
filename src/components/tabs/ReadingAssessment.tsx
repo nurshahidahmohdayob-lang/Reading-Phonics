@@ -531,7 +531,6 @@ function PassageReader({
   const [micSuggested, setMicSuggested] = useState(0); // the mic's original suggested count (shown in the prompt)
   const [micWpm, setMicWpm] = useState<number | null>(null);
   const [missedWords, setMissedWords] = useState<string[]>([]); // the specific words the mic flagged; feeds the results practice list
-  const [missedPos, setMissedPos] = useState<number[]>([]); // 1-based positions of those words in the passage, shown to the teacher
   const startedAt = useRef<number | null>(null);
   const pages = passage.pages;
   const fullText = pages.map((p) => p.text).join(" ");
@@ -548,19 +547,13 @@ function PassageReader({
     const status = alignReading(words, spoken);
     const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
     setMicWpm(elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null);
-    const flaggedWords: string[] = [];
-    const flaggedPos: number[] = [];
-    words.forEach((w, i) => {
-      if (status[i] === "correct") return;
-      const clean = w.replace(/[.,!?;:"]/g, "");
-      if (!clean) return;
-      flaggedWords.push(clean);
-      flaggedPos.push(i + 1); // 1-based word position in the passage
-    });
-    setMissedWords(flaggedWords);
-    setMissedPos(flaggedPos);
-    setMicSuggested(flaggedWords.length);
-    setWrong(flaggedWords.length);
+    const flagged = words
+      .filter((_, i) => status[i] !== "correct")
+      .map((w) => w.replace(/[.,!?;:"]/g, ""))
+      .filter(Boolean);
+    setMissedWords(flagged);
+    setMicSuggested(flagged.length);
+    setWrong(flagged.length);
     setDidMic(true);
   }
 
@@ -740,17 +733,11 @@ function PassageReader({
             </p>
             <p className="mt-0.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               {didMic
-                ? missedPos.length > 0
-                  ? `The mic heard ${micSuggested} word${micSuggested === 1 ? "" : "s"} read wrongly. Retype the total only if it looks off — slang and accents can fool the mic.`
+                ? micSuggested > 0
+                  ? `The mic heard ${micSuggested} of ${words.length} word${micSuggested === 1 ? "" : "s"} read wrongly. Retype the number only if it looks off — slang and accents can fool the mic.`
                   : "The mic didn't hear any words read wrongly. Type the number if the student did miss some."
                 : `Out of ${words.length} words, how many did the student read wrongly?`}
             </p>
-
-            {didMic && missedPos.length > 0 && (
-              <p className="mt-2 text-sm font-bold text-rose-700 dark:text-rose-300">
-                {missedPos.map((n) => `word ${n}`).join(", ")}
-              </p>
-            )}
 
             <div className="mt-3 flex items-center justify-center gap-2">
               <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Total</span>
