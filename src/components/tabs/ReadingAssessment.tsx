@@ -522,7 +522,7 @@ function PassageReader({
   onDone: (result: ReadResult, missed: string[]) => void;
   onExit: () => void;
 }) {
-  const { supported, listening, transcript, start, stop, reset } =
+  const { supported, listening, transcript, start, stop, reset, error } =
     useSpeechRecognition();
   const [page, setPage] = useState(0);
   const [sc, setSc] = useState(0); // self-corrections (teacher-entered)
@@ -666,8 +666,8 @@ function PassageReader({
       </nav>
 
       {/* Mic timer control */}
-      {supported && (
-        <div className="mt-5">
+      {supported ? (
+        <div className="mt-5 flex flex-col items-center gap-2">
           {!listening ? (
             <button
               onClick={() => {
@@ -684,7 +684,20 @@ function PassageReader({
               👂 Listening &amp; timing… read each page
             </span>
           )}
+          {error && !listening && (
+            <p className="max-w-xs text-center text-xs font-semibold text-rose-600 dark:text-rose-400">
+              {error === "not-allowed" || error === "service-not-allowed"
+                ? "🎤 The microphone is blocked. Click the mic (or lock) icon in the address bar, allow the microphone, then tap Start again."
+                : error === "audio-capture"
+                  ? "🎤 No microphone found — check your device is connected, then tap Start again."
+                  : "🎤 The mic had trouble starting. Tap Start to try again, or just type the number below."}
+            </p>
+          )}
         </div>
+      ) : (
+        <p className="mt-5 max-w-sm text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+          🎤 This browser can&apos;t listen automatically. Open the app in Google Chrome for auto-detect — or simply type how many words were read wrongly below.
+        </p>
       )}
 
       {/* On the last page: self-corrections + finish */}

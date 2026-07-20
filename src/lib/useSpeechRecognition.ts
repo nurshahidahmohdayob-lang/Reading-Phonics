@@ -41,6 +41,7 @@ export function useSpeechRecognition() {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState<string | null>(null); // last blocking mic error (e.g. "not-allowed")
 
   const recRef = useRef<RecognitionLike | null>(null);
   const finalRef = useRef(""); // finalized words, kept across auto-restarts
@@ -93,6 +94,7 @@ export function useSpeechRecognition() {
       }
       wantRef.current = false;
       setListening(false);
+      setError(e.error);
     };
     recRef.current = rec;
 
@@ -111,6 +113,7 @@ export function useSpeechRecognition() {
     if (!rec) return;
     finalRef.current = "";
     setTranscript("");
+    setError(null);
     wantRef.current = true;
     setListening(true);
     try {
@@ -149,5 +152,5 @@ export function useSpeechRecognition() {
     setTranscript("");
   }, []);
 
-  return { supported, listening, transcript, start, stop, reset };
+  return { supported, listening, transcript, start, stop, reset, error };
 }
