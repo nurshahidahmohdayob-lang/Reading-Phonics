@@ -119,90 +119,174 @@ const SECTIONS: {
   },
 ];
 
-/* One consistent line-icon family (stroke 2, round caps) — themed via
-   currentColor so each icon takes on its card's accent colour. */
+/* A colourful illustrated picture per tool — filled multi-colour SVG scenes,
+   each self-contained so they read as little pictures, not flat icons. */
 function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
-  const p = {
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    className,
-    "aria-hidden": true,
-  } as const;
+  const p = { viewBox: "0 0 48 48", className, "aria-hidden": true } as const;
   switch (id) {
-    case "phonics": // letter sounds — radiating sound
+    case "phonics": // speech bubble saying "Aa"
       return (
         <svg {...p}>
-          <circle cx="6" cy="12" r="2.5" />
-          <path d="M11 8.5a5 5 0 0 1 0 7" />
-          <path d="M14.5 6a9 9 0 0 1 0 12" />
+          <path
+            d="M8 8h32a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H22l-9 7v-7H8a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4z"
+            fill="#F472B6"
+          />
+          <text
+            x="24"
+            y="27"
+            fontSize="17"
+            fontWeight="800"
+            textAnchor="middle"
+            fill="#fff"
+            fontFamily="Georgia, serif"
+          >
+            Aa
+          </text>
+          <path d="M40 6l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#FBBF24" />
         </svg>
       );
-    case "soundout": // type a word — keyboard
+    case "soundout": // colourful keyboard
       return (
         <svg {...p}>
-          <rect x="2.5" y="6" width="19" height="12" rx="2" />
-          <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
+          <rect x="4" y="14" width="40" height="24" rx="4" fill="#60A5FA" />
+          <rect x="8" y="18" width="6" height="5" rx="1.5" fill="#fff" />
+          <rect x="17" y="18" width="6" height="5" rx="1.5" fill="#FDE68A" />
+          <rect x="26" y="18" width="6" height="5" rx="1.5" fill="#fff" />
+          <rect x="35" y="18" width="5" height="5" rx="1.5" fill="#F9A8D4" />
+          <rect x="8" y="26" width="6" height="5" rx="1.5" fill="#A7F3D0" />
+          <rect x="17" y="26" width="6" height="5" rx="1.5" fill="#fff" />
+          <rect x="26" y="26" width="14" height="5" rx="1.5" fill="#fff" />
         </svg>
       );
-    case "flashcards": // flip cards — stacked cards
+    case "flashcards": // two stacked cards with a picture
       return (
         <svg {...p}>
-          <rect x="3" y="7" width="12" height="13" rx="2" />
-          <path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+          <rect
+            x="17"
+            y="8"
+            width="23"
+            height="30"
+            rx="4"
+            fill="#5EEAD4"
+            transform="rotate(9 28 23)"
+          />
+          <rect
+            x="8"
+            y="12"
+            width="23"
+            height="30"
+            rx="4"
+            fill="#fff"
+            stroke="#14B8A6"
+            strokeWidth="2"
+          />
+          <circle cx="15" cy="21" r="4" fill="#FBBF24" />
+          <path d="M9 42v-4l6-6 4 4 6-6 6 6v6z" fill="#86EFAC" />
         </svg>
       );
-    case "formation": // trace & write — pencil
+    case "formation": // pencil writing on lined paper
       return (
         <svg {...p}>
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+          <rect
+            x="5"
+            y="8"
+            width="24"
+            height="32"
+            rx="3"
+            fill="#fff"
+            stroke="#CBD5E1"
+            strokeWidth="2"
+          />
+          <path
+            d="M10 18h14M10 24h14M10 30h9"
+            stroke="#E2E8F0"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <text x="12" y="30" fontSize="13" fontWeight="800" fill="#FB923C" fontFamily="Georgia">
+            a
+          </text>
+          <g transform="rotate(45 33 28)">
+            <rect x="29" y="5" width="8" height="28" rx="2" fill="#FBBF24" />
+            <rect x="29" y="5" width="8" height="6" rx="2" fill="#F472B6" />
+            <path d="M29 33l4 7 4-7z" fill="#FCD34D" />
+            <path d="M31 37l2 3 2-3z" fill="#1F2937" />
+          </g>
         </svg>
       );
-    case "spelling": // segment & spell — letter A with a check
+    case "spelling": // alphabet blocks spelling CAT
       return (
         <svg {...p}>
-          <path d="M4 16 8 5l4 11" />
-          <path d="M5.5 12.5h5" />
-          <path d="m14 14 2.5 2.5L21 12" />
+          <rect x="4" y="18" width="13" height="14" rx="3" fill="#F87171" />
+          <rect x="17.5" y="15" width="13" height="14" rx="3" fill="#60A5FA" />
+          <rect x="31" y="18" width="13" height="14" rx="3" fill="#34D399" />
+          <text x="10.5" y="29" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+            C
+          </text>
+          <text x="24" y="26" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+            A
+          </text>
+          <text x="37.5" y="29" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+            T
+          </text>
         </svg>
       );
-    case "tricky": // sight words — star
+    case "tricky": // smiley gold star
       return (
         <svg {...p}>
-          <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 16.77l-5.2 2.74.99-5.79L3.58 9.62l5.82-.85z" />
+          <path
+            d="M24 5l5.3 10.7 11.8 1.7-8.5 8.3 2 11.8L24 33.7 13.4 39.3l2-11.8-8.5-8.3 11.8-1.7z"
+            fill="#FBBF24"
+            stroke="#F59E0B"
+            strokeWidth="1.5"
+          />
+          <circle cx="20" cy="22" r="1.7" fill="#7C2D12" />
+          <circle cx="28" cy="22" r="1.7" fill="#7C2D12" />
+          <path d="M20 27a4 3 0 0 0 8 0" stroke="#7C2D12" strokeWidth="1.8" fill="none" strokeLinecap="round" />
         </svg>
       );
-    case "stories": // read stories — open book
+    case "stories": // open storybook
       return (
         <svg {...p}>
-          <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3H9a3 3 0 0 1 3 3 3 3 0 0 1 3-3h5.5A1.5 1.5 0 0 1 22 4.5v13a1.5 1.5 0 0 1-1.5 1.5H15a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3.5A1.5 1.5 0 0 1 2 17.5z" />
-          <path d="M12 6v15" />
+          <path d="M24 12c-4-3-9-4-15-3v26c6-1 11 0 15 3z" fill="#93C5FD" />
+          <path d="M24 12c4-3 9-4 15-3v26c-6-1-11 0-15 3z" fill="#3B82F6" />
+          <path d="M11 15c3-.5 7-.3 10 1M11 21c3-.5 7-.3 10 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M37 15c-3-.5-7-.3-10 1M37 21c-3-.5-7-.3-10 1" stroke="#DBEAFE" strokeWidth="1.5" strokeLinecap="round" />
+          <rect x="22.5" y="10" width="3" height="30" rx="1.5" fill="#1D4ED8" />
         </svg>
       );
-    case "storyplay": // match & order — puzzle piece
+    case "storyplay": // four colourful puzzle tiles
       return (
         <svg {...p}>
-          <path d="M15.5 3.5a2 2 0 0 1 2 2V8h2.5a2 2 0 1 1 0 4H17.5v2.5a2 2 0 0 1-2 2H13a2 2 0 1 0-4 0H6.5a2 2 0 0 1-2-2V12H2a2 2 0 1 1 0-4h2.5V5.5a2 2 0 0 1 2-2H9a2 2 0 1 0 4 0z" />
+          <rect x="6" y="6" width="17" height="17" rx="3" fill="#F472B6" />
+          <rect x="25" y="6" width="17" height="17" rx="3" fill="#60A5FA" />
+          <rect x="6" y="25" width="17" height="17" rx="3" fill="#FBBF24" />
+          <rect x="25" y="25" width="17" height="17" rx="3" fill="#34D399" />
+          <circle cx="24" cy="14.5" r="3" fill="#fff" />
+          <circle cx="14.5" cy="24" r="3" fill="#fff" />
         </svg>
       );
-    case "guided": // read aloud — microphone
+    case "guided": // microphone
       return (
         <svg {...p}>
-          <rect x="9" y="2" width="6" height="12" rx="3" />
-          <path d="M5 10v2a7 7 0 0 0 14 0v-2" />
-          <path d="M12 19v3" />
+          <rect x="18" y="6" width="12" height="22" rx="6" fill="#A78BFA" />
+          <rect x="21" y="10" width="6" height="4" rx="2" fill="#fff" opacity="0.6" />
+          <path d="M13 24a11 11 0 0 0 22 0" fill="none" stroke="#7C3AED" strokeWidth="3" strokeLinecap="round" />
+          <rect x="22.5" y="35" width="3" height="6" rx="1.5" fill="#7C3AED" />
+          <rect x="16" y="41" width="16" height="3" rx="1.5" fill="#7C3AED" />
+          <path d="M38 9l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#FBBF24" />
         </svg>
       );
-    case "assessment": // placement check — clipboard with tick
+    case "assessment": // clipboard with ticks and a star
       return (
         <svg {...p}>
-          <rect x="8" y="2" width="8" height="4" rx="1" />
-          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-          <path d="m9 14 2 2 4-4" />
+          <rect x="9" y="8" width="30" height="34" rx="4" fill="#FB7185" />
+          <rect x="14" y="12" width="20" height="26" rx="2" fill="#fff" />
+          <rect x="18" y="5" width="12" height="7" rx="2" fill="#E11D48" />
+          <path d="M17 19l2 2 3-3" stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M17 26l2 2 3-3" stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M25 20h6M25 27h6" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
+          <path d="M30 30l1.4 3 3.1.4-2.2 2.2.5 3.1-2.8-1.5-2.8 1.5.5-3.1L23.5 33.4l3.1-.4z" fill="#FBBF24" />
         </svg>
       );
     default:
@@ -270,10 +354,8 @@ export default function Home() {
               onClick={() => go(s.id)}
               className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
             >
-              <span
-                className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14 ${s.text}`}
-              >
-                <ToolIcon id={s.id} className="h-6 w-6 sm:h-7 sm:w-7" />
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/85 shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14">
+                <ToolIcon id={s.id} className="h-9 w-9 sm:h-11 sm:w-11" />
               </span>
               <span className="min-w-0 flex-1">
                 <span
