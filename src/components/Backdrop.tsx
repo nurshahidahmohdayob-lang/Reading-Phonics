@@ -15,6 +15,14 @@ const CLOUDS = [
   { top: "42%", scale: 0.55, duration: 100, delay: -25, opacity: 0.5 },
 ];
 
+const BUTTERFLIES = [
+  { left: "20%", top: "34%", size: 30, drift: 9, flap: 0.4, delay: 0 },
+  { left: "68%", top: "26%", size: 22, drift: 11, flap: 0.5, delay: -2.5 },
+  { left: "44%", top: "48%", size: 34, drift: 8, flap: 0.34, delay: -4 },
+  { left: "80%", top: "44%", size: 24, drift: 12, flap: 0.46, delay: -1.5 },
+  { left: "12%", top: "52%", size: 26, drift: 10, flap: 0.42, delay: -6 },
+];
+
 export default function Backdrop({ playful = false }: { playful?: boolean }) {
   const [boings, setBoings] = useState<Set<number>>(new Set());
 
@@ -114,6 +122,22 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
       {/* Front page only: swaying trees and two kids reading in the corners. */}
       {playful && (
         <>
+          {BUTTERFLIES.map((b, i) => (
+            <div
+              key={i}
+              className="butterfly select-none drop-shadow-sm"
+              style={{
+                left: b.left,
+                top: b.top,
+                fontSize: `${b.size}px`,
+                animationDuration: `${b.drift}s`,
+                animationDelay: `${b.delay}s`,
+              }}
+            >
+              <span style={{ animationDuration: `${b.flap}s` }}>🦋</span>
+            </div>
+          ))}
+
           <span
             className="anim-sway absolute bottom-[8%] left-[15%] hidden select-none drop-shadow-md sm:block"
             style={{ fontSize: "66px" }}
