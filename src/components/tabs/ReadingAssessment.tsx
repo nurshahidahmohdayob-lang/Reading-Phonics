@@ -528,9 +528,9 @@ function PassageReader({
   const [sc, setSc] = useState(0); // self-corrections (teacher-entered)
   const [wrong, setWrong] = useState(0); // misread words — seeded by the mic, adjusted by teacher
   const [didMic, setDidMic] = useState(false); // has the mic produced a starting count?
-  const [micErrorCount, setMicErrorCount] = useState(0); // mic's original misread count
+  const [excluded, setExcluded] = useState<Set<number>>(new Set()); // suggested words the teacher cleared as false positives
   const [micWpm, setMicWpm] = useState<number | null>(null);
-  const micMissed = useRef<string[]>([]); // read only in finishCount (event handler)
+  const [missedWords, setMissedWords] = useState<string[]>([]); // the specific words the mic flagged; shown as chips
   const startedAt = useRef<number | null>(null);
   const pages = passage.pages;
   const fullText = pages.map((p) => p.text).join(" ");
@@ -545,16 +545,15 @@ function PassageReader({
     stop();
     const spoken = transcript.split(/\s+/).filter(Boolean);
     const status = alignReading(words, spoken);
-    const correct = status.filter((s) => s === "correct").length;
     const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
     setMicWpm(elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null);
-    micMissed.current = words
+    const flagged = words
       .filter((_, i) => status[i] !== "correct")
       .map((w) => w.replace(/[.,!?;:"]/g, ""))
       .filter(Boolean);
-    const micErr = words.length - correct;
-    setMicErrorCount(micErr);
-    setWrong(micErr);
+    setMissedWords(flagged);
+    setExcluded(new Set());
+    setWrong(flagged.length);
     setDidMic(true);
   }
 
@@ -573,8 +572,19 @@ function PassageReader({
       const elapsed = (Date.now() - startedAt.current) / 1000;
       wpm = elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
     }
-    const missed = micMissed.current.slice(0, errors);
+    const kept = missedWords.filter((_, i) => !excluded.has(i));
+    const missed = kept.slice(0, errors);
     onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm }, missed);
+  }
+
+  // Teacher clears a mic false-positive (or adds it back); keep the count in sync.
+  function toggleSuggested(i: number) {
+    const wasOut = excluded.has(i);
+    const next = new Set(excluded);
+    if (wasOut) next.delete(i);
+    else next.add(i);
+    setExcluded(next);
+    setWrong((w) => Math.max(0, w + (wasOut ? 1 : -1)));
   }
 
   return (
@@ -713,26 +723,63 @@ function PassageReader({
             </button>
           )}
 
-          {/* Misread count — seeded by the mic, then adjusted by the teacher's ear */}
+          {/* Misread words — the mic suggests which words tripped the student up.
+              Tap a word to clear a false positive; type to override the total. */}
           <div className="mt-4 w-full max-w-md rounded-2xl bg-rose-50 p-4 text-center shadow-sm ring-2 ring-rose-100 dark:bg-rose-950/30 dark:ring-rose-900/40">
             <p className="text-sm font-extrabold text-rose-700 dark:text-rose-300">
               ✍️ Words read wrongly
             </p>
             <p className="mt-0.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-              {didMic
-                ? `The mic marked ${micErrorCount} of ${words.length}. Adjust it to what you actually heard — slang and accents can fool the mic.`
-                : `Out of ${words.length} words, how many did the student read wrongly?`}
+              {didMic && missedWords.length > 0
+                ? "The mic thinks these words tripped the student up. Tap any it got wrong to drop it — slang and accents can fool the mic — or type the correct total below."
+                : didMic
+                  ? "The mic didn't flag any words. Type how many the student actually read wrongly."
+                  : `Out of ${words.length} words, how many did the student read wrongly?`}
             </p>
-            <div className="mt-2 flex items-center justify-center gap-4">
+
+            {didMic && missedWords.length > 0 && (
+              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                {missedWords.map((w, i) => {
+                  const on = !excluded.has(i);
+                  return (
+                    <button
+                      key={`${w}-${i}`}
+                      onClick={() => toggleSuggested(i)}
+                      title={on ? "Counted as wrong — tap if it was actually fine" : "Not counted — tap to add back"}
+                      className={`rounded-lg px-2.5 py-1 text-sm font-bold shadow-sm transition-all active:scale-95 ${
+                        on
+                          ? "bg-rose-500 text-white"
+                          : "bg-white text-zinc-400 line-through dark:bg-zinc-800 dark:text-zinc-500"
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Total wrong — seeded from the suggestions above, editable */}
+            <div className="mt-3 flex items-center justify-center gap-3">
               <button
                 onClick={() => setWrong((n) => Math.max(0, n - 1))}
                 className="grid h-9 w-9 place-items-center rounded-full bg-white font-black text-rose-600 shadow-sm active:scale-90 dark:bg-zinc-800"
               >
                 −
               </button>
-              <span className="w-12 text-center text-3xl font-black text-zinc-700 dark:text-zinc-100">
-                {wrong}
-              </span>
+              <input
+                type="number"
+                min={0}
+                max={words.length}
+                value={wrong}
+                onChange={(e) =>
+                  setWrong(
+                    Math.max(0, Math.min(words.length, Math.round(Number(e.target.value) || 0))),
+                  )
+                }
+                aria-label="Total words read wrongly"
+                className="w-20 rounded-xl border-2 border-rose-200 bg-white text-center text-3xl font-black text-zinc-700 focus:border-rose-400 focus:outline-none dark:border-rose-900 dark:bg-zinc-800 dark:text-zinc-100"
+              />
               <button
                 onClick={() => setWrong((n) => Math.min(words.length, n + 1))}
                 className="grid h-9 w-9 place-items-center rounded-full bg-white font-black text-rose-600 shadow-sm active:scale-90 dark:bg-zinc-800"
