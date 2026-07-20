@@ -125,7 +125,7 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
 
       {/* A tree standing back with the mountains (behind the hills) */}
       {playful && (
-        <div className="absolute bottom-[6%] left-[38%] hidden flex-col items-center sm:flex">
+        <div className="absolute bottom-[6%] left-[38%] z-10 hidden flex-col items-center sm:flex">
           <span
             className="anim-sway block select-none leading-none drop-shadow-md"
             style={{ fontSize: "120px", animationDuration: "5s" }}
@@ -156,7 +156,7 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
 
       {/* A second tree in the back on the right (boy's side), behind the hills */}
       {playful && (
-        <div className="absolute bottom-[5%] right-3 hidden flex-col items-center sm:flex">
+        <div className="absolute bottom-[5%] right-3 z-10 hidden flex-col items-center sm:flex">
           <span
             className="anim-sway block select-none leading-none drop-shadow-md"
             style={{ fontSize: "140px", animationDuration: "4.5s" }}
@@ -229,14 +229,14 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
           <img
             src="/images/reader-girl.png"
             alt=""
-            className="anim-bob absolute bottom-2 left-8 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
+            className="anim-bob absolute bottom-2 left-8 z-20 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
             style={{ animationDelay: "-0.8s" }}
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/reader-boy.png"
             alt=""
-            className="anim-bob absolute bottom-2 right-10 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
+            className="anim-bob absolute bottom-2 right-10 z-20 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
           />
         </>
       )}
