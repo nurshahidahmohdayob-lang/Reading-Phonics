@@ -354,8 +354,12 @@ export default function Home() {
           </div>
         </div>
         {!section && (
-          <p className="mt-2 text-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            Learn to read, step by step.
+          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-zinc-700 dark:text-zinc-100 sm:text-2xl">
+            Learn to read,{" "}
+            <span className="text-[#0A4F29] dark:text-[#F7B917]">
+              one step at a time
+            </span>{" "}
+            🌱
           </p>
         )}
       </header>
