@@ -132,3 +132,86 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     text: "text-rose-700",
   },
 ];
+
+/* A deeper, screen-by-screen walkthrough of the Reading Assessment, shown as an
+   expandable section in the Guide. Screenshots live in /images/tutorial. */
+export type WalkStep = { tag: string; title: string; body: string; img: string };
+
+export const ASSESSMENT_WALKTHROUGH: WalkStep[] = [
+  {
+    tag: "Get started",
+    title: "Enter the child’s name and tap Start",
+    body: "Open Reading Assessment from the home menu, type the child’s name, and press Start. The panel shows how the final score is weighted — accuracy 40%, fluency 30%, comprehension 30%.",
+    img: "assess-start",
+  },
+  {
+    tag: "Stage 1 · Word check",
+    title: "The child reads single words — you mark each one",
+    body: "Words appear one at a time, easy to hard. The child reads each aloud and you tap ✓ Got it or ✗ Not yet (Hear it plays the word). It stops after 2 words wrong and uses how far they got to pick a starting level.",
+    img: "assess-words",
+  },
+  {
+    tag: "Stage 2 · Read aloud",
+    title: "Read the story out loud while the app listens",
+    body: "A book at the child’s level opens. Tap 🎤 Start reading aloud — the badge changes to “Listening & timing”. The child reads each page; tap Next page to turn.",
+    img: "assess-book",
+  },
+  {
+    tag: "Stage 2 · Score",
+    title: "Check the words-read-wrongly count",
+    body: "On the last page tap ✓ Done reading aloud. The mic suggests how many words were misread — retype the Total only if it looks off, since accents and slang can fool it. Add any self-corrections, then tap Confirm result.",
+    img: "assess-count",
+  },
+  {
+    tag: "Stage 3 · Comprehension",
+    title: "Answer the understanding questions",
+    body: "Up to eight questions — a mix of literal, inferential and vocabulary. The child can look back at the book to help. Short on time? Tap Skip → result.",
+    img: "assess-comp",
+  },
+  {
+    tag: "Result",
+    title: "Read the report",
+    body: "You get the reader level and overall score, plus words read, errors, self-corrections, accuracy % and words per minute. A “Practise these next” box lists the tricky words and suggests an easier or harder book.",
+    img: "assess-report",
+  },
+  {
+    tag: "Keep it",
+    title: "Print or send the one-page report",
+    body: "Tap “Open / print report” for a tidy one-page summary — Reader Level, Year · Term and a Lexile — ready to print or Save as PDF. For a result you can trust, run a second passage at the same level another day and compare.",
+    img: "assess-practise",
+  },
+];
+
+export type ReaderBand = {
+  band: string;
+  range: string;
+  desc: string;
+  tone: "rose" | "amber" | "sky" | "emerald";
+};
+
+export const READER_BANDS: ReaderBand[] = [
+  {
+    band: "Emerging Reader",
+    range: "below 60%",
+    desc: "Just beginning — learning letter sounds and first words. Needs lots of support and very easy, decodable books.",
+    tone: "rose",
+  },
+  {
+    band: "Developing Reader",
+    range: "60–74%",
+    desc: "Building decoding and fluency. Reads simple texts with guided practice and still meets many tricky words.",
+    tone: "amber",
+  },
+  {
+    band: "Instructional Reader",
+    range: "75–89%",
+    desc: "Reads well with a little teaching support — the ideal zone for guided reading and learning new skills.",
+    tone: "sky",
+  },
+  {
+    band: "Independent Reader",
+    range: "90–100%",
+    desc: "Reads smoothly and on their own, with strong understanding. Ready for more challenging books.",
+    tone: "emerald",
+  },
+];

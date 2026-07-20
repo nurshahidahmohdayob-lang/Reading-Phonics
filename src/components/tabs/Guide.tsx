@@ -4,8 +4,21 @@
    and students can read it any time (no video needed). Each card can jump
    straight into its tool, and the whole guide can be printed / saved as PDF. */
 
-import { GUIDE_TOOLS, GUIDE_INTRO } from "@/app/guideContent";
+import {
+  GUIDE_TOOLS,
+  GUIDE_INTRO,
+  ASSESSMENT_WALKTHROUGH,
+  READER_BANDS,
+} from "@/app/guideContent";
 import { openTutorial } from "@/lib/tutorialPrint";
+
+// Band accent colours, written out in full so Tailwind keeps the classes.
+const BAND_TEXT: Record<string, string> = {
+  rose: "text-rose-600 dark:text-rose-400",
+  amber: "text-amber-600 dark:text-amber-400",
+  sky: "text-sky-600 dark:text-sky-400",
+  emerald: "text-emerald-600 dark:text-emerald-400",
+};
 
 export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
   return (
@@ -93,6 +106,100 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
           </div>
         ))}
       </div>
+
+      {/* Deeper walkthrough: the Reading Assessment, screen by screen */}
+      <details className="group mt-6 w-full rounded-[1.5rem] bg-white/70 p-5 shadow-md ring-4 ring-white/60 dark:bg-zinc-800/70">
+        <summary className="flex cursor-pointer list-none items-center gap-3 font-extrabold text-rose-700 dark:text-rose-300">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-rose-100 text-2xl dark:bg-rose-950">
+            📋
+          </span>
+          <span className="min-w-0 flex-1 leading-tight">
+            Reading Assessment — full step-by-step
+            <span className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              Every screen, from name to printable report
+            </span>
+          </span>
+          <span className="shrink-0 text-sm text-zinc-400 transition-transform group-open:rotate-180">
+            ▾
+          </span>
+        </summary>
+
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Mic prerequisite */}
+          <div className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:ring-amber-900/50">
+            <span className="text-xl">🎤</span>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+              Before you start: open the app in{" "}
+              <span className="font-extrabold">Google Chrome</span> and tap{" "}
+              <span className="font-extrabold">Allow</span> on the microphone
+              popup — the read-aloud needs it. No microphone? You can still type
+              every score by hand.
+            </p>
+          </div>
+
+          {ASSESSMENT_WALKTHROUGH.map((s, i) => (
+            <div
+              key={s.img}
+              className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900"
+            >
+              <div className="flex items-center gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-violet-500 text-sm font-black text-white">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sky-500">
+                    {s.tag}
+                  </p>
+                  <h4 className="font-extrabold leading-tight text-zinc-800 dark:text-zinc-100">
+                    {s.title}
+                  </h4>
+                </div>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+                {s.body}
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/images/tutorial/${s.img}.jpg`}
+                alt={s.title}
+                loading="lazy"
+                className="mt-3 w-full rounded-xl bg-white shadow-sm ring-1 ring-black/5"
+              />
+            </div>
+          ))}
+
+          {/* Reader-level bands */}
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900">
+            <h4 className="font-extrabold text-zinc-800 dark:text-zinc-100">
+              What the reader levels mean
+            </h4>
+            <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+              The accuracy % places the child in one of four bands — it tells you
+              whether a book is just right, or too hard.
+            </p>
+            <div className="mt-3 flex flex-col gap-2">
+              {READER_BANDS.map((b) => (
+                <div
+                  key={b.band}
+                  className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className={`font-extrabold ${BAND_TEXT[b.tone]}`}>
+                      {b.band}
+                    </span>
+                    <span className="text-xs font-bold text-zinc-400">
+                      {b.range}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                    {b.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </details>
 
       <p className="mt-6 text-center text-sm font-semibold text-zinc-400">
         Tip: tap “Open ▶” on any card to go straight to that tool. 💛
