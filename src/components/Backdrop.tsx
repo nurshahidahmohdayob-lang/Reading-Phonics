@@ -16,11 +16,13 @@ const CLOUDS = [
 ];
 
 const BUTTERFLIES = [
-  { left: "20%", top: "34%", size: 30, drift: 9, flap: 0.4, delay: 0 },
-  { left: "68%", top: "26%", size: 22, drift: 11, flap: 0.5, delay: -2.5 },
-  { left: "44%", top: "48%", size: 34, drift: 8, flap: 0.34, delay: -4 },
-  { left: "80%", top: "44%", size: 24, drift: 12, flap: 0.46, delay: -1.5 },
-  { left: "12%", top: "52%", size: 26, drift: 10, flap: 0.42, delay: -6 },
+  { left: "6%", top: "16%", size: 30, drift: 11, flap: 0.4, delay: 0, hue: 0 },
+  { left: "86%", top: "12%", size: 24, drift: 13, flap: 0.5, delay: -2.5, hue: 55 },
+  { left: "48%", top: "8%", size: 28, drift: 10, flap: 0.36, delay: -4, hue: 130 },
+  { left: "90%", top: "58%", size: 26, drift: 14, flap: 0.46, delay: -1.5, hue: 190 },
+  { left: "5%", top: "66%", size: 32, drift: 12, flap: 0.42, delay: -6, hue: 265 },
+  { left: "72%", top: "80%", size: 22, drift: 11, flap: 0.44, delay: -3, hue: 315 },
+  { left: "32%", top: "84%", size: 28, drift: 12, flap: 0.38, delay: -7.5, hue: 95 },
 ];
 
 export default function Backdrop({ playful = false }: { playful?: boolean }) {
@@ -41,6 +43,7 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
   }
 
   return (
+    <>
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden dark:opacity-30"
@@ -122,22 +125,6 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
       {/* Front page only: swaying trees and two kids reading in the corners. */}
       {playful && (
         <>
-          {BUTTERFLIES.map((b, i) => (
-            <div
-              key={i}
-              className="butterfly select-none drop-shadow-sm"
-              style={{
-                left: b.left,
-                top: b.top,
-                fontSize: `${b.size}px`,
-                animationDuration: `${b.drift}s`,
-                animationDelay: `${b.delay}s`,
-              }}
-            >
-              <span style={{ animationDuration: `${b.flap}s` }}>🦋</span>
-            </div>
-          ))}
-
           <span
             className="anim-sway absolute bottom-[8%] left-[15%] hidden select-none drop-shadow-md sm:block"
             style={{ fontSize: "66px" }}
@@ -167,5 +154,31 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         </>
       )}
     </div>
+
+      {/* Butterflies fly above the tools too, so they roam the whole page. */}
+      {playful && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-30 overflow-hidden"
+        >
+          {BUTTERFLIES.map((b, i) => (
+            <div
+              key={i}
+              className="butterfly select-none"
+              style={{
+                left: b.left,
+                top: b.top,
+                fontSize: `${b.size}px`,
+                animationDuration: `${b.drift}s`,
+                animationDelay: `${b.delay}s`,
+                filter: `hue-rotate(${b.hue}deg) saturate(1.3) drop-shadow(0 2px 3px rgba(0,0,0,.2))`,
+              }}
+            >
+              <span style={{ animationDuration: `${b.flap}s` }}>🦋</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

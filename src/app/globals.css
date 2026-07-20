@@ -360,14 +360,17 @@ body {
   0% {
     transform: translate(0, 0);
   }
-  25% {
-    transform: translate(26px, -32px);
+  20% {
+    transform: translate(70px, -50px);
   }
-  50% {
-    transform: translate(52px, 6px);
+  40% {
+    transform: translate(140px, 20px);
   }
-  75% {
-    transform: translate(20px, 36px);
+  60% {
+    transform: translate(80px, 80px);
+  }
+  80% {
+    transform: translate(-40px, 40px);
   }
   100% {
     transform: translate(0, 0);
