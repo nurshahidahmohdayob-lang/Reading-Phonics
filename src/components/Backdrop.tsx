@@ -15,11 +15,6 @@ const CLOUDS = [
   { top: "42%", scale: 0.55, duration: 100, delay: -25, opacity: 0.5 },
 ];
 
-const BIRDS = [
-  { top: "6%", duration: 38, delay: -12, size: "text-xl" },
-  { top: "24%", duration: 55, delay: -35, size: "text-base" },
-];
-
 export default function Backdrop({ playful = false }: { playful?: boolean }) {
   const [boings, setBoings] = useState<Set<number>>(new Set());
 
@@ -79,25 +74,6 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
             }
           />
         </div>
-      ))}
-
-      {/* Birds crossing the sky */}
-      {BIRDS.map((b, i) => (
-        <span
-          key={i}
-          className="bird-fly opacity-70"
-          style={{
-            top: b.top,
-            animationDuration: `${b.duration}s`,
-            animationDelay: `${b.delay}s`,
-          }}
-        >
-          <span className={`anim-flutter ${b.size}`}>
-            <span className="inline-block" style={{ transform: "scaleX(-1)" }}>
-              🐦
-            </span>
-          </span>
-        </span>
       ))}
 
       {/* Rainbow peeking from behind the hills */}
