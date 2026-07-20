@@ -11,7 +11,6 @@ import SoundItOut from "@/components/tabs/SoundItOut";
 import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
-import PutInOrder from "@/components/tabs/PutInOrder";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
@@ -28,7 +27,6 @@ type SectionId =
   | "guided"
   | "assessment"
   | "storyplay"
-  | "putinorder"
   | "guide";
 
 const SECTIONS: {
@@ -118,14 +116,6 @@ const SECTIONS: {
     emoji: "🧩",
     color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
     text: "text-teal-700",
-  },
-  {
-    id: "putinorder",
-    label: "Put in Order",
-    blurb: "Drag sentences to build a story",
-    emoji: "🔀",
-    color: "from-[#E7DBFF] to-[#CDB4FF]", // grape
-    text: "text-purple-700",
   },
 ];
 
@@ -230,7 +220,6 @@ export default function Home() {
             {section === "guided" && <GuidedReading />}
             {section === "assessment" && <ReadingAssessment />}
             {section === "storyplay" && <StoryPlay />}
-            {section === "putinorder" && <PutInOrder />}
             {section === "guide" && (
               <Guide onOpen={(id) => go(id as SectionId)} />
             )}
