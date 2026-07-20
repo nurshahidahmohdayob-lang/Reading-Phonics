@@ -1,50 +1,34 @@
 <title>Put the Story in Order</title>
 <style>
   :root {
-    --paper: #FBF6EC;
-    --card: #FFFFFF;
-    --ink: #2B2740;
-    --ink-soft: #6A6480;
-    --line: #EBE3D4;
-    --grape: #6C4FB6;
-    --grape-soft: #EDE7F8;
-    --sun: #F6B44B;
-    --leaf: #3FA968;
-    --leaf-soft: #E4F4EA;
-    --berry: #DB5A54;
-    --berry-soft: #FBE7E5;
+    --paper: #FBF6EC; --card: #FFFFFF; --ink: #2B2740; --ink-soft: #6A6480;
+    --line: #EBE3D4; --grape: #6C4FB6; --grape-soft: #EDE7F8; --sun: #F6B44B;
+    --leaf: #3FA968; --leaf-soft: #E4F4EA; --berry: #DB5A54; --berry-soft: #FBE7E5;
+    --sky: #3B82C4; --sky-soft: #E4EFF9;
     --shadow: 24px 32px 60px -32px rgba(43, 39, 64, .35);
     --serif: Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif;
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #1B1826;
-      --card: #262233;
-      --ink: #F2EEF9;
-      --ink-soft: #A79FC0;
-      --line: #372F49;
-      --grape: #B79BF2;
-      --grape-soft: #322A47;
-      --sun: #F6B44B;
-      --leaf: #5FC98A;
-      --leaf-soft: #23392E;
-      --berry: #F07B75;
-      --berry-soft: #3A2429;
+      --paper: #1B1826; --card: #262233; --ink: #F2EEF9; --ink-soft: #A79FC0;
+      --line: #372F49; --grape: #B79BF2; --grape-soft: #322A47; --sun: #F6B44B;
+      --leaf: #5FC98A; --leaf-soft: #23392E; --berry: #F07B75; --berry-soft: #3A2429;
+      --sky: #6FB2E8; --sky-soft: #22344A;
       --shadow: 24px 32px 60px -30px rgba(0, 0, 0, .6);
     }
   }
   :root[data-theme="light"] {
-    --paper: #FBF6EC; --card: #FFFFFF; --ink: #2B2740; --ink-soft: #6A6480;
-    --line: #EBE3D4; --grape: #6C4FB6; --grape-soft: #EDE7F8; --sun: #F6B44B;
-    --leaf: #3FA968; --leaf-soft: #E4F4EA; --berry: #DB5A54; --berry-soft: #FBE7E5;
-    --shadow: 24px 32px 60px -32px rgba(43, 39, 64, .35);
+    --paper:#FBF6EC;--card:#FFFFFF;--ink:#2B2740;--ink-soft:#6A6480;--line:#EBE3D4;
+    --grape:#6C4FB6;--grape-soft:#EDE7F8;--sun:#F6B44B;--leaf:#3FA968;--leaf-soft:#E4F4EA;
+    --berry:#DB5A54;--berry-soft:#FBE7E5;--sky:#3B82C4;--sky-soft:#E4EFF9;
+    --shadow:24px 32px 60px -32px rgba(43,39,64,.35);
   }
   :root[data-theme="dark"] {
-    --paper: #1B1826; --card: #262233; --ink: #F2EEF9; --ink-soft: #A79FC0;
-    --line: #372F49; --grape: #B79BF2; --grape-soft: #322A47; --sun: #F6B44B;
-    --leaf: #5FC98A; --leaf-soft: #23392E; --berry: #F07B75; --berry-soft: #3A2429;
-    --shadow: 24px 32px 60px -30px rgba(0, 0, 0, .6);
+    --paper:#1B1826;--card:#262233;--ink:#F2EEF9;--ink-soft:#A79FC0;--line:#372F49;
+    --grape:#B79BF2;--grape-soft:#322A47;--sun:#F6B44B;--leaf:#5FC98A;--leaf-soft:#23392E;
+    --berry:#F07B75;--berry-soft:#3A2429;--sky:#6FB2E8;--sky-soft:#22344A;
+    --shadow:24px 32px 60px -30px rgba(0,0,0,.6);
   }
 
   * { box-sizing: border-box; }
@@ -54,128 +38,54 @@
       radial-gradient(120% 90% at 12% 0%, color-mix(in srgb, var(--sun) 16%, transparent) 0%, transparent 42%),
       radial-gradient(120% 90% at 92% 8%, color-mix(in srgb, var(--grape) 14%, transparent) 0%, transparent 40%),
       var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.5;
-    min-height: 100vh;
-    padding: clamp(16px, 4vw, 48px);
-    display: flex;
-    justify-content: center;
+    color: var(--ink); font-family: var(--sans); line-height: 1.5;
+    min-height: 100vh; padding: clamp(16px, 4vw, 44px);
+    display: flex; justify-content: center;
   }
-  .wrap { width: 100%; max-width: 720px; }
+  .wrap { width: 100%; max-width: 740px; }
 
-  header { text-align: center; margin-bottom: 22px; }
-  .eyebrow {
-    text-transform: uppercase;
-    letter-spacing: .22em;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--grape);
-    margin: 0 0 8px;
-  }
-  h1 {
-    font-family: var(--serif);
-    font-weight: 700;
-    font-size: clamp(30px, 6.5vw, 46px);
-    line-height: 1.05;
-    margin: 0;
-    text-wrap: balance;
-    letter-spacing: -.01em;
-  }
+  header { text-align: center; margin-bottom: 18px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .22em; font-size: 12px; font-weight: 700; color: var(--grape); margin: 0 0 8px; }
+  h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(28px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
   .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 15px; }
 
-  .tabs {
-    display: flex;
-    gap: 8px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 6px;
-    width: fit-content;
-    margin: 22px auto 0;
-    box-shadow: var(--shadow);
-  }
-  .tab {
-    border: 0;
-    background: transparent;
-    color: var(--ink-soft);
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 15px;
-    padding: 9px 20px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: color .18s, background .18s;
-  }
+  /* Level picker */
+  .levels { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin: 22px 0 0; }
+  .group { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .group-label { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+  .group.upper .group-label { color: var(--sky); }
+  .group.lower .group-label { color: var(--grape); }
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px; box-shadow: var(--shadow); }
+  .tab { border: 0; background: transparent; color: var(--ink-soft); font-family: var(--sans); font-weight: 800; font-size: 14px; padding: 8px 15px; border-radius: 999px; cursor: pointer; transition: color .18s, background .18s; }
   .tab[aria-selected="true"] { background: var(--grape); color: #fff; }
+  .group.upper .tab[aria-selected="true"] { background: var(--sky); }
   .tab:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 26px;
-    box-shadow: var(--shadow);
-    padding: clamp(18px, 3.5vw, 30px);
-    margin-top: 24px;
-  }
-  .story-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
-  .story-emoji {
-    font-size: 30px;
-    width: 54px; height: 54px;
-    display: grid; place-items: center;
-    background: var(--grape-soft);
-    border-radius: 16px;
-    flex: none;
-  }
-  .story-title { font-family: var(--serif); font-size: clamp(20px, 4vw, 25px); font-weight: 700; margin: 0; }
-  .hint { color: var(--ink-soft); font-size: 14px; margin: 2px 0 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow); padding: clamp(18px, 3.5vw, 30px); margin-top: 22px; }
+  .story-head { display: flex; align-items: center; gap: 14px; }
+  .story-emoji { font-size: 30px; width: 54px; height: 54px; display: grid; place-items: center; background: var(--grape-soft); border-radius: 16px; flex: none; }
+  .story-title { font-family: var(--serif); font-size: clamp(19px, 3.6vw, 24px); font-weight: 700; margin: 0; }
+  .hint { color: var(--ink-soft); font-size: 13px; margin: 2px 0 0; }
+  .story-nav { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; }
+  .counter { font-size: 12px; font-weight: 700; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .next-btn { border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-family: var(--sans); font-weight: 800; font-size: 13px; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: border-color .15s, color .15s; }
+  .next-btn:hover { border-color: var(--grape); color: var(--grape); }
+  .next-btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
   ol.list { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-  .item {
-    display: flex; align-items: stretch; gap: 12px;
-    background: var(--card);
-    border: 2px solid var(--line);
-    border-radius: 16px;
-    padding: 12px 12px 12px 0;
-    cursor: grab;
-    transition: border-color .18s, box-shadow .18s, transform .15s, background .18s;
-  }
+  .item { display: flex; align-items: stretch; gap: 12px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 12px 12px 12px 0; cursor: grab; transition: border-color .18s, box-shadow .18s, transform .15s, background .18s; }
   .item:active { cursor: grabbing; }
   .item.dragging { opacity: .45; }
   .item.over { border-color: var(--grape); box-shadow: 0 0 0 3px var(--grape-soft); }
   .item:focus-within { border-color: var(--grape); }
-
-  .badge {
-    flex: none;
-    width: 44px;
-    display: grid; place-items: center;
-    font-family: var(--serif);
-    font-weight: 700;
-    font-size: 20px;
-    color: #fff;
-    background: var(--sun);
-    border-radius: 12px;
-    margin: 2px 0 2px 12px;
-    font-variant-numeric: tabular-nums;
-  }
+  .badge { flex: none; width: 44px; display: grid; place-items: center; font-family: var(--serif); font-weight: 700; font-size: 20px; color: #fff; background: var(--sun); border-radius: 12px; margin: 2px 0 2px 12px; font-variant-numeric: tabular-nums; }
   .grip { flex: none; width: 20px; display: grid; place-items: center; color: var(--ink-soft); font-size: 18px; user-select: none; }
-  .sentence { font-family: var(--serif); font-size: clamp(15px, 3.2vw, 17.5px); line-height: 1.5; align-self: center; flex: 1; padding: 2px 0; }
+  .sentence { font-family: var(--serif); font-size: clamp(15px, 3vw, 17px); line-height: 1.5; align-self: center; flex: 1; padding: 2px 0; }
   .arrows { display: flex; flex-direction: column; gap: 4px; justify-content: center; flex: none; padding-right: 4px; }
-  .arrow {
-    border: 1px solid var(--line);
-    background: var(--paper);
-    color: var(--ink);
-    width: 30px; height: 26px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px; line-height: 1;
-    display: grid; place-items: center;
-    transition: background .15s, border-color .15s;
-  }
+  .arrow { border: 1px solid var(--line); background: var(--paper); color: var(--ink); width: 30px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 13px; line-height: 1; display: grid; place-items: center; transition: background .15s, border-color .15s; }
   .arrow:hover { border-color: var(--grape); color: var(--grape); }
   .arrow:disabled { opacity: .3; cursor: default; }
   .arrow:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
-
   .item.correct { border-color: var(--leaf); background: var(--leaf-soft); }
   .item.correct .badge { background: var(--leaf); }
   .item.wrong { border-color: var(--berry); background: var(--berry-soft); }
@@ -184,35 +94,27 @@
   .item.shake { animation: nudge .32s ease; }
 
   .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
-  .btn {
-    font-family: var(--sans); font-weight: 700; font-size: 15px;
-    border-radius: 12px; padding: 12px 22px; cursor: pointer;
-    border: 2px solid transparent; transition: transform .12s, filter .18s, background .18s;
-  }
+  .btn { font-family: var(--sans); font-weight: 700; font-size: 15px; border-radius: 12px; padding: 12px 22px; cursor: pointer; border: 2px solid transparent; transition: transform .12s, filter .18s, background .18s; }
   .btn:active { transform: translateY(1px); }
   .btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
-  .btn-primary { background: var(--grape); color: #fff; flex: 1; min-width: 180px; }
+  .btn-primary { background: var(--grape); color: #fff; flex: 1; min-width: 170px; }
   .btn-primary:hover { filter: brightness(1.06); }
   .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
   .btn-ghost:hover { border-color: var(--grape); color: var(--grape); }
 
-  .feedback {
-    margin-top: 18px; border-radius: 16px; padding: 0 18px;
-    max-height: 0; overflow: hidden; opacity: 0;
-    transition: max-height .3s ease, opacity .3s ease, padding .3s ease;
-    font-size: 15px;
-  }
-  .feedback.show { max-height: 240px; opacity: 1; padding: 16px 18px; }
+  .feedback { margin-top: 18px; border-radius: 16px; padding: 0 18px; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .3s ease, opacity .3s ease, padding .3s ease; font-size: 15px; }
+  .feedback.show { max-height: 260px; opacity: 1; padding: 16px 18px; }
   .feedback.win { background: var(--leaf-soft); color: var(--ink); border: 1px solid var(--leaf); }
   .feedback.tryagain { background: var(--berry-soft); color: var(--ink); border: 1px solid var(--berry); }
   .feedback strong { font-family: var(--serif); font-size: 18px; }
   .feedback .score { font-variant-numeric: tabular-nums; font-weight: 700; }
 
   footer { text-align: center; color: var(--ink-soft); font-size: 13px; margin-top: 26px; }
-
-  @media (max-width: 460px) {
+  @media (max-width: 480px) {
     .badge { width: 38px; font-size: 18px; margin-left: 8px; }
     .grip { display: none; }
+    .story-head { flex-wrap: wrap; }
+    .story-nav { margin-left: 0; width: 100%; justify-content: space-between; }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -221,19 +123,20 @@
   <header>
     <p class="eyebrow">Reading &middot; Sequencing</p>
     <h1>Put the Story in Order</h1>
-    <p class="sub">Read the mixed-up sentences and drag them into the order that tells the story. Use the arrows if you like — then check your work!</p>
-    <div class="tabs" role="tablist" aria-label="Choose a level">
-      <button class="tab" role="tab" id="tab-lower" aria-controls="panel" aria-selected="true" data-level="lower">Lower Primary</button>
-      <button class="tab" role="tab" id="tab-upper" aria-controls="panel" aria-selected="false" data-level="upper">Upper Primary</button>
-    </div>
+    <p class="sub">Pick a year level, read the mixed-up sentences, and drag them into the order that tells the story. Use the arrows if you like — then check your work!</p>
+    <div class="levels" id="levels"></div>
   </header>
 
-  <main class="card" id="panel" role="tabpanel" aria-labelledby="tab-lower">
+  <main class="card">
     <div class="story-head">
-      <div class="story-emoji" id="emoji">🌻</div>
+      <div class="story-emoji" id="emoji">📖</div>
       <div>
-        <h2 class="story-title" id="story-title">Ravi's Sunflower</h2>
-        <p class="hint" id="hint">5 sentences to put in order</p>
+        <h2 class="story-title" id="story-title">Story</h2>
+        <p class="hint" id="hint"></p>
+      </div>
+      <div class="story-nav">
+        <span class="counter" id="counter"></span>
+        <button class="next-btn" id="next-story">Next story →</button>
       </div>
     </div>
 
@@ -248,69 +151,340 @@
     <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
   </main>
 
-  <footer>Drag the cards, or use ▲ ▼. Green means it's in the right spot.</footer>
+  <footer>Drag the cards, or use ▲ ▼. Green means it's in the right spot. 40 stories across Year 1–6.</footer>
 </div>
 
 <script>
-  const STORIES = {
-    lower: {
-      title: "Ravi's Sunflower",
-      emoji: "🌻",
-      sentences: [
-        "One sunny morning, Ravi found a tiny brown seed lying in the garden.",
-        "He dug a little hole and gently tucked the seed into the soft, cool soil.",
-        "Every day after that, Ravi gave the seed a drink of water and let the warm sun shine down.",
-        "After about a week, a small green shoot peeked out of the ground to say hello.",
-        "Before long, a tall sunflower opened its bright yellow petals and seemed to smile right at Ravi."
-      ]
-    },
-    upper: {
-      title: "Mei and the Stray Puppy",
-      emoji: "🐶",
-      sentences: [
-        "On her way home from school, Mei heard a faint whimper coming from behind the old bakery.",
-        "Curious, she crept closer and found a shivering puppy tangled up in a torn plastic bag.",
-        "She carefully freed the frightened little animal and wrapped it snugly in her own woolly scarf.",
-        "Because the puppy wore no collar, Mei carried it home and asked her mother if they could help.",
-        "Together they fed the puppy, gave it a warm bath, and put up bright posters all around the neighbourhood.",
-        "A few days later, a grateful family knocked on the door, overjoyed to find the pet they had lost."
-      ]
-    }
-  };
+  const LEVELS = [
+    { id: "y1", label: "Year 1", band: "lower", stories: [
+      { title: "The Red Ball", emoji: "🔴", sentences: [
+        "Tom had a big red ball.",
+        "He kicked the ball high into the tree.",
+        "The ball got stuck in the branches.",
+        "Dad shook the tree, and the ball fell down to Tom."] },
+      { title: "Bath Time", emoji: "🛁", sentences: [
+        "Sam the dog was very muddy after playing in the yard.",
+        "Mum filled the tub with warm water and bubbles.",
+        "Sam splashed about and got nice and clean.",
+        "Now Sam smells fresh and looks white again."] },
+      { title: "The Lost Sock", emoji: "🧦", sentences: [
+        "Mia could only find one sock in the morning.",
+        "She looked under the bed and behind the door.",
+        "At last she found it hiding inside her shoe.",
+        "Now Mia had two socks and could get ready for school."] },
+      { title: "Ducks at the Pond", emoji: "🦆", sentences: [
+        "Ben and Grandma walked to the pond with a bag of seeds.",
+        "Three little ducks swam over to say hello.",
+        "Ben threw the seeds gently onto the water.",
+        "The happy ducks ate up every last one."] },
+      { title: "A Snowy Day", emoji: "⛄", sentences: [
+        "Snow fell softly all through the night.",
+        "In the morning the whole garden was white.",
+        "Lily rolled the snow into a big round ball.",
+        "She built a snowman with a carrot for a nose."] },
+      { title: "The Hungry Cat", emoji: "🐱", sentences: [
+        "Milo the cat woke up feeling very hungry.",
+        "He rubbed against Mum's legs and gave a loud meow.",
+        "Mum poured food into his little blue bowl.",
+        "Milo ate it all and curled up for a nap."] },
+      { title: "My New Bike", emoji: "🚲", sentences: [
+        "Grandpa gave Ella a shiny new bike for her birthday.",
+        "At first she was wobbly and a little scared.",
+        "Grandpa held the seat and ran along beside her.",
+        "Soon Ella could ride all by herself."] } ] },
+
+    { id: "y2", label: "Year 2", band: "lower", stories: [
+      { title: "The Kite", emoji: "🪁", sentences: [
+        "On a windy Saturday, Jack took his kite to the park.",
+        "He let out the string and the kite lifted into the blue sky.",
+        "A strong gust of wind pulled it high above the trees.",
+        "Jack laughed as his red kite danced in the air."] },
+      { title: "Baking Cookies", emoji: "🍪", sentences: [
+        "Grandma and Rosie decided to bake cookies together.",
+        "They mixed the flour, sugar and butter in a big bowl.",
+        "Rosie spooned the dough onto the tray, and Grandma slid it into the oven.",
+        "Soon the kitchen smelled warm and sweet, and the cookies were ready to eat."] },
+      { title: "The Runaway Balloon", emoji: "🎈", sentences: [
+        "Amir was given a bright green balloon at the fair.",
+        "He held the string tightly as he walked around.",
+        "But when he stopped to watch the clowns, the balloon slipped free.",
+        "It floated up and up until it was just a tiny dot in the sky."] },
+      { title: "Rainy Day Fun", emoji: "🌧️", sentences: [
+        "Dark clouds rolled in and rain began to pour.",
+        "Priya could not play outside, so she felt a little sad.",
+        "Then Dad built a cosy tent out of blankets in the living room.",
+        "They read stories inside until the sun came back out."] },
+      { title: "The Little Turtle", emoji: "🐢", sentences: [
+        "A tiny turtle hatched on the warm, sandy beach.",
+        "It was a very long way down to the sea.",
+        "The little turtle crawled slowly across the sand.",
+        "At last a wave washed over it, and the turtle swam away."] },
+      { title: "Planting a Tree", emoji: "🌳", sentences: [
+        "The class wanted to plant a tree in the school garden.",
+        "They dug a deep hole with their small spades.",
+        "Everyone helped to stand the tree up and cover its roots with soil.",
+        "They watered it well and promised to look after it."] },
+      { title: "The Football Match", emoji: "⚽", sentences: [
+        "Leo's team was losing the football match by one goal.",
+        "With only a minute left, he got the ball near the net.",
+        "He kicked it as hard as he could past the goalkeeper.",
+        "The crowd cheered as Leo scored and tied the game."] } ] },
+
+    { id: "y3", label: "Year 3", band: "lower", stories: [
+      { title: "The Sandcastle", emoji: "🏖️", sentences: [
+        "Nadia and her brother arrived at the beach early in the morning.",
+        "They chose a spot near the water and began to dig.",
+        "Bucket by bucket, they built a tall sandcastle with four towers.",
+        "A big wave crept up and washed part of it away.",
+        "Instead of crying, they laughed and started an even bigger one."] },
+      { title: "The School Play", emoji: "🎭", sentences: [
+        "Oliver was chosen to play the brave knight in the school play.",
+        "For weeks he practised his lines every single evening.",
+        "On the night of the show, his hands shook with nerves.",
+        "But once the curtain rose, he spoke loudly and clearly.",
+        "The audience clapped and clapped, and Oliver felt proud."] },
+      { title: "The Lost Puppy", emoji: "🐶", sentences: [
+        "On the way home, Ella heard a soft whimper near the bushes.",
+        "She found a small puppy that was cold and all alone.",
+        "Carefully, she wrapped it in her jacket and carried it home.",
+        "Her family fed the puppy and made posters to find its owner.",
+        "The next day, a happy family came to take their puppy home."] },
+      { title: "Camping Trip", emoji: "⛺", sentences: [
+        "The Patel family packed the car for their first camping trip.",
+        "When they arrived, they worked together to put up the tent.",
+        "In the evening they cooked sausages over a crackling fire.",
+        "As the sky grew dark, they gazed up at hundreds of stars.",
+        "They fell asleep to the gentle sound of wind in the trees."] },
+      { title: "The Science Fair", emoji: "🔬", sentences: [
+        "Maya wanted to make a volcano for the science fair.",
+        "She built the volcano out of clay and painted it brown.",
+        "On the big day, she poured in vinegar and baking soda.",
+        "Red foam bubbled up and spilled down the sides like lava.",
+        "The judges were amazed, and Maya won a shiny blue ribbon."] },
+      { title: "The Snowman Melts", emoji: "☃️", sentences: [
+        "After the snowstorm, Sam built a grand snowman with a scarf and hat.",
+        "He visited it every morning to say good day.",
+        "Then the weather turned warmer and the sun shone brightly.",
+        "Little by little, the snowman began to melt away.",
+        "Sam saved the scarf and hat, ready for the next snowy day."] } ] },
+
+    { id: "y4", label: "Year 4", band: "upper", stories: [
+      { title: "The Secret Garden", emoji: "🌷", sentences: [
+        "Behind the old cottage, Isla discovered a rusty gate hidden by ivy.",
+        "Curious, she pushed it open and stepped into a forgotten garden.",
+        "Weeds had swallowed the flowerbeds, and the fountain had run dry.",
+        "All summer she pulled weeds, planted seeds, and mended the winding paths.",
+        "By autumn the garden bloomed with colour, exactly as it once had."] },
+      { title: "The Storm at Sea", emoji: "🌊", sentences: [
+        "The little fishing boat set out under a calm morning sky.",
+        "Without warning, dark clouds gathered and the sea grew rough.",
+        "Waves crashed over the deck as the fishermen struggled to steer.",
+        "Just when they feared the worst, the lighthouse beam cut through the rain.",
+        "Following its light, they reached the safe harbour at last."] },
+      { title: "The Reluctant Hero", emoji: "🦸", sentences: [
+        "Noah was the smallest and shyest boy in his whole class.",
+        "One afternoon he saw a younger child slip into the fast river.",
+        "Without stopping to think, he grabbed a branch and reached out.",
+        "With all his strength, he pulled the frightened child to the bank.",
+        "From that day on, nobody ever called Noah too small again."] },
+      { title: "The Museum Mystery", emoji: "🏛️", sentences: [
+        "On a school trip, Zara noticed that a famous painting hung crooked.",
+        "Looking closer, she saw the real painting had been swapped for a copy.",
+        "She quietly told the guard exactly what she had spotted.",
+        "The guards searched the building and caught the thief at the door.",
+        "The grateful museum gave Zara a medal for her sharp eyes."] },
+      { title: "Winter Rescue", emoji: "🏔️", sentences: [
+        "A family of deer became trapped when heavy snow blocked the valley.",
+        "The village rangers loaded hay onto their sleds to help.",
+        "They climbed the steep, icy slopes for hours in the freezing wind.",
+        "Finally they reached the deer and cleared a path through the drifts.",
+        "The deer bounded to safety, and the tired rangers headed home."] },
+      { title: "The Great Bake Off", emoji: "🎂", sentences: [
+        "Deepa entered the town's baking contest with her grandmother's recipe.",
+        "The night before, she carefully measured and mixed every ingredient.",
+        "In the morning she decorated the cake with berries and cream.",
+        "One nervous judge tasted a slice and slowly began to smile.",
+        "To her delight, Deepa's cake was crowned the winner."] },
+      { title: "The Message in a Bottle", emoji: "🍾", sentences: [
+        "While walking the shore, Finn spotted a glass bottle among the rocks.",
+        "Inside was a note asking for a new pen-friend far away.",
+        "Excited, he wrote a long reply about his town and his dog.",
+        "He sealed it in the bottle and threw it back into the waves.",
+        "Months later, a letter arrived from a boy across the ocean."] } ] },
+
+    { id: "y5", label: "Year 5", band: "upper", stories: [
+      { title: "The Abandoned Lighthouse", emoji: "🗼", sentences: [
+        "For years the lighthouse on the cliff had stood dark and empty.",
+        "When ships began to run aground, the villagers grew worried.",
+        "A young engineer named Priya offered to bring the old light back to life.",
+        "She climbed the spiral stairs and repaired the rusted machinery piece by piece.",
+        "On a stormy night, the great lamp finally blazed across the water.",
+        "From then on, every ship passed the rocks in safety."] },
+      { title: "The Time Capsule", emoji: "⏳", sentences: [
+        "The Year 5 class decided to bury a time capsule in the schoolyard.",
+        "Each student wrote a letter describing their life and their dreams.",
+        "They added photographs, a newspaper, and a few small treasures.",
+        "Together they sealed everything inside a strong metal box.",
+        "Carefully, they buried it beneath the old oak tree.",
+        "A note on the wall asked future students to open it in fifty years."] },
+      { title: "The Mountain Expedition", emoji: "🏕️", sentences: [
+        "A team of explorers set out to reach the summit of the tallest peak.",
+        "For days they trekked through forests and across roaring rivers.",
+        "As they climbed higher, the air grew thin and bitterly cold.",
+        "A sudden avalanche forced them to shelter in a narrow cave.",
+        "When the storm passed, they pressed on with new determination.",
+        "At dawn they stood at the top, gazing over a sea of clouds."] },
+      { title: "The Inventor's Workshop", emoji: "🔧", sentences: [
+        "Old Mr Huang spent every day tinkering in his cluttered workshop.",
+        "The neighbourhood children thought his strange machines were useless.",
+        "One winter, the town's power failed and the streets went dark.",
+        "Mr Huang wheeled out a curious contraption built from spare parts.",
+        "To everyone's astonishment, it hummed to life and lit up the square.",
+        "After that, the children begged to learn how to build things too."] },
+      { title: "The Wildlife Photographer", emoji: "📷", sentences: [
+        "Amara dreamed of photographing the rare snow leopard in the wild.",
+        "She spent weeks hiking through the mountains with her heavy camera.",
+        "Day after day she waited quietly, but the leopard never appeared.",
+        "Just as she was about to give up, a shadow slipped across the rocks.",
+        "Holding her breath, she pressed the shutter at the perfect moment.",
+        "Her photograph later appeared in magazines all around the world."] },
+      { title: "The Runaway Train", emoji: "🚂", sentences: [
+        "The old steam train chugged happily along the mountain track.",
+        "Halfway up the pass, the brakes suddenly stopped working.",
+        "The train began to roll backwards, faster and faster down the slope.",
+        "The quick-thinking driver threw sand onto the rails to slow the wheels.",
+        "Bit by bit, the screeching train ground to a halt.",
+        "The shaken passengers cheered and thanked the brave driver."] },
+      { title: "The Community Garden", emoji: "🌻", sentences: [
+        "An empty lot in the city had become a dumping ground for rubbish.",
+        "Mrs Okafor believed it could become something beautiful instead.",
+        "She gathered her neighbours, and together they cleared away the mess.",
+        "They built raised beds and planted vegetables, herbs and flowers.",
+        "Through the summer, the whole street helped to water and weed.",
+        "By harvest time, the once-ugly lot was bursting with life."] } ] },
+
+    { id: "y6", label: "Year 6", band: "upper", stories: [
+      { title: "The Forgotten Letter", emoji: "✉️", sentences: [
+        "While clearing the attic, Sophie found a yellowed letter tucked inside an old book.",
+        "It had been written during the war but never posted.",
+        "The faded words spoke of a promise between two long-lost friends.",
+        "Determined to finish the story, Sophie searched old records for weeks.",
+        "At last she traced the writer's family to a town far away.",
+        "When she delivered the letter, an elderly woman wept with joy."] },
+      { title: "The Coral Reef", emoji: "🐠", sentences: [
+        "Beneath the tropical waves lay a coral reef teeming with colour and life.",
+        "Over the years, warming seas had begun to bleach it a ghostly white.",
+        "A group of young scientists refused to let the reef die.",
+        "They grew healthy coral in tanks and carefully replanted it by hand.",
+        "Season after season, the fish and the colours slowly returned.",
+        "Their patient work gave the dying reef a second chance at life."] },
+      { title: "The Chess Champion", emoji: "♟️", sentences: [
+        "Everyone expected the famous grandmaster to win the tournament easily.",
+        "Facing him was Rohan, an unknown boy from a small village.",
+        "Move by move, Rohan defended calmly against every clever attack.",
+        "The crowd fell silent as the game stretched late into the night.",
+        "With one daring sacrifice, Rohan trapped the grandmaster's king.",
+        "The hall erupted as the youngest champion in history was crowned."] },
+      { title: "The Desert Journey", emoji: "🐪", sentences: [
+        "A caravan of traders crossed the vast desert toward a distant city.",
+        "Days of blazing heat gave way to nights of freezing wind.",
+        "When their water ran dangerously low, panic began to spread.",
+        "An old guide remembered a hidden well marked on a faded map.",
+        "Trusting his memory, they changed course across the endless dunes.",
+        "At sunset they reached the well, and their journey went on at dawn."] },
+      { title: "The Broken Violin", emoji: "🎻", sentences: [
+        "Grandfather's violin had sat silent in its case for many years.",
+        "Elena longed to play it, but the wood was cracked and the strings had snapped.",
+        "A kind old craftsman agreed to teach her how to restore it.",
+        "Together they mended the cracks and fitted gleaming new strings.",
+        "After months of practice, Elena stood nervously on the concert stage.",
+        "As she drew the bow, the old violin sang more beautifully than ever."] },
+      { title: "The Northern Lights", emoji: "🌌", sentences: [
+        "Far in the frozen north, a family waited each night for the sky to glow.",
+        "Cloud after cloud rolled in, hiding the stars for a whole week.",
+        "The children began to lose hope of ever seeing the famous lights.",
+        "Then, on their very last evening, the clouds melted away.",
+        "Ribbons of green and purple rippled silently across the heavens.",
+        "They stood in the snow, watching in wonder until the dawn."] } ] },
+  ];
 
   const listEl = document.getElementById('list');
   const feedbackEl = document.getElementById('feedback');
-  let level = 'lower';
-  let order = [];      // array of original indices, in current display order
+  const levelsEl = document.getElementById('levels');
+  let levelIndex = 0;
+  let storyIndex = 0;
+  let order = [];       // original sentence indices, in current display order
   let dragFrom = null;
 
+  function currentStory() { return LEVELS[levelIndex].stories[storyIndex]; }
+
   function shuffled(n) {
-    const a = Array.from({length: n}, (_, i) => i);
+    const a = Array.from({ length: n }, (_, i) => i);
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
-    // make sure it doesn't start already solved
-    const solved = a.every((v, i) => v === i);
-    return solved ? shuffled(n) : a;
+    if (a.every((v, i) => v === i)) return shuffled(n); // never start already solved
+    return a;
   }
 
-  function loadLevel(next) {
-    level = next;
-    const story = STORIES[level];
-    document.getElementById('emoji').textContent = story.emoji;
-    document.getElementById('story-title').textContent = story.title;
-    document.getElementById('hint').textContent = story.sentences.length + ' sentences to put in order';
-    document.getElementById('panel').setAttribute('aria-labelledby', 'tab-' + level);
-    document.querySelectorAll('.tab').forEach(t =>
-      t.setAttribute('aria-selected', String(t.dataset.level === level)));
-    order = shuffled(story.sentences.length);
+  function buildLevelPicker() {
+    const groups = [
+      { band: "lower", label: "Lower · Y1–3" },
+      { band: "upper", label: "Upper · Y4–6" },
+    ];
+    groups.forEach((g) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'group ' + g.band;
+      const lbl = document.createElement('span');
+      lbl.className = 'group-label';
+      lbl.textContent = g.label;
+      const tabs = document.createElement('div');
+      tabs.className = 'tabs';
+      tabs.setAttribute('role', 'tablist');
+      LEVELS.forEach((lv, i) => {
+        if (lv.band !== g.band) return;
+        const b = document.createElement('button');
+        b.className = 'tab';
+        b.setAttribute('role', 'tab');
+        b.dataset.index = i;
+        b.textContent = lv.label;
+        b.setAttribute('aria-selected', String(i === levelIndex));
+        b.onclick = () => loadLevel(i);
+        tabs.append(b);
+      });
+      wrap.append(lbl, tabs);
+      levelsEl.append(wrap);
+    });
+  }
+
+  function syncTabs() {
+    levelsEl.querySelectorAll('.tab').forEach((t) =>
+      t.setAttribute('aria-selected', String(Number(t.dataset.index) === levelIndex)));
+  }
+
+  function loadLevel(i) {
+    levelIndex = i;
+    storyIndex = 0;
+    syncTabs();
+    loadStory();
+  }
+
+  function loadStory() {
+    const s = currentStory();
+    document.getElementById('emoji').textContent = s.emoji;
+    document.getElementById('story-title').textContent = s.title;
+    document.getElementById('hint').textContent =
+      `${LEVELS[levelIndex].label} · ${s.sentences.length} sentences to order`;
+    document.getElementById('counter').textContent =
+      `Story ${storyIndex + 1} of ${LEVELS[levelIndex].stories.length}`;
+    order = shuffled(s.sentences.length);
     hideFeedback();
     render();
   }
 
   function render() {
-    const story = STORIES[level];
+    const s = currentStory();
     listEl.innerHTML = '';
     order.forEach((origIndex, pos) => {
       const li = document.createElement('li');
@@ -329,18 +503,18 @@
 
       const sentence = document.createElement('div');
       sentence.className = 'sentence';
-      sentence.textContent = story.sentences[origIndex];
+      sentence.textContent = s.sentences[origIndex];
 
       const arrows = document.createElement('div');
       arrows.className = 'arrows';
       const up = document.createElement('button');
-      up.className = 'arrow'; up.type = 'button';
-      up.innerHTML = '▲'; up.setAttribute('aria-label', 'Move up');
+      up.className = 'arrow'; up.type = 'button'; up.innerHTML = '▲';
+      up.setAttribute('aria-label', 'Move up');
       up.disabled = pos === 0;
       up.onclick = () => move(pos, pos - 1);
       const down = document.createElement('button');
-      down.className = 'arrow'; down.type = 'button';
-      down.innerHTML = '▼'; down.setAttribute('aria-label', 'Move down');
+      down.className = 'arrow'; down.type = 'button'; down.innerHTML = '▼';
+      down.setAttribute('aria-label', 'Move down');
       down.disabled = pos === order.length - 1;
       down.onclick = () => move(pos, pos + 1);
       arrows.append(up, down);
@@ -360,21 +534,18 @@
   }
 
   function addDrag(li) {
-    li.addEventListener('dragstart', e => {
+    li.addEventListener('dragstart', (e) => {
       dragFrom = Number(li.dataset.pos);
       li.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
     li.addEventListener('dragend', () => {
       li.classList.remove('dragging');
-      document.querySelectorAll('.item.over').forEach(x => x.classList.remove('over'));
+      listEl.querySelectorAll('.item.over').forEach((x) => x.classList.remove('over'));
     });
-    li.addEventListener('dragover', e => {
-      e.preventDefault();
-      li.classList.add('over');
-    });
+    li.addEventListener('dragover', (e) => { e.preventDefault(); li.classList.add('over'); });
     li.addEventListener('dragleave', () => li.classList.remove('over'));
-    li.addEventListener('drop', e => {
+    li.addEventListener('drop', (e) => {
       e.preventDefault();
       li.classList.remove('over');
       const to = Number(li.dataset.pos);
@@ -389,44 +560,36 @@
     order.forEach((origIndex, pos) => {
       const li = items[pos];
       li.classList.remove('correct', 'wrong', 'shake');
-      if (origIndex === pos) {
-        li.classList.add('correct');
-        correct++;
-      } else {
-        li.classList.add('wrong');
-        void li.offsetWidth;
-        li.classList.add('shake');
-      }
+      if (origIndex === pos) { li.classList.add('correct'); correct++; }
+      else { li.classList.add('wrong'); void li.offsetWidth; li.classList.add('shake'); }
     });
     const total = order.length;
     if (correct === total) {
-      showFeedback('win',
-        '<strong>🎉 You did it!</strong><br>Every sentence is in the right place. The whole story reads perfectly — well done, storyteller!');
+      showFeedback('win', '<strong>🎉 You did it!</strong><br>Every sentence is in the right place. The whole story reads perfectly — well done, storyteller!');
     } else {
-      showFeedback('tryagain',
-        '<strong>Almost there!</strong><br><span class="score">' + correct + ' of ' + total +
+      showFeedback('tryagain', '<strong>Almost there!</strong><br><span class="score">' + correct + ' of ' + total +
         '</span> sentences are in the right spot (the green ones). Look at the red cards and think about what happens next. Try again!');
     }
   }
 
   function reveal() {
-    order = Array.from({length: STORIES[level].sentences.length}, (_, i) => i);
+    order = Array.from({ length: currentStory().sentences.length }, (_, i) => i);
     render();
-    [...listEl.children].forEach(li => li.classList.add('correct'));
+    [...listEl.children].forEach((li) => li.classList.add('correct'));
     showFeedback('win', '<strong>Here is the story in order.</strong><br>Read it through, then press <em>Shuffle</em> to try it yourself!');
   }
 
-  function showFeedback(kind, html) {
-    feedbackEl.className = 'feedback show ' + kind;
-    feedbackEl.innerHTML = html;
-  }
+  function showFeedback(kind, html) { feedbackEl.className = 'feedback show ' + kind; feedbackEl.innerHTML = html; }
   function hideFeedback() { feedbackEl.className = 'feedback'; feedbackEl.innerHTML = ''; }
 
-  document.querySelectorAll('.tab').forEach(t =>
-    t.addEventListener('click', () => loadLevel(t.dataset.level)));
   document.getElementById('check').onclick = check;
-  document.getElementById('shuffle').onclick = () => { order = shuffled(STORIES[level].sentences.length); hideFeedback(); render(); };
+  document.getElementById('shuffle').onclick = () => { order = shuffled(currentStory().sentences.length); hideFeedback(); render(); };
   document.getElementById('reveal').onclick = reveal;
+  document.getElementById('next-story').onclick = () => {
+    storyIndex = (storyIndex + 1) % LEVELS[levelIndex].stories.length;
+    loadStory();
+  };
 
-  loadLevel('lower');
+  buildLevelPicker();
+  loadStory();
 </script>
