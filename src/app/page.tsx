@@ -321,17 +321,35 @@ export default function Home() {
     >
       <SoundPrimer />
       <Backdrop playful={!section} />
-      <header className="relative z-10 flex w-full max-w-5xl shrink-0 flex-col items-center gap-1.5 text-center">
-        <div className="flex items-center justify-center gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-            <span className="bg-gradient-to-r from-pink-500 via-violet-500 to-sky-500 bg-clip-text text-transparent">
-              Phonics Pals & Guided Reading
+      <header className="relative z-10 flex w-full max-w-5xl shrink-0 flex-col items-center gap-2 text-center">
+        {/* Logo lockup header */}
+        <div className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-2.5 shadow-md ring-1 ring-black/5 backdrop-blur dark:bg-zinc-900/70 dark:ring-white/10 sm:px-6 sm:py-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-violet-500 shadow-sm sm:h-12 sm:w-12">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6 sm:h-7 sm:w-7"
+              fill="none"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3H9a3 3 0 0 1 3 3 3 3 0 0 1 3-3h5.5A1.5 1.5 0 0 1 22 4.5v13a1.5 1.5 0 0 1-1.5 1.5H15a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3.5A1.5 1.5 0 0 1 2 17.5z" />
+              <path d="M12 6v15" />
+            </svg>
+          </span>
+          <h1 className="text-left text-xl font-black leading-none tracking-tight sm:text-2xl">
+            <span className="block bg-gradient-to-r from-pink-500 via-violet-500 to-sky-500 bg-clip-text text-transparent">
+              Phonics Pals
+            </span>
+            <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 sm:text-xs">
+              &amp; Guided Reading
             </span>
           </h1>
         </div>
-        <div className="h-1.5 w-32 rounded-full bg-gradient-to-r from-pink-300 via-amber-300 via-emerald-300 to-sky-300" />
         {!section && (
-          <div className="flex flex-col items-center gap-3">
+          <div className="mt-1 flex flex-col items-center gap-2.5">
             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               Learn to read, step by step.
             </p>
