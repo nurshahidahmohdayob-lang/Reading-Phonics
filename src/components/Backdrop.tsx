@@ -16,11 +16,16 @@ const CLOUDS = [
 ];
 
 const LEAVES = [
-  { left: "34px", top: "20px", size: 16, dur: 4.2, delay: 0 },
-  { left: "62px", top: "12px", size: 13, dur: 5.6, delay: -1.6 },
-  { left: "88px", top: "26px", size: 15, dur: 4.9, delay: -3.1 },
-  { left: "50px", top: "34px", size: 12, dur: 6.2, delay: -2.4 },
-  { left: "74px", top: "16px", size: 14, dur: 5.1, delay: -0.8 },
+  { left: "44px", top: "26px", size: 18, dur: 4.6, delay: 0 },
+  { left: "78px", top: "16px", size: 15, dur: 5.8, delay: -1.6 },
+  { left: "112px", top: "34px", size: 17, dur: 5.0, delay: -3.1 },
+  { left: "62px", top: "46px", size: 14, dur: 6.4, delay: -2.4 },
+  { left: "96px", top: "22px", size: 16, dur: 5.3, delay: -0.8 },
+  { left: "130px", top: "40px", size: 14, dur: 4.9, delay: -3.8 },
+  { left: "34px", top: "40px", size: 13, dur: 6.0, delay: -1.1 },
+  { left: "120px", top: "18px", size: 15, dur: 5.5, delay: -4.4 },
+  { left: "54px", top: "60px", size: 12, dur: 6.6, delay: -2.9 },
+  { left: "88px", top: "52px", size: 16, dur: 4.7, delay: -5.2 },
 ];
 
 const BUTTERFLIES = [
@@ -157,7 +162,7 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
           <div className="absolute bottom-0 right-1 hidden sm:block">
             <span
               className="anim-sway block select-none drop-shadow-md"
-              style={{ fontSize: "128px", animationDuration: "4.5s" }}
+              style={{ fontSize: "184px", animationDuration: "5s" }}
             >
               🌳
             </span>
