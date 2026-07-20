@@ -140,7 +140,7 @@ export default function Home() {
     <div
       className={`flex flex-1 flex-col items-center px-4 py-4 font-sans text-zinc-900 dark:text-zinc-50 ${
         !section
-          ? "bg-gradient-to-b from-[#F6F7FB] via-white to-[#EEF1F7] pb-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-black"
+          ? "bg-gradient-to-b from-[#E6F1FD] via-[#F5FAFF] to-[#E1EDFB] pb-16 dark:from-[#0C1322] dark:via-[#111A2C] dark:to-black"
           : "bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] py-8 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black"
       }`}
     >
