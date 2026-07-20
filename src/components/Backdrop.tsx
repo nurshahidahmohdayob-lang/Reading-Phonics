@@ -125,15 +125,15 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
 
       {/* A tree standing back with the mountains (behind the hills) */}
       {playful && (
-        <div className="absolute bottom-[6%] left-[38%] z-10 hidden flex-col items-center sm:flex">
+        <div className="absolute bottom-[6%] left-[36%] z-10 hidden flex-col items-center sm:flex">
           <span
             className="anim-sway block select-none leading-none drop-shadow-md"
-            style={{ fontSize: "120px", animationDuration: "5s" }}
+            style={{ fontSize: "184px", animationDuration: "5s" }}
           >
             🌳
           </span>
           <span
-            className="-mt-7 h-20 w-6 rounded-b-md shadow-md"
+            className="-mt-10 h-36 w-9 rounded-b-md shadow-md"
             style={{ background: "linear-gradient(to bottom, #8B5A2B, #5C3A1E)" }}
           />
           {LEAVES.map((l, i) => (
