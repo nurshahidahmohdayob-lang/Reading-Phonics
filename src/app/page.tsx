@@ -172,27 +172,29 @@ export default function Home() {
 
       {/* Home menu — a clean, modern 2-column card grid */}
       {!section ? (
-        <main className="relative z-10 mt-6 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+        <main className="relative z-10 mt-6 grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
             <button
               key={s.id}
               onClick={() => go(s.id)}
-              className="group flex items-center gap-4 rounded-2xl border border-black/5 bg-white/90 p-4 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[.99] dark:border-white/10 dark:bg-zinc-900/70"
+              className={`group flex items-center gap-4 rounded-3xl bg-gradient-to-br ${s.color} p-5 text-left shadow-md ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:shadow-xl active:scale-[.98] sm:gap-5 sm:p-6 dark:ring-white/10`}
             >
-              <span
-                className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${s.color} text-2xl shadow-sm`}
-              >
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white/75 text-3xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110 sm:h-20 sm:w-20 sm:text-4xl">
                 {s.emoji}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-bold leading-tight text-zinc-800 dark:text-zinc-100">
+                <span
+                  className={`block text-lg font-extrabold leading-tight sm:text-xl ${s.text}`}
+                >
                   {s.label}
                 </span>
-                <span className="block truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <span className="mt-1 block text-sm font-semibold leading-snug text-zinc-600/90">
                   {s.blurb}
                 </span>
               </span>
-              <span className="shrink-0 text-lg text-zinc-300 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-400 dark:text-zinc-600">
+              <span
+                className={`shrink-0 text-2xl ${s.text} opacity-40 transition-all group-hover:translate-x-0.5 group-hover:opacity-70`}
+              >
                 →
               </span>
             </button>
