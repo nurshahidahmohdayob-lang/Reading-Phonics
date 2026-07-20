@@ -324,12 +324,20 @@ export default function Home() {
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* Full-width brand header bar — Zera green */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[#0A4F29] px-3 py-3 shadow-md sm:gap-3 sm:px-6">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/zera-mark-white.png"
-            alt="Zera Education"
-            className="h-9 w-auto shrink-0 justify-self-start object-contain sm:h-11"
-          />
+          <div className="flex items-center gap-2 justify-self-start">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/zera-mark-white.png"
+              alt="Zera International School"
+              className="h-9 w-auto shrink-0 object-contain sm:h-11"
+            />
+            <span className="hidden text-left leading-tight sm:block">
+              <span className="block text-xs font-extrabold text-white">Zera</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                International School
+              </span>
+            </span>
+          </div>
           <h1 className="justify-self-center whitespace-nowrap text-center text-sm font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
             Phonics Pals &amp; Guided Reading
           </h1>
