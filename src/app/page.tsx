@@ -323,7 +323,7 @@ export default function Home() {
       <Backdrop playful={!section} />
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* Full-width brand header bar — Zera green */}
-        <div className="flex items-center gap-3 rounded-2xl bg-[#0A4F29] px-4 py-3 shadow-md sm:px-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[#0A4F29] px-4 py-3 shadow-md sm:px-6">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 sm:h-11 sm:w-11">
             <svg
               viewBox="0 0 24 24"
@@ -339,13 +339,8 @@ export default function Home() {
               <path d="M12 6v15" />
             </svg>
           </span>
-          <h1 className="text-left leading-none">
-            <span className="block text-lg font-black tracking-tight text-white sm:text-xl">
-              Phonics Pals
-            </span>
-            <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 sm:text-xs">
-              &amp; Guided Reading
-            </span>
+          <h1 className="whitespace-nowrap text-base font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
+            Phonics Pals &amp; Guided Reading
           </h1>
           {!section && (
             <button
