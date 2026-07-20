@@ -396,6 +396,28 @@ body {
   animation: butterfly-flap ease-in-out infinite;
 }
 
+/* Leaves drifting down from a tree in the wind. */
+@keyframes leaf-fall {
+  0% {
+    transform: translate(0, -6px) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-46px, 120px) rotate(300deg);
+    opacity: 0;
+  }
+}
+.leaf-fall {
+  position: absolute;
+  animation: leaf-fall linear infinite;
+}
+
 /* Tap a kid and a little heart floats up. */
 @keyframes heart-pop {
   from {
@@ -457,6 +479,7 @@ body {
   .anim-sway,
   .butterfly,
   .butterfly > span,
+  .leaf-fall,
   .anim-heart-pop {
     animation: none;
   }

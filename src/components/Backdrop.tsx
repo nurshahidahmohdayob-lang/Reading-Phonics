@@ -15,6 +15,14 @@ const CLOUDS = [
   { top: "42%", scale: 0.55, duration: 100, delay: -25, opacity: 0.5 },
 ];
 
+const LEAVES = [
+  { left: "34px", top: "20px", size: 16, dur: 4.2, delay: 0 },
+  { left: "62px", top: "12px", size: 13, dur: 5.6, delay: -1.6 },
+  { left: "88px", top: "26px", size: 15, dur: 4.9, delay: -3.1 },
+  { left: "50px", top: "34px", size: 12, dur: 6.2, delay: -2.4 },
+  { left: "74px", top: "16px", size: 14, dur: 5.1, delay: -0.8 },
+];
+
 const BUTTERFLIES = [
   { left: "6%", top: "16%", size: 30, drift: 11, flap: 0.4, delay: 0, hue: 0 },
   { left: "86%", top: "12%", size: 24, drift: 13, flap: 0.5, delay: -2.5, hue: 55 },
@@ -145,6 +153,30 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
             className="anim-bob absolute bottom-2 left-8 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
             style={{ animationDelay: "-0.8s" }}
           />
+          {/* Tree behind the boy — sways in the wind and sheds falling leaves */}
+          <div className="absolute bottom-0 right-1 hidden sm:block">
+            <span
+              className="anim-sway block select-none drop-shadow-md"
+              style={{ fontSize: "128px", animationDuration: "4.5s" }}
+            >
+              🌳
+            </span>
+            {LEAVES.map((l, i) => (
+              <span
+                key={i}
+                className="leaf-fall select-none"
+                style={{
+                  left: l.left,
+                  top: l.top,
+                  fontSize: `${l.size}px`,
+                  animationDuration: `${l.dur}s`,
+                  animationDelay: `${l.delay}s`,
+                }}
+              >
+                🍂
+              </span>
+            ))}
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/reader-boy.png"
