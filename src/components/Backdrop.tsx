@@ -135,14 +135,36 @@ export default function Backdrop({ playful = false }: { playful?: boolean }) {
         🦋
       </span>
 
-      {/* Front page only: the boy reading, tucked into the bottom-right. */}
+      {/* Front page only: swaying trees and two kids reading in the corners. */}
       {playful && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src="/images/reader-boy.png"
-          alt=""
-          className="anim-bob absolute bottom-2 right-10 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
-        />
+        <>
+          <span
+            className="anim-sway absolute bottom-[8%] left-[15%] hidden select-none drop-shadow-md sm:block"
+            style={{ fontSize: "66px" }}
+          >
+            🌳
+          </span>
+          <span
+            className="anim-sway absolute bottom-[11%] right-[28%] hidden select-none drop-shadow-md sm:block"
+            style={{ fontSize: "52px", animationDuration: "6.5s", animationDelay: "-1.5s" }}
+          >
+            🌲
+          </span>
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/reader-girl.png"
+            alt=""
+            className="anim-bob absolute bottom-2 left-8 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
+            style={{ animationDelay: "-0.8s" }}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/reader-boy.png"
+            alt=""
+            className="anim-bob absolute bottom-2 right-10 hidden h-24 w-auto drop-shadow-md sm:block sm:h-32"
+          />
+        </>
       )}
     </div>
   );

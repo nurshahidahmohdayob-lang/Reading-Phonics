@@ -145,7 +145,7 @@ export default function Home() {
       }`}
     >
       <SoundPrimer />
-      {section && <Backdrop playful={false} />}
+      <Backdrop playful={!section} />
       <header className="relative z-10 flex w-full max-w-5xl shrink-0 flex-col items-center gap-1.5 text-center">
         <div className="flex items-center justify-center gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">

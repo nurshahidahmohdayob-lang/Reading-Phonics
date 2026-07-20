@@ -339,6 +339,22 @@ body {
   animation: flutter 1.6s ease-in-out infinite;
 }
 
+/* A tree swaying gently in the breeze (pivots at the trunk base). */
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+.anim-sway {
+  display: inline-block;
+  transform-origin: bottom center;
+  animation: sway 5s ease-in-out infinite;
+}
+
 /* Tap a kid and a little heart floats up. */
 @keyframes heart-pop {
   from {
@@ -397,6 +413,7 @@ body {
   .anim-boing,
   .bird-fly,
   .anim-flutter,
+  .anim-sway,
   .anim-heart-pop {
     animation: none;
   }
