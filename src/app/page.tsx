@@ -94,6 +94,14 @@ const SECTIONS: {
     text: "text-sky-700",
   },
   {
+    id: "storyplay",
+    label: "Story Play",
+    blurb: "Match pictures & order stories",
+    emoji: "🧩",
+    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
+    text: "text-teal-700",
+  },
+  {
     id: "guided",
     label: "Guided Reading",
     blurb: "Read aloud with your coach",
@@ -108,14 +116,6 @@ const SECTIONS: {
     emoji: "📋",
     color: "from-[#FFE3E0] to-[#FFC9C2]", // coral
     text: "text-rose-700",
-  },
-  {
-    id: "storyplay",
-    label: "Story Play",
-    blurb: "Match pictures & order stories",
-    emoji: "🧩",
-    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
-    text: "text-teal-700",
   },
 ];
 
@@ -139,7 +139,7 @@ export default function Home() {
   return (
     <div
       className={`flex flex-1 flex-col items-center bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] px-4 py-4 font-sans text-zinc-900 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black dark:text-zinc-50 ${
-        !section ? "h-[100dvh] overflow-hidden" : "py-8"
+        !section ? "pb-14" : "py-8"
       }`}
     >
       <SoundPrimer />
@@ -176,26 +176,67 @@ export default function Home() {
         )}
       </header>
 
-      {/* Home menu — a 3×3 grid that fills the frame (no scrolling) */}
+      {/* Home menu — a winding learning journey from first sounds to reading aloud */}
       {!section ? (
-        <main className="relative z-10 mt-3 grid min-h-0 w-full max-w-5xl flex-1 grid-cols-3 gap-2.5 [grid-auto-rows:1fr] sm:gap-3.5">
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => go(s.id)}
-              className={`group flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded-3xl bg-gradient-to-br ${s.color} ${s.text} p-2 shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95`}
-            >
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-white/70 text-2xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110 sm:h-14 sm:w-14 sm:text-3xl">
-                {s.emoji}
-              </span>
-              <span className="text-xs font-extrabold leading-tight sm:text-base">
-                {s.label}
-              </span>
-              <span className="hidden text-center text-[11px] font-semibold leading-tight opacity-80 sm:block">
-                {s.blurb}
-              </span>
-            </button>
-          ))}
+        <main className="relative z-10 mt-4 w-full max-w-2xl">
+          {/* Start marker */}
+          <div className="flex justify-center">
+            <span className="rounded-full bg-white/80 px-5 py-1.5 text-sm font-extrabold text-violet-600 shadow-sm ring-2 ring-white/70 backdrop-blur dark:bg-zinc-800/80 dark:text-violet-300">
+              🚩 Start your reading journey
+            </span>
+          </div>
+
+          {/* The winding path */}
+          <div className="relative mt-4 flex flex-col gap-5">
+            {/* dashed spine down the middle */}
+            <div className="pointer-events-none absolute bottom-8 left-1/2 top-8 -translate-x-1/2 border-l-4 border-dashed border-violet-300/70 dark:border-violet-400/25" />
+
+            {SECTIONS.map((s, i) => {
+              const left = i % 2 === 0;
+              const card = (
+                <span
+                  className={`inline-flex flex-col rounded-2xl bg-white/85 px-4 py-2.5 shadow-sm ring-2 ring-white/70 backdrop-blur transition-transform group-hover:-translate-y-0.5 dark:bg-zinc-800/85 ${
+                    left ? "items-end text-right" : "items-start text-left"
+                  }`}
+                >
+                  <span
+                    className={`text-sm font-extrabold leading-tight sm:text-base ${s.text}`}
+                  >
+                    {s.label}
+                  </span>
+                  <span className="text-[11px] font-semibold leading-tight text-zinc-500 dark:text-zinc-400">
+                    {s.blurb}
+                  </span>
+                </span>
+              );
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => go(s.id)}
+                  aria-label={`${i + 1}. ${s.label} — ${s.blurb}`}
+                  className="group relative z-10 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4"
+                >
+                  <span className="flex justify-end">{left ? card : null}</span>
+                  <span
+                    className={`relative grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br ${s.color} text-3xl shadow-lg ring-4 ring-white/80 transition-transform group-hover:scale-110 group-active:scale-95 dark:ring-zinc-900/50 sm:h-20 sm:w-20`}
+                  >
+                    {s.emoji}
+                    <span className="absolute -left-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-white text-xs font-black text-zinc-700 shadow ring-1 ring-black/5">
+                      {i + 1}
+                    </span>
+                  </span>
+                  <span className="flex justify-start">{!left ? card : null}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Finish marker */}
+          <div className="mt-5 flex justify-center">
+            <span className="rounded-full bg-gradient-to-r from-amber-300 to-amber-400 px-5 py-1.5 text-sm font-extrabold text-amber-950 shadow-sm">
+              🏆 You&apos;re a reader!
+            </span>
+          </div>
         </main>
       ) : (
         <div className="relative z-10 mt-6 flex w-full max-w-4xl flex-1 flex-col items-center">
