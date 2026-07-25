@@ -5,6 +5,7 @@ import { letterSound, letterSounds } from "@/app/alphabet";
 import { speak, playSoundClip } from "@/lib/speak";
 import FormationGames from "@/components/FormationGames";
 import LetterTrace from "@/components/LetterTrace";
+import { LETTER_STROKES } from "@/app/letterStrokes";
 
 const SIZE = 300;
 
@@ -18,6 +19,10 @@ export default function LetterFormation() {
 
   const info = letterSound(selected);
   const glyph = upper ? selected.toUpperCase() : selected;
+  // The trace guide must match the "Watch it written" demo exactly, so use the
+  // same stroke paths (the handwriting form) rather than the font glyph, which
+  // can differ (e.g. single- vs double-storey "a").
+  const guideStrokes = LETTER_STROKES[glyph] ?? [];
 
   // Clear the canvas whenever the letter or case changes.
   useEffect(() => {
@@ -147,12 +152,32 @@ export default function LetterFormation() {
         className="relative mt-2 rounded-3xl border-2 border-dashed border-brand-300 bg-white dark:bg-zinc-900"
         style={{ width: SIZE, height: SIZE, maxWidth: "90vw" }}
       >
-        <span
-          className="pointer-events-none absolute inset-0 flex items-center justify-center font-black leading-none text-zinc-200 dark:text-zinc-700"
-          style={{ fontSize: SIZE * 0.8 }}
-        >
-          {glyph}
-        </span>
+        {guideStrokes.length ? (
+          <svg
+            viewBox="0 0 300 300"
+            aria-hidden
+            className="pointer-events-none absolute inset-0 h-full w-full text-zinc-200 dark:text-zinc-700"
+          >
+            {guideStrokes.map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={16}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        ) : (
+          <span
+            className="pointer-events-none absolute inset-0 flex items-center justify-center font-black leading-none text-zinc-200 dark:text-zinc-700"
+            style={{ fontSize: SIZE * 0.8 }}
+          >
+            {glyph}
+          </span>
+        )}
         <canvas
           ref={canvasRef}
           width={SIZE}
