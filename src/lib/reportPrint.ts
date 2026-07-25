@@ -168,7 +168,7 @@ export function openReport(d: ReportData): void {
   const chips = d.practice.map((w) => `<span class="chip">${esc(w)}</span>`).join("");
 
   const running = d.running
-    ? `<p class="stats">${d.running.words} words · ${d.running.errors} errors · ${d.running.selfCorrections} self-corrections · ${d.running.accuracy}% (${esc(d.running.band)})${d.running.wpm != null ? ` · ${d.running.wpm} wpm (goal ${esc(d.running.wpmGoal)})` : ""}</p>`
+    ? `<p class="stats">${d.running.words} words · ${d.running.errors} errors · ${d.running.selfCorrections} self-corrections${d.running.wpm != null ? ` · ${d.running.wpm} wpm (goal ${esc(d.running.wpmGoal)})` : ""}</p>`
     : "";
 
   const html = `<!doctype html>
@@ -200,13 +200,13 @@ export function openReport(d: ReportData): void {
 
     <div class="cols2">
       <div class="section">
-        <h2>What the reader levels mean</h2>
+        <h2>The reader's reading level</h2>
         ${readerLegend}
       </div>
       ${
         d.accuracyBand
           ? `<div class="section">
-        <h2>What the accuracy levels mean</h2>
+        <h2>The reader's accuracy level: ${d.accuracyBand.pct}%</h2>
         ${accLegend}
       </div>`
           : "<div></div>"

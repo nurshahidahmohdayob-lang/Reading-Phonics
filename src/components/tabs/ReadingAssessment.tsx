@@ -968,7 +968,7 @@ function ReaderGuide({ currentLabel }: { currentLabel?: string }) {
   return (
     <details className="mt-3 w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
       <summary className="flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-extrabold text-zinc-600 select-none dark:text-zinc-200">
-        <span>📖 What do the reader levels mean?</span>
+        <span>📖 The reader&apos;s reading level</span>
         <span className="text-xs font-bold text-zinc-400">tap to open</span>
       </summary>
       <div className="flex flex-col gap-2 px-4 pb-4">
@@ -1035,11 +1035,13 @@ export const ACCURACY_BANDS = [
 ];
 
 /** Collapsible legend explaining each accuracy band, current one highlighted. */
-function AccuracyGuide({ currentLabel }: { currentLabel?: string }) {
+function AccuracyGuide({ currentLabel, pct }: { currentLabel?: string; pct?: number }) {
   return (
     <details className="mt-3 w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
       <summary className="flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-extrabold text-zinc-600 select-none dark:text-zinc-200">
-        <span>🎯 What do the accuracy levels mean?</span>
+        <span>
+          🎯 The reader&apos;s accuracy level{pct != null ? ` · ${pct}%` : ""}
+        </span>
         <span className="text-xs font-bold text-zinc-400">tap to open</span>
       </summary>
       <div className="flex flex-col gap-2 px-4 pb-4">
@@ -1770,7 +1772,9 @@ function Report({
       )}
 
       {/* Accuracy-level guide */}
-      {read && band && <AccuracyGuide currentLabel={band.label} />}
+      {read && band && (
+        <AccuracyGuide currentLabel={band.label} pct={read.accuracy} />
+      )}
 
       {/* Practice words */}
       {practice.length > 0 && (
