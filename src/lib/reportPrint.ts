@@ -198,6 +198,11 @@ export function openReport(d: ReportData): void {
       <div class="card"><div class="k">Lexile</div><div class="v">${esc(d.lexile)}</div><div class="vs">${esc(d.lexileBand)}</div></div>
     </div>
 
+    <div class="section" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:12px 16px">
+      <div style="font-weight:800;font-size:14px;color:#075985">👪 Two levels — what's the difference?</div>
+      <p style="margin:4px 0 0;font-size:13px;font-weight:600;color:#0c4a6e"><b>Reading level</b> is the overall picture — how accurately, how smoothly (fluency), and with how much understanding your child read. <b>Accuracy level</b> is only how many words were read correctly in this one passage. A book can be a little too hard to read every word, even for a strong reader, so the two can differ — and that's perfectly normal.</p>
+    </div>
+
     <div class="cols2">
       <div class="section">
         <h2>The reader's reading level</h2>

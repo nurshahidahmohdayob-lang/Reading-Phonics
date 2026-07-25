@@ -1663,6 +1663,29 @@ function Report({
       {/* Guide: what each reader level means */}
       <ReaderGuide currentLabel={category.label} />
 
+      {/* Parent-friendly note: the two levels measure different things */}
+      <div className="mt-3 w-full max-w-xl rounded-2xl bg-sky-50 p-4 ring-1 ring-sky-100 dark:bg-sky-950/30 dark:ring-sky-900/40">
+        <p className="text-sm font-extrabold text-sky-800 dark:text-sky-200">
+          👪 Two levels in this report — what&apos;s the difference?
+        </p>
+        <ul className="mt-1.5 flex flex-col gap-1 text-sm font-semibold text-sky-900/80 dark:text-sky-200/80">
+          <li>
+            <span className="font-extrabold">Reading level</span> — the overall
+            picture: how accurately, how smoothly (fluency), and with how much
+            understanding your child read.
+          </li>
+          <li>
+            <span className="font-extrabold">Accuracy level</span> — only how
+            many words were read correctly in this one passage.
+          </li>
+        </ul>
+        <p className="mt-1.5 text-sm font-semibold text-sky-900/70 dark:text-sky-200/70">
+          A book can be a little too hard to read every word, even for a strong
+          reader — so the two levels can be different, and that&apos;s perfectly
+          normal.
+        </p>
+      </div>
+
       {/* Placement decision + adaptive book trials */}
       {read && (
         <AdaptivePlacement
