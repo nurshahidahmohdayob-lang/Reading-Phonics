@@ -972,6 +972,9 @@ function ReaderGuide({ currentLabel }: { currentLabel?: string }) {
         <span className="text-xs font-bold text-zinc-400">tap to open</span>
       </summary>
       <div className="flex flex-col gap-2 px-4 pb-4">
+        <p className="text-xs font-semibold text-zinc-400">
+          Overall — blends accuracy, fluency and understanding.
+        </p>
         {ladder.map((c) => {
           const isCurrent = c.label === currentLabel;
           return (
@@ -1045,6 +1048,9 @@ function AccuracyGuide({ currentLabel, pct }: { currentLabel?: string; pct?: num
         <span className="text-xs font-bold text-zinc-400">tap to open</span>
       </summary>
       <div className="flex flex-col gap-2 px-4 pb-4">
+        <p className="text-xs font-semibold text-zinc-400">
+          Just the words read correctly in this one passage.
+        </p>
         {ACCURACY_BANDS.map((c) => {
           const isCurrent = c.label === currentLabel;
           return (

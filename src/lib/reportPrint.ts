@@ -201,12 +201,14 @@ export function openReport(d: ReportData): void {
     <div class="cols2">
       <div class="section">
         <h2>The reader's reading level</h2>
+        <p style="margin:-2px 0 8px;font-size:12px;font-weight:600;color:#71717a">Overall — blends accuracy, fluency and understanding.</p>
         ${readerLegend}
       </div>
       ${
         d.accuracyBand
           ? `<div class="section">
         <h2>The reader's accuracy level: ${d.accuracyBand.pct}%</h2>
+        <p style="margin:-2px 0 8px;font-size:12px;font-weight:600;color:#71717a">Just the words read correctly in this one passage.</p>
         ${accLegend}
       </div>`
           : "<div></div>"
