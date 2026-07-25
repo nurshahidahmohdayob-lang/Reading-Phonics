@@ -1765,21 +1765,11 @@ function Report({
         </div>
       )}
 
-      {/* Accuracy explanation */}
+      {/* Accuracy note — the % and band are already shown in the stats above */}
       {read && band && (
-        <div className="mt-4 w-full max-w-xl rounded-2xl bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-extrabold text-zinc-700 dark:text-zinc-200">
-              Accuracy {read.accuracy}%
-            </h3>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${band.tone}`}>
-              {band.label} level · {band.range}
-            </span>
-          </div>
-          <p className="mt-2 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
-            {band.note}
-          </p>
-        </div>
+        <p className="mt-2 w-full max-w-xl px-2 text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+          {band.note}
+        </p>
       )}
 
       {/* Accuracy-level guide */}
