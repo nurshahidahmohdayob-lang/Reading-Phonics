@@ -200,15 +200,13 @@ export function openReport(d: ReportData): void {
 
     <div class="cols2">
       <div class="section">
-        <h2>Reader level: ${esc(d.categoryLabel)}</h2>
-        <p style="font-weight:600;margin:0 0 8px">Overall ${d.composite}% — in the ${esc(d.categoryRange)} band.</p>
+        <h2>What the reader levels mean</h2>
         ${readerLegend}
       </div>
       ${
         d.accuracyBand
           ? `<div class="section">
-        <h2>Reading accuracy: ${d.accuracyBand.pct}%</h2>
-        <p style="font-weight:600;margin:0 0 8px"><b>${esc(d.accuracyBand.label)} level (${esc(d.accuracyBand.range)}).</b></p>
+        <h2>What the accuracy levels mean</h2>
         ${accLegend}
       </div>`
           : "<div></div>"

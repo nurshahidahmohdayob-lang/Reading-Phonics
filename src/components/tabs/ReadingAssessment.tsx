@@ -1676,9 +1676,6 @@ function Report({
         <p className="mt-0.5 font-extrabold text-zinc-700 dark:text-zinc-200">
           {finalLevel.grade} · Age {finalLevel.age}
         </p>
-        <p className="mt-0.5 text-xs font-semibold text-zinc-400">
-          From the word check · {finalLevel.grade} band {finalLevel.lexileRange}
-        </p>
       </div>
 
       {/* Stage 1 word check — level reached + words read wrongly */}
