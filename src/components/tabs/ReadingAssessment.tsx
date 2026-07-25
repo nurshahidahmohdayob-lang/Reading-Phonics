@@ -961,15 +961,6 @@ function categoryFor(score: number) {
   return CATEGORIES.find((c) => score >= c.min) ?? CATEGORIES[CATEGORIES.length - 1];
 }
 
-/** How far the decoding-accuracy band lets the reader category climb — an index
-    into CATEGORIES (0 = Independent Reader, higher = lower level). A child can't
-    be labelled a higher level than their accuracy on the passage supports. */
-const READER_ACC_CAP: Record<string, number> = {
-  Independent: 0, // 98–100% — may reach Independent Reader
-  Instructional: 1, // 95–97% — at most Instructional Reader
-  Developing: 2, // below 95% — at most Developing Reader
-};
-
 /** Collapsible legend explaining each reader category, current one highlighted. */
 function ReaderGuide({ currentLabel }: { currentLabel?: string }) {
   // Show easiest → most advanced so it reads like a growth ladder.
@@ -1549,22 +1540,14 @@ function Report({
         ? Math.round((0.4 * accScore + 0.3 * fluencyScore) / 0.7)
         : 0
       : Math.round(0.4 * accScore + 0.3 * fluencyScore + 0.3 * understandingScore);
-  // Accuracy band for this passage.
-  const band = accuracy != null ? benchmarkBand(accuracy) : null;
-
-  // Reader category from the composite, capped by decoding accuracy — a child
-  // can't be labelled a higher reader level than their accuracy on the passage
-  // supports (e.g. below-95% accuracy can't be an Independent Reader here).
-  const compIdx = CATEGORIES.indexOf(categoryFor(composite));
-  const capIdx = band ? (READER_ACC_CAP[band.label] ?? 0) : 0;
-  const cappedByAccuracy = capIdx > compIdx;
-  const category = CATEGORIES[Math.max(compIdx, capIdx)];
+  const category = categoryFor(composite);
 
   // ----- reading level: anchored to the Stage 1 word check -----
   // The reading level IS the Lexile of the hardest word read in the word check.
   // Stage 2 only drives the move-up / stay / move-down recommendation below — it
   // never inflates this Lexile. (A child who reads only "is" stays at BR99, not
   // a Year-1 benchmark.)
+  const band = accuracy != null ? benchmarkBand(accuracy) : null;
   const { term } = placeByTerm(suggestIdx, accuracy, compScore);
   const finalIdx = suggestIdx;
   const finalLevel = levels[finalIdx];
@@ -1631,7 +1614,6 @@ function Report({
       categoryRange: category.range,
       categoryAbout: category.about,
       composite,
-      readerCapped: cappedByAccuracy,
       accuracyBand:
         accuracy != null && band
           ? { pct: accuracy, label: band.label, range: band.range, note: band.note }
@@ -1671,9 +1653,7 @@ function Report({
       >
         <p className="text-3xl font-extrabold">{category.label}</p>
         <p className="mt-1 text-sm font-bold opacity-80">
-          {cappedByAccuracy
-            ? `Held at ${category.label} — decoding accuracy ${accuracy}% (needs 95%+)`
-            : `Overall score ${composite}% — in the ${category.range} band`}
+          Overall score {composite}% — in the {category.range} band
         </p>
         <p className="mt-1 text-sm font-semibold opacity-90">
           Why: {category.about}
