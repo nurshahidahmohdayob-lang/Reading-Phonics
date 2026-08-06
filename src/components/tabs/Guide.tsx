@@ -62,7 +62,15 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
       {/* ---------- Guide 1: the whole app ---------- */}
       {tab === "app" && (
         <>
-          <div className="mt-4 flex w-full justify-end">
+          <div className="mt-4 flex w-full flex-wrap justify-end gap-2">
+            <a
+              href="/parent-pamphlet.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#0A4F29] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform active:scale-95"
+            >
+              📗 Parent pamphlet
+            </a>
             <button
               onClick={openTutorial}
               className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm active:scale-95"
