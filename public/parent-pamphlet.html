@@ -104,14 +104,15 @@
   @media (max-width: 560px) {
     .adv-grid, .tools { grid-template-columns: 1fr; }
   }
-  /* Floating download/print button (screen only) */
-  .printbtn {
-    position: fixed; right: 18px; bottom: 18px; z-index: 20;
+  /* Floating action buttons (screen only) */
+  .actions { position: fixed; right: 18px; bottom: 18px; z-index: 20; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .actbtn {
     border: 0; cursor: pointer; font-family: var(--sans); font-weight: 800; font-size: 14px;
-    background: var(--yellow); color: #3a2b00; padding: 12px 20px; border-radius: 999px;
-    box-shadow: 0 10px 24px -8px rgba(0,0,0,.4);
+    padding: 12px 20px; border-radius: 999px; box-shadow: 0 10px 24px -8px rgba(0,0,0,.4);
   }
-  .printbtn:hover { filter: brightness(1.04); }
+  .actbtn.pdf { background: var(--yellow); color: #3a2b00; }
+  .actbtn.html { background: var(--green); color: #fff; }
+  .actbtn:hover { filter: brightness(1.05); }
 
   @media print {
     body { background: #fff; padding: 0; }
@@ -119,11 +120,27 @@
     .sheet { gap: 14px; max-width: none; }
     .hero, .cta, .card, .adv, .tool { box-shadow: none; }
     .card, .adv, .tool, .hero, .cta { break-inside: avoid; }
-    .printbtn { display: none; }
+    .actions { display: none; }
   }
 </style>
 
-<button class="printbtn" onclick="window.print()">🖨️ Download / Print (PDF)</button>
+<div class="actions">
+  <button class="actbtn html" onclick="downloadHtml()">⬇️ Download HTML</button>
+  <button class="actbtn pdf" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</div>
+<script>
+  function downloadHtml() {
+    var doc = '<!doctype html>' + document.documentElement.outerHTML;
+    var blob = new Blob([doc], { type: 'text/html' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'phonics-pals-parent-pamphlet.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+</script>
 
 <div class="sheet">
 
