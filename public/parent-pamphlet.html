@@ -68,11 +68,22 @@
   .adv h3 { margin: 0 0 3px; font-size: 15px; font-weight: 800; }
   .adv p { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
-  /* Journey strip */
-  .journey { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .step { display: flex; align-items: center; gap: 8px; background: var(--leaf); color: var(--green); font-weight: 800; font-size: 13px; padding: 8px 13px; border-radius: 999px; }
-  @media (prefers-color-scheme: dark){ .step{ color:#CFEAD7; } }
+  /* Journey */
+  .journey-lead { margin: 0 0 14px; font-size: 14.5px; color: var(--ink-soft); }
+  .journey-lead b { color: var(--ink); }
+  .startpill { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #fff; font-weight: 800; font-size: 14px; padding: 10px 18px; border-radius: 999px; }
+  .startpill .n { background: var(--yellow); color: #3a2b00; border-radius: 999px; padding: 1px 9px; font-size: 12px; }
+  .thenrow { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; }
+  .thenrow .ln { flex: 1; height: 1px; background: var(--line); }
+  .thenrow .tt { font-size: 11.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+  .paths { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .path { border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px; background: var(--leaf); }
+  .ptag { display: block; font-size: 12px; font-weight: 800; color: var(--green); margin: 0 0 9px; }
+  @media (prefers-color-scheme: dark){ .ptag{ color:#7ED9A3; } }
+  .journey { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+  .step { display: flex; align-items: center; gap: 6px; background: var(--card); color: var(--ink); font-weight: 800; font-size: 12.5px; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); }
   .arrow { color: var(--yellow-deep); font-weight: 900; }
+  @media (max-width: 560px){ .paths{ grid-template-columns: 1fr; } }
 
   /* Tools grid */
   .tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -133,7 +144,7 @@
   <!-- WHAT IS IT -->
   <section class="card intro">
     <p class="eyebrow">A learn-to-read app</p>
-    <p>A friendly app that guides your child from their very first letter sounds all the way to reading whole storybooks aloud — <b>the same structured, step-by-step method we use in class.</b> Ten playful tools take them, in order, from <b>sounds → blending → spelling → reading</b>. Best of all, it <b>listens</b> as your child reads and cheers them on.</p>
+    <p>A friendly app that guides your child from their very first letter sounds all the way to reading whole storybooks aloud — <b>the same structured, step-by-step method we use in class.</b> It starts by finding your child's reading level, then guides them with ten playful tools — from <b>sounds and blending</b> right through to <b>reading whole stories</b>. Best of all, it <b>listens</b> as your child reads and cheers them on.</p>
   </section>
 
   <!-- WHY IT HELPS -->
@@ -170,12 +181,29 @@
   <!-- THE JOURNEY -->
   <section class="card">
     <p class="eyebrow">The learning journey</p>
-    <div class="journey">
-      <span class="step">🔊 Letter sounds</span><span class="arrow">→</span>
-      <span class="step">🔤 Blending words</span><span class="arrow">→</span>
-      <span class="step">✍️ Writing &amp; spelling</span><span class="arrow">→</span>
-      <span class="step">📖 Reading stories</span><span class="arrow">→</span>
-      <span class="step">📋 Reading check</span>
+    <p class="journey-lead">Every child begins with a quick <b>Reading Assessment</b> so we know exactly where to start — then follows the path that fits them.</p>
+
+    <span class="startpill"><span class="n">Start</span> 📋 Reading Assessment — find their reading level</span>
+
+    <div class="thenrow"><span class="ln"></span><span class="tt">then, based on their level</span><span class="ln"></span></div>
+
+    <div class="paths">
+      <div class="path">
+        <span class="ptag">🌱 Just starting to read</span>
+        <div class="journey">
+          <span class="step">🔊 Sounds</span><span class="arrow">→</span>
+          <span class="step">🔤 Blending</span><span class="arrow">→</span>
+          <span class="step">✍️ Writing</span><span class="arrow">→</span>
+          <span class="step">📖 Reading stories</span>
+        </div>
+      </div>
+      <div class="path">
+        <span class="ptag">⭐ Already reading well</span>
+        <div class="journey">
+          <span class="step">🎤 Guided Reading practice</span><span class="arrow">→</span>
+          <span class="step">📚 Harder levels &amp; fluency</span>
+        </div>
+      </div>
     </div>
   </section>
 
