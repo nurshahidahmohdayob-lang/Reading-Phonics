@@ -118,19 +118,31 @@
   .actbtn.html { background: var(--green); color: #fff; }
   .actbtn:hover { filter: brightness(1.05); }
 
+  /* Print as a tri-fold: landscape A4, three equal columns to fold into thirds. */
   @media print {
-    body { background: #fff; padding: 0; }
+    @page { size: A4 landscape; margin: 7mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .sheet { gap: 14px; max-width: none; }
-    .hero, .cta, .card, .adv, .tool { box-shadow: none; }
-    .card, .adv, .tool, .hero, .cta { break-inside: avoid; }
+    body { background: #fff; padding: 0; }
+    .sheet { display: block; column-count: 3; column-gap: 8mm; max-width: none; margin: 0; font-size: 10.5px; line-height: 1.4; }
+    .sheet > * { margin: 0 0 7px; }
+    .hero { display: block; text-align: center; padding: 14px 12px; box-shadow: none; break-inside: avoid; }
+    .hero-text { text-align: center; }
+    .brandrow { justify-content: center; }
+    .hero h1 { font-size: 19px; max-width: none; }
+    .hero-mascot { width: 82px; margin: 8px auto 0; display: block; }
+    .eyebrow { margin-top: 2px; }
+    .card { padding: 12px 13px; box-shadow: none; break-inside: avoid; }
+    .adv-grid, .tools, .paths { display: block; }
+    .adv, .tool { display: flex; margin: 0 0 6px; box-shadow: none; break-inside: avoid; }
+    .cta { padding: 14px; box-shadow: none; break-inside: avoid; }
+    figure, footer { break-inside: avoid; }
     .actions { display: none; }
   }
 </style>
 
 <div class="actions">
   <button class="actbtn html" onclick="downloadHtml()">⬇️ Download HTML</button>
-  <button class="actbtn pdf" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <button class="actbtn pdf" onclick="window.print()">🖨️ Print tri-fold (PDF)</button>
 </div>
 <script>
   function downloadHtml() {
