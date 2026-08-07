@@ -83,22 +83,23 @@
   .actbtn.html { background:var(--green); color:#fff; }
 
   @media print {
-    @page { size: A4 landscape; margin: 0; }
-    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @page { size: A4 landscape; margin: 8mm; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; overflow:visible !important; }
     body { background:#fff; padding:0; }
     .note, .page-label, .actions { display:none !important; }
     .brochure { max-width:none; margin:0; }
-    .page { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; width:297mm; height:210mm; break-after:page; }
+    .page { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; min-height:calc(210mm - 16mm); break-after:page; break-inside:avoid; }
     .page:last-child { break-after:auto; }
-    .panel { border:0; border-radius:0; min-height:0; padding:11mm 8mm; break-inside:avoid; }
-    .panel + .panel { border-left:1px dashed #cfcfcf; } /* fold guides */
-    .cover img { width:44mm; }
-    .back img { width:26mm; }
+    .panel { border:0; border-radius:0; min-height:0; padding:7.5mm 7mm; break-inside:avoid; }
+    .panel + .panel { border-left:1px dashed #cfcfcf; }
+    .cover img { width:42mm; }
+    .back img { width:24mm; }
+    .panel p, .adv p, .tool span { font-size:10.3px; }
   }
 </style>
 
 <div class="note">
-  🖨️ <b>How to print:</b> Print <b>double-sided</b> (flip on the <b>short edge</b>), <b>Landscape</b>, margins <b>None</b>. Two A4 pages print: the <b>Outside</b> and the <b>Inside</b>. Then fold into thirds — fold the right panel in first, then the left panel over it.
+  🖨️ <b>How to print:</b> This fits on <b>one A4 sheet</b>, printed <b>double-sided</b>. In the print dialog choose <b>Landscape</b>, <b>Print on both sides</b> (flip on <b>short edge</b>), and <b>Default</b> margins. Side 1 is the <b>Outside</b>, side 2 the <b>Inside</b>. Then fold into thirds: fold the right panel in first, then the left panel over it.
 </div>
 
 <div class="brochure">
