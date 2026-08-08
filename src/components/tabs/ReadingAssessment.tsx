@@ -1556,7 +1556,7 @@ function Report({
   // Year-1 reader. Report BR rather than falling back to the Year-1 Lexile.
   const beginning = stopLexile === null;
   const lexile = stopLexile ?? finalLevel.lexileLow;
-  const lexileText = beginning ? "BR" : lexLabel(lexile);
+  const lexileText = beginning ? "BR99" : lexLabel(lexile);
   const lexileBandText = beginning ? "Beginning Reader" : lexileBand(lexile);
   const levelGradeText = beginning
     ? "Still building first words"
