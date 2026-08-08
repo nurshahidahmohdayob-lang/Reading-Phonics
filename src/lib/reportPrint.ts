@@ -12,6 +12,7 @@ export type ReportData = {
   categoryAbout: string;
   composite: number;
   accuracyBand: { pct: number; label: string; range: string; note: string } | null;
+  beginning?: boolean;
   levelGrade: string;
   term: number;
   lexile: string;
@@ -194,7 +195,7 @@ export function openReport(d: ReportData): void {
 
     <div class="row">
       <div class="card"><div class="k">Reader level</div><div class="v">${esc(d.categoryLabel)}</div><div class="vs">Overall ${d.composite}% · ${esc(d.categoryRange)}</div></div>
-      <div class="card"><div class="k">Reading level</div><div class="v">${esc(d.levelGrade)} · Term ${d.term}</div><div class="vs">Age ${d.age}</div></div>
+      <div class="card"><div class="k">Reading level</div><div class="v">${esc(d.levelGrade)}${d.beginning ? "" : ` · Term ${d.term}`}</div><div class="vs">${d.beginning ? "Still building first words" : `Age ${d.age}`}</div></div>
       <div class="card"><div class="k">Lexile</div><div class="v">${esc(d.lexile)}</div><div class="vs">${esc(d.lexileBand)}</div></div>
     </div>
 

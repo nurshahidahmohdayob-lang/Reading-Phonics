@@ -1551,8 +1551,16 @@ function Report({
   const { term } = placeByTerm(suggestIdx, accuracy, compScore);
   const finalIdx = suggestIdx;
   const finalLevel = levels[finalIdx];
+  // A child who read nothing in the Stage 1 word check — i.e. could not
+  // pronounce the words from the beginning — is a Beginning Reader (BR), not a
+  // Year-1 reader. Report BR rather than falling back to the Year-1 Lexile.
+  const beginning = stopLexile === null;
   const lexile = stopLexile ?? finalLevel.lexileLow;
-  const lexileText = lexLabel(lexile);
+  const lexileText = beginning ? "BR" : lexLabel(lexile);
+  const lexileBandText = beginning ? "Beginning Reader" : lexileBand(lexile);
+  const levelGradeText = beginning
+    ? "Still building first words"
+    : `${finalLevel.grade} · Age ${finalLevel.age}`;
 
   // ----- placement decision (Reading Level Placement Guide) -----
   const placement = placementDecision(accuracy, read ? fluencyScore : null, compScore);
@@ -1618,10 +1626,11 @@ function Report({
         accuracy != null && band
           ? { pct: accuracy, label: band.label, range: band.range, note: band.note }
           : null,
-      levelGrade: finalLevel.grade,
+      beginning,
+      levelGrade: beginning ? "Beginning Reader" : finalLevel.grade,
       term,
       lexile: lexileText,
-      lexileBand: lexileBand(lexile),
+      lexileBand: lexileBandText,
       age: finalLevel.age,
       strands,
       support,
@@ -1702,10 +1711,10 @@ function Report({
           Reading level
         </p>
         <p className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-300">
-          {lexileText} · {lexileBand(lexile)}
+          {lexileText} · {lexileBandText}
         </p>
         <p className="mt-0.5 font-extrabold text-zinc-700 dark:text-zinc-200">
-          {finalLevel.grade} · Age {finalLevel.age}
+          {levelGradeText}
         </p>
       </div>
 
