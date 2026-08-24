@@ -71,6 +71,14 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
             >
               📗 Parent pamphlet
             </a>
+            <a
+              href="/parent-slides.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#668C4A] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform active:scale-95"
+            >
+              🖥️ Parent slides
+            </a>
             <button
               onClick={openTutorial}
               className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm active:scale-95"
