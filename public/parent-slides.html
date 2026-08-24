@@ -293,6 +293,11 @@
     width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1rem;
     box-shadow: 0 10px 30px rgba(0,0,0,.28); }
   .fs:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .dl { position: fixed; bottom: 22px; right: calc(clamp(18px, 4vw, 34px) + 50px); z-index: 20;
+    border: 0; background: color-mix(in srgb, var(--forest) 92%, black); color: #F6EFDC;
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+  .dl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
   .hint { position: absolute; bottom: clamp(28px, 5vh, 52px); font-size: .82rem; color: var(--feat-soft); display: flex; align-items: center; gap: 8px; }
   .kbd { border: 1px solid var(--feat-line); border-radius: 6px; padding: 2px 8px; font-family: var(--sans); font-size: .78rem; }
@@ -531,6 +536,7 @@
   <div class="dots" id="dots"></div>
   <button id="next" aria-label="Next slide">›</button>
 </div>
+<button class="dl" id="dlBtn" aria-label="Download this presentation" title="Download this presentation">⬇</button>
 <button class="fs" id="fsBtn" aria-label="Toggle fullscreen">⛶</button>
 
 <script>
@@ -547,7 +553,8 @@
     var CREST_WHITE = document.querySelector(".title-crest").getAttribute("src");
     var CREST_COLOR = brandCrest.getAttribute("src");
 
-    // Build dots
+    // Build dots (clear first so a downloaded copy re-renders cleanly)
+    dotsWrap.innerHTML = "";
     slides.forEach(function (s, idx) {
       var b = document.createElement("button");
       b.className = "dot"; b.setAttribute("aria-label", "Go to slide " + (idx + 1));
@@ -615,6 +622,18 @@
       else { (document.exitFullscreen || function(){}).call(document); }
     }
     document.getElementById("fsBtn").addEventListener("click", toggleFs);
+
+    function downloadHtml() {
+      var html = "<!doctype html>\n" + document.documentElement.outerHTML;
+      var blob = new Blob([html], { type: "text/html" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "learning-to-read-at-zera.html";
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+    var dlb = document.getElementById("dlBtn");
+    if (dlb) dlb.addEventListener("click", downloadHtml);
 
     render();
   })();
