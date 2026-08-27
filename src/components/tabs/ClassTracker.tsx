@@ -7,7 +7,7 @@
    reading level and opens / downloads that saved report; an empty cell starts a
    fresh assessment for that child and term. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ROSTER, studentKey } from "@/app/roster";
 import {
   useTracker,
@@ -20,6 +20,16 @@ import {
 import { openReport } from "@/lib/reportPrint";
 
 const TERMS: TermNo[] = [1, 2, 3];
+
+// Passcode lock — only the hash of the code is stored, never the digits.
+const UNLOCK_KEY = "phonics.tracker.unlock.v1";
+const PASS_HASH =
+  "8b42d912a9d46626e3dc9895a15ce1ff70456abc7167d6498c45921336625816";
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 // Reader-category colours for the at-a-glance dot.
 const CAT_TONE: Record<string, { dot: string; text: string }> = {
@@ -50,6 +60,90 @@ export default function ClassTracker({
   onAssess,
 }: {
   onAssess: (init: { name: string; term: TermNo }) => void;
+}) {
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => {
+    setUnlocked(
+      typeof window !== "undefined" &&
+        window.localStorage.getItem(UNLOCK_KEY) === "1",
+    );
+  }, []);
+
+  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
+
+  return (
+    <TrackerBoard
+      onAssess={onAssess}
+      onLock={() => {
+        if (typeof window !== "undefined")
+          window.localStorage.removeItem(UNLOCK_KEY);
+        setUnlocked(false);
+      }}
+    />
+  );
+}
+
+/** Passcode screen shown until the correct code is entered on this device. */
+function LockScreen({ onUnlock }: { onUnlock: () => void }) {
+  const [code, setCode] = useState("");
+  const [err, setErr] = useState(false);
+
+  async function submit() {
+    if ((await sha256Hex(code.trim())) === PASS_HASH) {
+      if (typeof window !== "undefined")
+        window.localStorage.setItem(UNLOCK_KEY, "1");
+      onUnlock();
+    } else {
+      setErr(true);
+      setCode("");
+    }
+  }
+
+  return (
+    <div className="flex w-full max-w-md flex-1 flex-col items-center">
+      <div className="mt-8 w-full rounded-[2rem] bg-gradient-to-br from-[#0A4F29] to-[#0d6b39] px-6 py-9 text-center text-white shadow-lg ring-4 ring-white/60">
+        <div className="text-6xl">🔒</div>
+        <h2 className="mt-2 text-2xl font-extrabold">Class Tracker is locked</h2>
+        <p className="mx-auto mt-1 max-w-xs text-sm font-semibold text-white/85">
+          Enter the passcode to open the reading tracker.
+        </p>
+        <input
+          type="password"
+          inputMode="numeric"
+          autoFocus
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+            setErr(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void submit();
+          }}
+          placeholder="••••••"
+          className="mx-auto mt-5 block w-full max-w-[220px] rounded-2xl border-4 border-white/30 bg-white/95 px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-zinc-800 outline-none focus:border-[#F7B917]"
+        />
+        {err && (
+          <p className="mt-2 text-sm font-bold text-[#FFD75E]">
+            Wrong passcode — try again.
+          </p>
+        )}
+        <button
+          onClick={() => void submit()}
+          className="mx-auto mt-5 block rounded-full bg-[#F7B917] px-10 py-3 text-lg font-extrabold text-[#3a2b00] shadow-lg active:scale-95"
+        >
+          Unlock
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TrackerBoard({
+  onAssess,
+  onLock,
+}: {
+  onAssess: (init: { name: string; term: TermNo }) => void;
+  onLock: () => void;
 }) {
   const { store, cloud } = useTracker();
   const others = otherStudents(store);
@@ -147,6 +241,12 @@ export default function ClassTracker({
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onLock}
+            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            🔒 Lock
+          </button>
           <button
             onClick={() => setManage((m) => !m)}
             aria-pressed={manage}

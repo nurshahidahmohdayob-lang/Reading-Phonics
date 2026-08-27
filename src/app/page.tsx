@@ -122,8 +122,8 @@ const SECTIONS: {
   },
   {
     id: "tracker",
-    label: "Class Tracker",
-    blurb: "Reading levels per term, Year 1-6",
+    label: "Class Tracker 🔒",
+    blurb: "Passcode-protected · levels per term",
     emoji: "🗂️",
     color: "from-[#CDEAD9] to-[#A7D8BE]", // Zera green tint
     text: "text-emerald-800",
