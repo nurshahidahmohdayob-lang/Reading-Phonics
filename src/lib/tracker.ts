@@ -2,11 +2,14 @@
 
 /* Reading-assessment tracker storage.
 
-   There is no backend in this app, so — like the Spelling / Guided Reading
-   progress — results are kept in the browser's localStorage on this device.
-   Each completed assessment is stored as the full printable ReportData under
-   the student, split by academic term (1–3), so the Class Tracker can show a
-   per-term grid and re-open / download any saved report. */
+   Results sync to a shared cloud store (see /api/tracker) so the same data
+   appears on the live site, phonics.test, and every device. The browser's
+   localStorage is kept as an instant cache and offline fallback: saves apply
+   locally right away (optimistic), then push to the server; on load and after
+   each save we pull the server's authoritative copy back into the cache.
+
+   If no cloud store is configured yet, everything still works from
+   localStorage on that device. */
 
 import { useEffect, useState } from "react";
 import type { ReportData } from "./reportPrint";
@@ -30,8 +33,13 @@ export type TrackerRecord = {
 /** studentKey -> { term -> record }. */
 export type TrackerStore = Record<string, Partial<Record<TermNo, TrackerRecord>>>;
 
+export type CloudStatus = "checking" | "on" | "off";
+
 const KEY = "phonics.tracker.v1";
 const EVT = "phonics-tracker-change";
+const STATUS_EVT = "phonics-tracker-status";
+
+let cloudStatus: CloudStatus = "checking";
 
 function read(): TrackerStore {
   if (typeof window === "undefined") return {};
@@ -43,17 +51,70 @@ function read(): TrackerStore {
   }
 }
 
-function write(store: TrackerStore) {
+/** Overwrite the local cache and notify listeners. */
+function writeLocal(store: TrackerStore) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, JSON.stringify(store));
   window.dispatchEvent(new Event(EVT));
+}
+
+function setCloud(status: CloudStatus) {
+  cloudStatus = status;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(STATUS_EVT));
+}
+
+/** Push a change to the shared store; on success adopt its authoritative copy. */
+async function pushServer(
+  body:
+    | { op: "save"; record: TrackerRecord }
+    | { op: "delete"; yearKey: string; name: string; term: TermNo },
+) {
+  if (typeof window === "undefined") return;
+  try {
+    const res = await fetch("/api/tracker", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data?.ok && data.store) {
+      setCloud("on");
+      writeLocal(data.store as TrackerStore);
+    } else if (data && data.configured === false) {
+      setCloud("off");
+    }
+  } catch {
+    /* offline — keep the optimistic local copy */
+  }
+}
+
+/** Sync with the shared store on load: push this device's records up (so
+    nothing is lost when cloud sync first turns on) and adopt the merged copy. */
+export async function pullServer(): Promise<TrackerStore | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch("/api/tracker", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ op: "merge", store: read() }),
+    });
+    const data = await res.json();
+    if (data?.ok && data.store) {
+      setCloud("on");
+      writeLocal(data.store as TrackerStore);
+      return data.store as TrackerStore;
+    }
+    if (data && data.configured === false) setCloud("off");
+  } catch {
+    /* offline — keep the local cache */
+  }
+  return null;
 }
 
 export function loadAll(): TrackerStore {
   return read();
 }
 
-/** The saved terms for one student. */
 export function getRecords(
   yearKey: string,
   name: string,
@@ -61,12 +122,13 @@ export function getRecords(
   return read()[studentKey(yearKey, name)] ?? {};
 }
 
-/** Save (or overwrite) a student's result for one term. */
+/** Save (or overwrite) a student's result for one term — locally now, cloud next. */
 export function saveRecord(rec: TrackerRecord) {
   const store = read();
   const k = studentKey(rec.yearKey, rec.student);
   store[k] = { ...(store[k] ?? {}), [rec.term]: rec };
-  write(store);
+  writeLocal(store); // optimistic
+  void pushServer({ op: "save", record: rec });
 }
 
 export function deleteRecord(yearKey: string, name: string, term: TermNo) {
@@ -76,28 +138,33 @@ export function deleteRecord(yearKey: string, name: string, term: TermNo) {
   if (entry && entry[term]) {
     delete entry[term];
     if (Object.keys(entry).length === 0) delete store[k];
-    write(store);
+    writeLocal(store); // optimistic
   }
+  void pushServer({ op: "delete", yearKey, name, term });
 }
 
-/** Total number of saved reports across everyone. */
 export function totalSaved(store: TrackerStore): number {
   return Object.values(store).reduce((n, terms) => n + Object.keys(terms).length, 0);
 }
 
-/** A reactive snapshot of the whole tracker — re-renders on save/delete and
-    when another tab changes it. */
-export function useTracker(): TrackerStore {
+/** A reactive snapshot of the tracker + cloud-sync status. Pulls the shared
+    store on mount, and re-renders on any local save/delete or cross-tab change. */
+export function useTracker(): { store: TrackerStore; cloud: CloudStatus } {
   const [store, setStore] = useState<TrackerStore>({});
+  const [cloud, setStatus] = useState<CloudStatus>(cloudStatus);
   useEffect(() => {
     const sync = () => setStore(read());
+    const syncStatus = () => setStatus(cloudStatus);
     sync();
     window.addEventListener(EVT, sync);
     window.addEventListener("storage", sync);
+    window.addEventListener(STATUS_EVT, syncStatus);
+    void pullServer(); // auto-sync from the shared store
     return () => {
       window.removeEventListener(EVT, sync);
       window.removeEventListener("storage", sync);
+      window.removeEventListener(STATUS_EVT, syncStatus);
     };
   }, []);
-  return store;
+  return { store, cloud };
 }

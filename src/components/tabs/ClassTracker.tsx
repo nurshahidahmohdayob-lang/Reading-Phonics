@@ -51,7 +51,7 @@ export default function ClassTracker({
 }: {
   onAssess: (init: { name: string; term: TermNo }) => void;
 }) {
-  const store = useTracker();
+  const { store, cloud } = useTracker();
   const others = otherStudents(store);
   const groups = [
     ...ROSTER,
@@ -233,9 +233,18 @@ export default function ClassTracker({
         ))}
       </div>
       <p className="mt-3 max-w-xl text-center text-xs font-semibold text-zinc-400">
-        {totalSaved(store)} report{totalSaved(store) === 1 ? "" : "s"} saved on this
-        device. Reports are kept in this browser — export a CSV or download each
-        report to keep a copy.
+        {totalSaved(store)} report{totalSaved(store) === 1 ? "" : "s"} saved.{" "}
+        {cloud === "on" ? (
+          <span className="text-emerald-600 dark:text-emerald-400">
+            ☁️ Synced to the cloud — the same data shows on every device.
+          </span>
+        ) : cloud === "off" ? (
+          <span className="text-amber-600 dark:text-amber-400">
+            On this device only — cloud sync isn’t set up yet.
+          </span>
+        ) : (
+          <span>Checking cloud sync…</span>
+        )}
       </p>
     </div>
   );
