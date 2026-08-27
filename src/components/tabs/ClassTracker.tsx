@@ -11,6 +11,7 @@ import { useState } from "react";
 import { ROSTER, studentKey } from "@/app/roster";
 import {
   useTracker,
+  deleteRecord,
   totalSaved,
   type TermNo,
   type TrackerRecord,
@@ -59,6 +60,7 @@ export default function ClassTracker({
       : []),
   ];
   const [yearKey, setYearKey] = useState(groups[0]?.key ?? "y1");
+  const [manage, setManage] = useState(false);
   const group = groups.find((g) => g.key === yearKey) ?? groups[0];
 
   const rowsFor = (name: string) => store[studentKey(group.key, name)] ?? {};
@@ -144,13 +146,31 @@ export default function ClassTracker({
             </span>
           ))}
         </div>
-        <button
-          onClick={exportCsv}
-          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
-        >
-          ⬇️ Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setManage((m) => !m)}
+            aria-pressed={manage}
+            className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
+              manage
+                ? "bg-rose-500 text-white ring-rose-500"
+                : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+            }`}
+          >
+            {manage ? "✓ Done" : "🗑️ Manage"}
+          </button>
+          <button
+            onClick={exportCsv}
+            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            ⬇️ Export CSV
+          </button>
+        </div>
       </div>
+      {manage && (
+        <p className="mt-2 w-full text-center text-xs font-semibold text-rose-500">
+          Manage mode — tap 🗑️ on a saved cell to delete that report.
+        </p>
+      )}
 
       {/* Tracker grid */}
       <div className="mt-3 w-full overflow-x-auto rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
@@ -186,7 +206,12 @@ export default function ClassTracker({
                     <td key={t} className="px-3 py-2.5 text-center align-middle">
                       <Cell
                         rec={r[t]}
+                        manage={manage}
                         onOpen={(rec) => openReport(rec.report)}
+                        onDelete={() => {
+                          if (confirm(`Delete ${name}'s Term ${t} report?`))
+                            deleteRecord(group.key, name, t);
+                        }}
                         onAssess={() => onAssess({ name, term: t })}
                       />
                     </td>
@@ -219,24 +244,56 @@ export default function ClassTracker({
 /** One term cell: a saved level chip, or an “assess” prompt. */
 function Cell({
   rec,
+  manage,
   onOpen,
+  onDelete,
   onAssess,
 }: {
   rec: TrackerRecord | undefined;
+  manage: boolean;
   onOpen: (rec: TrackerRecord) => void;
+  onDelete: () => void;
   onAssess: () => void;
 }) {
   if (!rec) {
     return (
       <button
         onClick={onAssess}
-        className="mx-auto flex h-9 w-full max-w-[130px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 text-xs font-bold text-zinc-400 transition-colors hover:border-rose-300 hover:text-rose-500 dark:border-zinc-700"
+        disabled={manage}
+        className="mx-auto flex h-9 w-full max-w-[130px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 text-xs font-bold text-zinc-400 transition-colors hover:border-rose-300 hover:text-rose-500 disabled:opacity-40 disabled:hover:border-zinc-200 disabled:hover:text-zinc-400 dark:border-zinc-700"
       >
         + Assess
       </button>
     );
   }
   const t = tone(rec.report.categoryLabel);
+
+  // Manage mode: show the level next to a delete button.
+  if (manage) {
+    return (
+      <div className="mx-auto flex max-w-[160px] items-center gap-1.5">
+        <span className="flex flex-1 items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 opacity-70 ring-1 ring-black/5 dark:bg-zinc-800">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${t.dot}`} />
+          <span className="min-w-0">
+            <span className={`block text-sm font-extrabold leading-none ${t.text}`}>
+              {rec.report.lexile}
+            </span>
+            <span className="block truncate text-[10px] font-semibold text-zinc-400">
+              {rec.report.levelGrade}
+            </span>
+          </span>
+        </span>
+        <button
+          onClick={onDelete}
+          aria-label="Delete this report"
+          className="shrink-0 rounded-lg bg-rose-100 px-2 py-2 text-rose-600 shadow-sm active:scale-90 dark:bg-rose-950/50 dark:text-rose-300"
+        >
+          🗑️
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={() => onOpen(rec)}
