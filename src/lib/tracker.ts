@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import type { ReportData } from "./reportPrint";
 import { studentKey } from "@/app/roster";
+import { TRACKER_SEED } from "@/app/trackerSeed";
 
 export type TermNo = 1 | 2 | 3;
 
@@ -38,6 +39,7 @@ export type CloudStatus = "checking" | "on" | "off";
 const KEY = "phonics.tracker.v1";
 const EVT = "phonics-tracker-change";
 const STATUS_EVT = "phonics-tracker-status";
+const SEED_FLAG = "phonics.tracker.seed.v1";
 
 let cloudStatus: CloudStatus = "checking";
 
@@ -111,6 +113,25 @@ export async function pullServer(): Promise<TrackerStore | null> {
   return null;
 }
 
+/** Fill in the baked-in reading levels once per browser. Never overwrites an
+    existing record; then it flows up to the cloud via the load-time merge. */
+function applySeedOnce() {
+  if (typeof window === "undefined") return;
+  try {
+    if (window.localStorage.getItem(SEED_FLAG)) return;
+    const store = read();
+    for (const rec of TRACKER_SEED) {
+      const k = studentKey(rec.yearKey, rec.student);
+      const entry = store[k] ?? (store[k] = {});
+      if (!entry[rec.term]) entry[rec.term] = rec;
+    }
+    window.localStorage.setItem(SEED_FLAG, "1");
+    writeLocal(store);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function loadAll(): TrackerStore {
   return read();
 }
@@ -155,6 +176,7 @@ export function useTracker(): { store: TrackerStore; cloud: CloudStatus } {
   useEffect(() => {
     const sync = () => setStore(read());
     const syncStatus = () => setStatus(cloudStatus);
+    applySeedOnce();
     sync();
     window.addEventListener(EVT, sync);
     window.addEventListener("storage", sync);
