@@ -16,7 +16,9 @@ import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
-import { openReport } from "@/lib/reportPrint";
+import { openReport, type ReportData } from "@/lib/reportPrint";
+import { ALL_STUDENTS } from "@/app/roster";
+import { saveRecord, type TermNo } from "@/lib/tracker";
 
 /* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
    Words, Lexiles and `lvl` (0 = Year 1 … 5 = Year 6) come from the Cambridge
@@ -123,9 +125,15 @@ type Comp = CompResult | "skipped" | null;
 
 /* ---------- Top level ---------- */
 
-export default function ReadingAssessment() {
+export default function ReadingAssessment({
+  initial,
+}: {
+  /** Optional prefill when opened from the Class Tracker (student + term). */
+  initial?: { name?: string; term?: TermNo };
+} = {}) {
   const [phase, setPhase] = useState<Phase>("intro");
-  const [studentName, setStudentName] = useState("");
+  const [studentName, setStudentName] = useState(initial?.name ?? "");
+  const [term, setTerm] = useState<TermNo>(initial?.term ?? 1);
   const [wordRatings, setWordRatings] = useState<Record<string, Rating>>({});
   const [wordWrong, setWordWrong] = useState(0); // words read wrongly in Stage 1
   const [stopLexile, setStopLexile] = useState<number | null>(null); // Lexile of the hardest word read in Stage 1
@@ -250,6 +258,7 @@ export default function ReadingAssessment() {
     return (
       <Report
         studentName={studentName.trim() || "Student"}
+        assessTerm={term}
         wordRatings={wordRatings}
         wordWrong={wordWrong}
         stopLexile={stopLexile}
@@ -284,9 +293,39 @@ export default function ReadingAssessment() {
           value={studentName}
           onChange={(e) => setStudentName(e.target.value)}
           placeholder="Student's name"
+          list="roster-names"
           autoComplete="off"
           className="w-full max-w-xs rounded-2xl border-4 border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold text-zinc-700 shadow-sm outline-none focus:border-rose-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
         />
+        <datalist id="roster-names">
+          {ALL_STUDENTS.map((s) => (
+            <option key={`${s.yearKey}:${s.name}`} value={s.name}>
+              {s.year}
+            </option>
+          ))}
+        </datalist>
+
+        {/* Which term is this check for? Saved reports are filed by term. */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide opacity-70">
+            Term
+          </span>
+          {([1, 2, 3] as TermNo[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTerm(t)}
+              aria-pressed={term === t}
+              className={`h-9 w-9 rounded-full text-sm font-extrabold transition-all active:scale-95 ${
+                term === t
+                  ? "bg-rose-500 text-white shadow"
+                  : "bg-white/70 text-rose-700 dark:bg-zinc-800 dark:text-rose-300"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setPhase("words")}
           disabled={!studentName.trim()}
@@ -297,7 +336,7 @@ export default function ReadingAssessment() {
         <p className="text-xs font-semibold opacity-70">
           {studentName.trim()
             ? "The child reads each word aloud — you mark it ✓ or ✗ by hand."
-            : "Enter the student's name to begin."}
+            : "Pick a name from the class list (or type one) to begin."}
         </p>
       </div>
 
@@ -1479,6 +1518,7 @@ function BookReader({
 
 function Report({
   studentName,
+  assessTerm,
   wordRatings,
   wordWrong,
   stopLexile,
@@ -1490,6 +1530,7 @@ function Report({
   onHome,
 }: {
   studentName: string;
+  assessTerm: TermNo;
   wordRatings: Record<string, Rating>;
   wordWrong: number;
   stopLexile: number | null;
@@ -1500,6 +1541,13 @@ function Report({
   onRetry: () => void;
   onHome: () => void;
 }) {
+  const [saved, setSaved] = useState(false);
+  const autoSaved = useRef(false);
+  // Match the typed name to the class list so the report is filed in the right
+  // year group; an off-list name is filed under "Other".
+  const rosterMatch = ALL_STUDENTS.find(
+    (s) => s.name.toLowerCase() === studentName.trim().toLowerCase(),
+  );
   const level = levels[suggestIdx];
 
   // ----- strand scores (0–100) -----
@@ -1609,8 +1657,8 @@ function Report({
       "Strong across the board — extend with longer texts and more inferential (“why do you think…”) questions.",
     );
 
-  function printReport() {
-    openReport({
+  function buildReport(): ReportData {
+    return {
       studentName,
       dateStr: new Date().toLocaleDateString(undefined, {
         year: "numeric",
@@ -1646,8 +1694,32 @@ function Report({
             band: band?.label ?? "",
           }
         : null,
-    });
+    };
   }
+
+  function printReport() {
+    openReport(buildReport());
+  }
+
+  function saveToTracker() {
+    saveRecord({
+      student: studentName,
+      year: rosterMatch?.year ?? "Other",
+      yearKey: rosterMatch?.yearKey ?? "other",
+      term: assessTerm,
+      savedAt: new Date().toISOString(),
+      report: buildReport(),
+    });
+    setSaved(true);
+  }
+
+  // File the result under the child's name + term as soon as the report opens.
+  useEffect(() => {
+    if (autoSaved.current) return;
+    autoSaved.current = true;
+    saveToTracker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
@@ -1839,9 +1911,24 @@ function Report({
         scores should be similar.
       </p>
 
+      {/* Auto-filed into the Class Tracker by student + term; tap to re-save */}
+      <button
+        onClick={saveToTracker}
+        className="mt-5 w-full max-w-xl rounded-full bg-[#0A4F29] px-6 py-3.5 text-lg font-extrabold text-white shadow-lg active:scale-95"
+      >
+        {saved
+          ? `✓ Saved to ${rosterMatch?.year ?? "Other"} · Term ${assessTerm} — tap to update`
+          : `💾 Save to ${rosterMatch?.year ?? "Other"} · Term ${assessTerm}`}
+      </button>
+      {!rosterMatch && (
+        <p className="mt-1.5 max-w-xl text-center text-xs font-semibold text-amber-600 dark:text-amber-400">
+          “{studentName}” isn’t on a class list — filed under “Other”.
+        </p>
+      )}
+
       <button
         onClick={printReport}
-        className="mt-5 w-full max-w-xl rounded-full bg-emerald-600 px-6 py-3.5 text-lg font-extrabold text-white shadow-lg active:scale-95"
+        className="mt-3 w-full max-w-xl rounded-full bg-emerald-600 px-6 py-3.5 text-lg font-extrabold text-white shadow-lg active:scale-95"
       >
         🖨️ Open / print {studentName}&apos;s report
       </button>

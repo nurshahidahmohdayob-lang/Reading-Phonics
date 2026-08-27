@@ -11,10 +11,12 @@ import SoundItOut from "@/components/tabs/SoundItOut";
 import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
+import ClassTracker from "@/components/tabs/ClassTracker";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
 import { stopSpeech } from "@/lib/speak";
+import type { TermNo } from "@/lib/tracker";
 
 type SectionId =
   | "phonics"
@@ -27,6 +29,7 @@ type SectionId =
   | "guided"
   | "assessment"
   | "storyplay"
+  | "tracker"
   | "guide";
 
 const SECTIONS: {
@@ -116,6 +119,14 @@ const SECTIONS: {
     emoji: "📋",
     color: "from-[#FFE3E0] to-[#FFC9C2]", // coral
     text: "text-rose-700",
+  },
+  {
+    id: "tracker",
+    label: "Class Tracker",
+    blurb: "Reading levels per term, Year 1-6",
+    emoji: "🗂️",
+    color: "from-[#CDEAD9] to-[#A7D8BE]", // Zera green tint
+    text: "text-emerald-800",
   },
 ];
 
@@ -289,6 +300,20 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           <path d="M30 30l1.4 3 3.1.4-2.2 2.2.5 3.1-2.8-1.5-2.8 1.5.5-3.1L23.5 33.4l3.1-.4z" fill="#FBBF24" />
         </svg>
       );
+    case "tracker": // register with rows of ticks per term
+      return (
+        <svg {...p}>
+          <rect x="8" y="7" width="32" height="34" rx="4" fill="#0A4F29" />
+          <rect x="12" y="11" width="24" height="26" rx="2" fill="#fff" />
+          <rect x="19" y="4" width="10" height="6" rx="3" fill="#F7B917" />
+          <rect x="15" y="15" width="4" height="4" rx="1" fill="#34C38A" />
+          <rect x="21" y="16" width="11" height="2.4" rx="1.2" fill="#B7C2BB" />
+          <rect x="15" y="22" width="4" height="4" rx="1" fill="#38A3F5" />
+          <rect x="21" y="23" width="11" height="2.4" rx="1.2" fill="#B7C2BB" />
+          <rect x="15" y="29" width="4" height="4" rx="1" fill="#F5A623" />
+          <rect x="21" y="30" width="8" height="2.4" rx="1.2" fill="#B7C2BB" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -296,6 +321,11 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
 
 export default function Home() {
   const [section, setSection] = useState<SectionId | null>(null);
+  // Optional prefill when the assessment is opened from the Class Tracker.
+  const [assessInit, setAssessInit] = useState<
+    { name: string; term: TermNo } | undefined
+  >(undefined);
+  const [assessKey, setAssessKey] = useState(0); // bump to remount for a fresh run
 
   // Silence everything when the child switches away from this browser tab.
   useEffect(() => {
@@ -309,6 +339,13 @@ export default function Home() {
   function go(next: SectionId | null) {
     stopSpeech(); // leaving a page always stops whatever is playing
     setSection(next);
+  }
+
+  // Open the assessment fresh (optionally prefilled from the tracker).
+  function openAssessment(init?: { name: string; term: TermNo }) {
+    setAssessInit(init);
+    setAssessKey((k) => k + 1);
+    go("assessment");
   }
 
   return (
@@ -369,7 +406,7 @@ export default function Home() {
           {SECTIONS.map((s) => (
             <button
               key={s.id}
-              onClick={() => go(s.id)}
+              onClick={() => (s.id === "assessment" ? openAssessment() : go(s.id))}
               className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/85 shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14">
@@ -409,10 +446,21 @@ export default function Home() {
             {section === "tricky" && <TrickyWords />}
             {section === "stories" && <Stories />}
             {section === "guided" && <GuidedReading />}
-            {section === "assessment" && <ReadingAssessment />}
+            {section === "assessment" && (
+              <ReadingAssessment key={assessKey} initial={assessInit} />
+            )}
             {section === "storyplay" && <StoryPlay />}
+            {section === "tracker" && (
+              <ClassTracker onAssess={(init) => openAssessment(init)} />
+            )}
             {section === "guide" && (
-              <Guide onOpen={(id) => go(id as SectionId)} />
+              <Guide
+                onOpen={(id) =>
+                  id === "assessment"
+                    ? openAssessment()
+                    : go(id as SectionId)
+                }
+              />
             )}
           </div>
         </div>
