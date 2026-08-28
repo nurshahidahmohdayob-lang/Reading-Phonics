@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken, SESSION_COOKIE } from "@/lib/session";
+import { isTrackerOwner } from "@/lib/trackerAccess";
 import { kvConfigured, kvGetJson, kvSetJson } from "@/lib/kv";
 import { studentKey } from "@/app/roster";
 
@@ -41,22 +42,24 @@ function mergeInto(base: Store, incoming: Store) {
   }
 }
 
-async function signedIn(): Promise<boolean> {
+/** Only a tracker owner (by signed-in email) may read/write. */
+async function owner(): Promise<boolean> {
   const jar = await cookies();
-  return verifyToken(jar.get(SESSION_COOKIE)?.value) !== null;
+  const session = verifyToken(jar.get(SESSION_COOKIE)?.value);
+  return isTrackerOwner(session?.email);
 }
 
 export async function GET() {
-  if (!(await signedIn()))
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  if (!(await owner()))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   if (!kvConfigured()) return NextResponse.json({ ok: false, configured: false });
   const store = (await kvGetJson<Store>(KEY)) ?? {};
   return NextResponse.json({ ok: true, store });
 }
 
 export async function POST(req: Request) {
-  if (!(await signedIn()))
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  if (!(await owner()))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   if (!kvConfigured()) return NextResponse.json({ ok: false, configured: false });
 
   let body: Body;

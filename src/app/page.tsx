@@ -123,7 +123,7 @@ const SECTIONS: {
   {
     id: "tracker",
     label: "Class Tracker 🔒",
-    blurb: "Passcode-protected · levels per term",
+    blurb: "Private · reading levels per term",
     emoji: "🗂️",
     color: "from-[#CDEAD9] to-[#A7D8BE]", // Zera green tint
     text: "text-emerald-800",
@@ -326,6 +326,14 @@ export default function Home() {
     { name: string; term: TermNo } | undefined
   >(undefined);
   const [assessKey, setAssessKey] = useState(0); // bump to remount for a fresh run
+  // Whether the signed-in staff member may see the Class Tracker.
+  const [trackerOwner, setTrackerOwner] = useState(false);
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setTrackerOwner(!!d?.trackerOwner))
+      .catch(() => {});
+  }, []);
 
   // Silence everything when the child switches away from this browser tab.
   useEffect(() => {
@@ -403,7 +411,7 @@ export default function Home() {
       {/* Home menu — a clean, modern 2-column card grid */}
       {!section ? (
         <main className="relative z-10 mt-3 grid min-h-0 w-full max-w-4xl flex-1 grid-cols-2 gap-2.5 [grid-auto-rows:1fr] sm:gap-3">
-          {SECTIONS.map((s) => (
+          {SECTIONS.filter((s) => s.id !== "tracker" || trackerOwner).map((s) => (
             <button
               key={s.id}
               onClick={() => (s.id === "assessment" ? openAssessment() : go(s.id))}
@@ -450,7 +458,7 @@ export default function Home() {
               <ReadingAssessment key={assessKey} initial={assessInit} />
             )}
             {section === "storyplay" && <StoryPlay />}
-            {section === "tracker" && (
+            {section === "tracker" && trackerOwner && (
               <ClassTracker onAssess={(init) => openAssessment(init)} />
             )}
             {section === "guide" && (
