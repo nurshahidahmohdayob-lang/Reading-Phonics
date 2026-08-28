@@ -4,7 +4,7 @@
 
    Add or remove an email here to change who has access. */
 
-export const TRACKER_OWNERS = ["shahidah.a@zera.edu.my", "yeenn.s@zera.edu.my"];
+export const TRACKER_OWNERS = ["shahidah.a@zera.edu.my"];
 
 export function isTrackerOwner(email?: string | null): boolean {
   if (!email) return false;
