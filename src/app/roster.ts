@@ -1,14 +1,27 @@
 /* Class roster for the Reading Assessment tracker — Year 1 to Year 6.
+
    Names come from the Cambridge Students 2026/2027 name list. Edit the arrays
    below to add, remove, or correct a child; the tracker and the assessment
-   name picker read straight from here. */
+   name picker read straight from here.
+
+   `pending: true` marks a child who has not registered yet (a future intake in
+   the name list). They start LOCKED in the Class Tracker so nobody assesses
+   them by mistake — unlock them there once they actually join. Teachers can
+   also add students and lock/unlock anyone from the tracker itself; those
+   changes are saved per device (see lib/rosterStore.ts). */
+
+export type Student = {
+  name: string;
+  /** Not registered yet — starts locked in the tracker. */
+  pending?: boolean;
+};
 
 export type ClassGroup = {
   /** Display label, e.g. "Year 1". */
   year: string;
   /** Short key used in stored records, e.g. "y1". */
   key: string;
-  students: string[];
+  students: Student[];
 };
 
 export const ROSTER: ClassGroup[] = [
@@ -16,126 +29,135 @@ export const ROSTER: ClassGroup[] = [
     year: "Year 1",
     key: "y1",
     students: [
-      "Aloysius Cheng",
-      "Asher Ng",
-      "Austyn Liew Ze Yu",
-      "Bella Tan Ning Er",
-      "Chin Isabelle Ler Han",
-      "Emma Kuan Yu En",
-      "Grayson Low",
-      "Grayson Ng Kai Shern",
-      "Ho Zi CC Astrid",
-      "Jayler Hong Jie Le",
-      "Law Chen Yi",
-      "Lucas Ling Sheng Jie",
-      "Marco Chia Guan Fu",
-      "Park Ji Hoon",
-      "Wong Kai Cheng",
-      "Yap Kyree",
-      "Yap Yu Qian",
-      "Lucas Tiu Ee Wee",
-      "Luvish Rao Chandrasegar",
-      "Chang Yiqian (Ethan)",
+      { name: "Aloysius Cheng" },
+      { name: "Asher Ng" },
+      { name: "Austyn Liew Ze Yu" },
+      { name: "Bella Tan Ning Er", pending: true },
+      { name: "Chin Isabelle Ler Han", pending: true },
+      { name: "Emma Kuan Yu En", pending: true },
+      { name: "Grayson Low" },
+      { name: "Grayson Ng Kai Shern", pending: true },
+      { name: "Ho Zi CC Astrid" },
+      { name: "Jayler Hong Jie Le", pending: true },
+      { name: "Law Chen Yi" },
+      { name: "Lucas Ling Sheng Jie" },
+      { name: "Marco Chia Guan Fu" },
+      { name: "Park Ji Hoon" },
+      { name: "Wong Kai Cheng", pending: true },
+      { name: "Yap Kyree" },
+      { name: "Yap Yu Qian" },
+      { name: "Lucas Tiu Ee Wee", pending: true },
+      { name: "Luvish Rao Chandrasegar" },
+      { name: "Chang Yiqian (Ethan)" },
     ],
   },
   {
     year: "Year 2",
     key: "y2",
     students: [
-      "Ethan Kuan Yu Xuan",
-      "Kingsley Tan",
-      "Jefferson Ang Zhen Xi",
-      "Sora Kiew",
-      "Wu Yee Tang (Sammi)",
-      "Chiah Chen Fong (Ethan)",
-      "Che Kang You",
-      "Tan Jing Yan (Yan Yan)",
-      "Zhao Yile",
-      "Kouga Kuroki",
-      "Avery Boon",
-      "Alucard Chek",
+      { name: "Ethan Kuan Yu Xuan" },
+      { name: "Kingsley Tan" },
+      { name: "Jefferson Ang Zhen Xi" },
+      { name: "Sora Kiew" },
+      { name: "Wu Yee Tang (Sammi)" },
+      { name: "Chiah Chen Fong (Ethan)" },
+      { name: "Che Kang You" },
+      { name: "Tan Jing Yan (Yan Yan)" },
+      { name: "Zhao Yile" },
+      { name: "Kouga Kuroki" },
+      { name: "Avery Boon", pending: true },
+      { name: "Alucard Chek", pending: true },
     ],
   },
   {
     year: "Year 3",
     key: "y3",
     students: [
-      "Alysa Sanjana",
-      "Hannah Ng Yu Ting",
-      "Neo Gao Ze",
-      "Tiffany Michael Abdelmeseh Farag",
-      "Christopher James Bruyns Fernandez (CJ)",
-      "Sean Ng Chen Feng",
-      "Sarah Evangeline A/P Edward Gregory",
-      "Berenice Tan Jia En",
-      "Cheng Wen Xuan",
-      "Chua Yun Xin",
-      "Lim Jun Xuan",
-      "Lau Ze Yang",
-      "Lee En Chee",
-      "Peter John Pizon",
-      "Muhammad Alif",
+      { name: "Alysa Sanjana" },
+      { name: "Hannah Ng Yu Ting" },
+      { name: "Neo Gao Ze" },
+      { name: "Tiffany Michael Abdelmeseh Farag" },
+      { name: "Christopher James Bruyns Fernandez (CJ)" },
+      { name: "Sean Ng Chen Feng" },
+      { name: "Sarah Evangeline A/P Edward Gregory" },
+      { name: "Berenice Tan Jia En" },
+      { name: "Cheng Wen Xuan" },
+      { name: "Chua Yun Xin" },
+      { name: "Lim Jun Xuan" },
+      { name: "Lau Ze Yang" },
+      { name: "Lee En Chee" },
+      { name: "Peter John Pizon" },
+      { name: "Muhammad Alif", pending: true },
     ],
   },
   {
     year: "Year 4",
     key: "y4",
     students: [
-      "Asher Santosh A/L Ananthan",
-      "Oscar Yup Zi Hao",
-      "Lucian Cristopher Tay",
-      "Ervina Isabelle Selvanesan",
-      "Liu Xinan",
-      "Tan Chia Xin (Jia Xin)",
-      "Kho Chen Xi",
-      "Mia Chua",
+      { name: "Asher Santosh A/L Ananthan" },
+      { name: "Oscar Yup Zi Hao" },
+      { name: "Lucian Cristopher Tay" },
+      { name: "Ervina Isabelle Selvanesan" },
+      { name: "Liu Xinan" },
+      { name: "Tan Chia Xin (Jia Xin)" },
+      { name: "Kho Chen Xi" },
+      { name: "Mia Chua" },
     ],
   },
   {
     year: "Year 5",
     key: "y5",
     students: [
-      "Donovan Goh Yan Chong",
-      "Vanessa Ng Yu Xuan",
-      "Harper Destiny Lucius",
-      "Johansson Zhen Yu Ang",
-      "Lucas Choo Jia Le",
-      "Chong Xuan Yu (Shawn)",
-      "Georgina Lee Zi Yue",
-      "Dominic Carl Tan Jun Shen",
-      "Yao Tang (Tang Yao)",
-      "Kang Ruo Hann (Ella)",
+      { name: "Donovan Goh Yan Chong" },
+      { name: "Vanessa Ng Yu Xuan" },
+      { name: "Harper Destiny Lucius" },
+      { name: "Johansson Zhen Yu Ang" },
+      { name: "Lucas Choo Jia Le" },
+      { name: "Chong Xuan Yu (Shawn)" },
+      { name: "Georgina Lee Zi Yue" },
+      { name: "Dominic Carl Tan Jun Shen" },
+      { name: "Yao Tang (Tang Yao)", pending: true },
+      { name: "Kang Ruo Hann (Ella)", pending: true },
     ],
   },
   {
     year: "Year 6",
     key: "y6",
     students: [
-      "Bunny Ng Yu Shan",
-      "Chok Jie Yeo (Adrian)",
-      "Hadif Hefny Bin Hasnor Hakim",
-      "Nattania Rao A/P Jaganmohan",
-      "Neo Gao Jun",
-      "Neo Jing Er",
-      "Nicholas Lim Zhi Yun",
-      "Stevan Abilash A/L Ananthan",
-      "Anston Ho Zi Xue",
-      "Sia Yee Chen (Justin)",
-      "Leong Yu Jie (Menicssa)",
-      "Ng Guo Jun",
-      "Yang Fuyu (Dorcas)",
-      "Do Nhu Huyen",
-      "Le Minh Thong (Jake)",
-      "Kim Dongwoo (Rovin)",
+      { name: "Bunny Ng Yu Shan" },
+      { name: "Chok Jie Yeo (Adrian)" },
+      { name: "Hadif Hefny Bin Hasnor Hakim" },
+      { name: "Nattania Rao A/P Jaganmohan" },
+      { name: "Neo Gao Jun" },
+      { name: "Neo Jing Er" },
+      { name: "Nicholas Lim Zhi Yun" },
+      { name: "Stevan Abilash A/L Ananthan" },
+      { name: "Anston Ho Zi Xue" },
+      { name: "Sia Yee Chen (Justin)" },
+      { name: "Leong Yu Jie (Menicssa)" },
+      { name: "Ng Guo Jun" },
+      { name: "Yang Fuyu (Dorcas)" },
+      { name: "Do Nhu Huyen" },
+      { name: "Le Minh Thong (Jake)" },
+      { name: "Kim Dongwoo (Rovin)" },
     ],
   },
 ];
 
 /** All students, flattened, each tagged with their class — handy for name search. */
-export const ALL_STUDENTS: { name: string; year: string; yearKey: string }[] =
-  ROSTER.flatMap((g) =>
-    g.students.map((name) => ({ name, year: g.year, yearKey: g.key })),
-  );
+export const ALL_STUDENTS: {
+  name: string;
+  year: string;
+  yearKey: string;
+  pending: boolean;
+}[] = ROSTER.flatMap((g) =>
+  g.students.map((s) => ({
+    name: s.name,
+    year: g.year,
+    yearKey: g.key,
+    pending: !!s.pending,
+  })),
+);
 
 /** Stable per-student key for stored records (year + normalised name). */
 export function studentKey(yearKey: string, name: string): string {

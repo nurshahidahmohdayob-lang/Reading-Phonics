@@ -17,7 +17,11 @@ import { alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { openReport, type ReportData } from "@/lib/reportPrint";
-import { ALL_STUDENTS } from "@/app/roster";
+import {
+  useRosterEdits,
+  allStudents,
+  findStudent,
+} from "@/lib/rosterStore";
 import { saveRecord, type TermNo } from "@/lib/tracker";
 
 /* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
@@ -134,6 +138,10 @@ export default function ReadingAssessment({
   const [phase, setPhase] = useState<Phase>("intro");
   const [studentName, setStudentName] = useState(initial?.name ?? "");
   const [term, setTerm] = useState<TermNo>(initial?.term ?? 1);
+  // Class lists for the name picker — children who haven't registered yet
+  // (locked in the tracker) are left out.
+  const rosterEdits = useRosterEdits();
+  const pickable = allStudents(rosterEdits).filter((s) => !s.locked);
   const [wordRatings, setWordRatings] = useState<Record<string, Rating>>({});
   const [wordWrong, setWordWrong] = useState(0); // words read wrongly in Stage 1
   const [stopLexile, setStopLexile] = useState<number | null>(null); // Lexile of the hardest word read in Stage 1
@@ -298,7 +306,7 @@ export default function ReadingAssessment({
           className="w-full max-w-xs rounded-2xl border-4 border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold text-zinc-700 shadow-sm outline-none focus:border-rose-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
         />
         <datalist id="roster-names">
-          {ALL_STUDENTS.map((s) => (
+          {pickable.map((s) => (
             <option key={`${s.yearKey}:${s.name}`} value={s.name}>
               {s.year}
             </option>
@@ -1543,11 +1551,11 @@ function Report({
 }) {
   const [saved, setSaved] = useState(false);
   const autoSaved = useRef(false);
-  // Match the typed name to the class list so the report is filed in the right
-  // year group; an off-list name is filed under "Other".
-  const rosterMatch = ALL_STUDENTS.find(
-    (s) => s.name.toLowerCase() === studentName.trim().toLowerCase(),
-  );
+  // Match the typed name to the class lists (including students the teacher
+  // added) so the report is filed in the right year group; an off-list name is
+  // filed under "Other".
+  const rosterEdits = useRosterEdits();
+  const rosterMatch = findStudent(rosterEdits, studentName);
   const level = levels[suggestIdx];
 
   // ----- strand scores (0–100) -----
