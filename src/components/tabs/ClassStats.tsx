@@ -24,6 +24,9 @@ import { openReport } from "@/lib/reportPrint";
 
 const TERMS: TermNo[] = [1, 2, 3];
 
+/** Where each Lexile band starts — drawn as hairlines behind the bars. */
+const BAND_MARKS = [100, 300, 500, 700, 850];
+
 export default function ClassStats({
   scopeLabel,
   students,
@@ -44,20 +47,12 @@ export default function ClassStats({
   // Term 1 and this term — so a newly assessed child can't fake a jump.
   const growth = growthSinceTerm1(students, store, term);
 
-  // Warn when the terms hold different children — then the term-to-term
-  // averages move because the group changed, not because reading changed.
-  const cohorts = perTerm
-    .filter((s) => s.results.length)
-    .map((s) =>
-      s.results
-        .map((r) => `${r.yearKey}:${r.name}`)
-        .sort()
-        .join("|"),
-    );
-  const mixedCohort = new Set(cohorts).size > 1;
-
   const maxCount = Math.max(1, ...stats.byBand.map((b) => b.students.length));
-  const maxMean = Math.max(100, ...perTerm.map((s) => s.mean ?? 0));
+  // One shared scale for the per-child bars, rounded up to a tidy 100L.
+  const axisMax = Math.max(
+    500,
+    Math.ceil(Math.max(0, ...stats.results.map((r) => r.lexile)) / 100) * 100,
+  );
 
   return (
     <div className="w-full">
@@ -214,75 +209,93 @@ export default function ClassStats({
             </div>
           </section>
 
-          {/* Chart 2 — class average across the three terms */}
+          {/* Chart 2 — every child's own Lexile level */}
           <section className="mt-4 w-full rounded-2xl bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
             <h3 className="text-sm font-extrabold text-zinc-700 dark:text-zinc-100">
-              Class average Lexile by term
+              Every child’s Lexile level
             </h3>
             <p className="mt-0.5 text-xs font-semibold text-zinc-400">
-              {scopeLabel} · the average of every saved result in that term
+              {scopeLabel} · Term {term} · highest reader first · tap a bar to
+              open that child’s report
             </p>
 
-            <div className="mt-5 flex items-end justify-around gap-4 px-2">
-              {perTerm.map((s) => {
-                const h = s.mean === null ? 0 : (s.mean / maxMean) * 150;
+            <div className="mt-4 flex flex-col gap-1.5">
+              {stats.results.map((r) => {
+                const prev = earlierTerm(store, r, term);
+                const delta = prev === null ? null : r.lexile - prev;
                 return (
-                  <div
-                    key={s.term}
-                    title={
-                      s.mean === null
-                        ? `Term ${s.term} — nothing saved yet`
-                        : `Term ${s.term} — average ${lexileLabel(s.mean)} from ${s.results.length} result${s.results.length === 1 ? "" : "s"}`
-                    }
-                    className="flex w-full max-w-[110px] flex-col items-center"
+                  <button
+                    key={`${r.yearKey}:${r.name}`}
+                    onClick={() => openReport(r.record.report)}
+                    title={`${r.name} — ${r.lexileText}, ${r.band.label} (${r.band.range}) · open report`}
+                    className="flex items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                   >
-                    <span className="text-xs font-extrabold text-zinc-700 dark:text-zinc-100">
-                      {s.mean === null ? "—" : lexileLabel(s.mean)}
+                    <span className="w-[92px] shrink-0 truncate text-xs font-bold text-zinc-700 sm:w-[170px] md:w-[210px] dark:text-zinc-100">
+                      {r.name}
                     </span>
-                    <div className="mt-1.5 flex h-[150px] w-full items-end">
-                      {s.mean === null ? (
-                        <div className="h-6 w-full rounded-t-[4px] border-2 border-dashed border-zinc-200 dark:border-zinc-700" />
-                      ) : (
-                        <div
-                          className={`w-full rounded-t-[4px] ${
-                            s.term === term
-                              ? ""
-                              : "bg-zinc-200 dark:bg-zinc-700"
-                          }`}
-                          style={{
-                            height: `${Math.max(6, h)}px`,
-                            ...(s.term === term
-                              ? { background: "var(--lex-6)" }
-                              : null),
-                          }}
+                    <span className="relative flex h-6 flex-1 items-center">
+                      {/* Band thresholds — hairlines, so you can see which band
+                          a bar lands in without reading the number. */}
+                      {BAND_MARKS.filter((m) => m < axisMax).map((m) => (
+                        <span
+                          key={m}
+                          className="absolute top-0 bottom-0 w-px bg-zinc-100 dark:bg-zinc-800"
+                          style={{ left: `${(m / axisMax) * 100}%` }}
                         />
+                      ))}
+                      <span
+                        className="relative h-3.5 rounded-r-[4px]"
+                        style={{
+                          width: `${Math.max(2, (r.lexile / axisMax) * 100)}%`,
+                          background: `var(--lex-${r.band.key})`,
+                        }}
+                      />
+                    </span>
+                    <span className="w-[104px] shrink-0 text-right">
+                      <span className="text-xs font-extrabold text-zinc-700 dark:text-zinc-100">
+                        {r.lexileText}
+                      </span>
+                      {delta !== null && (
+                        <span
+                          className={`ml-1.5 text-[10px] font-bold ${
+                            delta > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : delta < 0
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-zinc-400"
+                          }`}
+                        >
+                          {delta > 0 ? "+" : delta < 0 ? "−" : "±"}
+                          {Math.abs(delta)}L
+                        </span>
                       )}
-                    </div>
-                    <span
-                      className={`mt-2 text-xs font-extrabold ${
-                        s.term === term
-                          ? "text-zinc-700 dark:text-zinc-100"
-                          : "text-zinc-400"
-                      }`}
-                    >
-                      Term {s.term}
                     </span>
-                    <span className="text-[10px] font-semibold text-zinc-400">
-                      {s.results.length
-                        ? `${s.results.length} assessed`
-                        : "not assessed"}
-                    </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
 
-            {mixedCohort && (
-              <p className="mt-4 text-[11px] font-semibold text-zinc-400">
-                Note: the terms don’t hold the same children yet, so these
-                averages move partly because the group changed. The “Growth vs
-                Term 1” number above compares only children assessed in both
-                terms.
+            {/* Axis: where the bands start */}
+            <div className="mt-1 flex items-center gap-3 px-1">
+              <span className="w-[92px] shrink-0 sm:w-[170px] md:w-[210px]" />
+              <span className="relative h-4 flex-1 border-t border-zinc-100 dark:border-zinc-800">
+                {BAND_MARKS.filter((m) => m < axisMax).map((m) => (
+                  <span
+                    key={m}
+                    className="absolute top-0.5 -translate-x-1/2 text-[9px] font-bold text-zinc-300 dark:text-zinc-600"
+                    style={{ left: `${(m / axisMax) * 100}%` }}
+                  >
+                    {m}L
+                  </span>
+                ))}
+              </span>
+              <span className="w-[104px] shrink-0" />
+            </div>
+
+            {term > 1 && (
+              <p className="mt-3 text-[11px] font-semibold text-zinc-400">
+                The small green number is the change since that child’s last
+                assessed term.
               </p>
             )}
           </section>
@@ -381,6 +394,22 @@ function topBandLabel(stats: TermStats): string {
 }
 function topBandCount(stats: TermStats): number {
   return topBand(stats).students.length;
+}
+
+/** That child's Lexile in the most recent earlier term they were assessed. */
+function earlierTerm(
+  store: TrackerStore,
+  r: { name: string; yearKey: string },
+  term: TermNo,
+): number | null {
+  const rows = store[studentKey(r.yearKey, r.name)];
+  if (!rows) return null;
+  for (let t = term - 1; t >= 1; t--) {
+    const rec = rows[t as TermNo];
+    const lex = rec ? lexileValue(rec.report.lexile) : null;
+    if (lex !== null) return lex;
+  }
+  return null;
 }
 
 /** Mean Lexile change for children assessed in BOTH Term 1 and `term`. */
