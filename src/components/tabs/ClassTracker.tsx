@@ -6,6 +6,10 @@
    reading level and opens / downloads that saved report; an empty cell starts a
    fresh assessment for that child and term.
 
+   The Statistics view turns the same records into graphs: how many children
+   sit in each Lexile band, the class average per term, and every child sorted
+   into their band (see ClassStats.tsx).
+
    Children who have not registered yet are LOCKED: they can't be assessed until
    the teacher unlocks them (tap the padlock by the name). Teachers can also add
    a student to any class. Both are saved per device via lib/rosterStore.ts. */
@@ -29,6 +33,8 @@ import {
   type RosterEdits,
 } from "@/lib/rosterStore";
 import { openReport } from "@/lib/reportPrint";
+import ClassStats from "./ClassStats";
+import type { Scoped } from "@/lib/lexileStats";
 
 const TERMS: TermNo[] = [1, 2, 3];
 
@@ -36,13 +42,30 @@ type Row = { name: string; pending: boolean; added: boolean };
 
 // Reader-category colours for the at-a-glance dot.
 const CAT_TONE: Record<string, { dot: string; text: string }> = {
-  "Independent Reader": { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300" },
-  "Instructional Reader": { dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-300" },
-  "Developing Reader": { dot: "bg-amber-500", text: "text-amber-700 dark:text-amber-300" },
-  "Emerging Reader": { dot: "bg-rose-500", text: "text-rose-700 dark:text-rose-300" },
+  "Independent Reader": {
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-300",
+  },
+  "Instructional Reader": {
+    dot: "bg-sky-500",
+    text: "text-sky-700 dark:text-sky-300",
+  },
+  "Developing Reader": {
+    dot: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-300",
+  },
+  "Emerging Reader": {
+    dot: "bg-rose-500",
+    text: "text-rose-700 dark:text-rose-300",
+  },
 };
 function tone(label: string) {
-  return CAT_TONE[label] ?? { dot: "bg-zinc-400", text: "text-zinc-600 dark:text-zinc-300" };
+  return (
+    CAT_TONE[label] ?? {
+      dot: "bg-zinc-400",
+      text: "text-zinc-600 dark:text-zinc-300",
+    }
+  );
 }
 
 /* A drawn padlock, not an emoji — emoji keep their own colour, so an open one
@@ -124,6 +147,7 @@ export default function ClassTracker({
   const edits = useRosterEdits();
   const groups = buildGroups(edits, store);
 
+  const [view, setView] = useState<"tracker" | "stats">("tracker");
   const [yearKey, setYearKey] = useState("y1");
   const [manage, setManage] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -143,6 +167,21 @@ export default function ClassTracker({
     (t) => active.filter((s) => rowsFor(s.name)[t]).length,
   );
 
+  // Statistics can also look across every class at once ("All classes").
+  const allYears = view === "stats" && yearKey === "all";
+  const scopeLabel = allYears ? "All classes" : group.year;
+  const scopeStudents: Scoped[] = allYears
+    ? groups.flatMap((g) =>
+        g.students
+          .filter((s) => !lockedRow(g, s))
+          .map((s) => ({ name: s.name, year: g.year, yearKey: g.key })),
+      )
+    : active.map((s) => ({
+        name: s.name,
+        year: group.year,
+        yearKey: group.key,
+      }));
+
   function submitAdd() {
     const ok = addStudent(
       group.key,
@@ -151,7 +190,9 @@ export default function ClassTracker({
     );
     if (!ok) {
       setAddErr(
-        newName.trim() ? "That name is already in this class." : "Enter a name.",
+        newName.trim()
+          ? "That name is already in this class."
+          : "Enter a name.",
       );
       return;
     }
@@ -164,7 +205,11 @@ export default function ClassTracker({
     const head = [
       "Student",
       "Status",
-      ...TERMS.flatMap((t) => [`Term ${t} Level`, `Term ${t} Lexile`, `Term ${t} Score`]),
+      ...TERMS.flatMap((t) => [
+        `Term ${t} Level`,
+        `Term ${t} Lexile`,
+        `Term ${t} Score`,
+      ]),
     ];
     const lines = [head.join(",")];
     for (const s of group.students) {
@@ -194,19 +239,60 @@ export default function ClassTracker({
         <div className="text-5xl">🗂️</div>
         <h2 className="mt-1 text-2xl font-extrabold">Class Reading Tracker</h2>
         <p className="mx-auto mt-1 max-w-lg text-sm font-semibold text-white/85">
-          Every child’s reading level across Term 1, 2 and 3. Tap a saved cell to
-          open or download the report; tap an empty cell to assess that child.
+          Every child’s reading level across Term 1, 2 and 3. Tap a saved cell
+          to open or download the report; tap an empty cell to assess that
+          child.
         </p>
+      </div>
+
+      {/* Tracker ⇄ Statistics */}
+      <div className="mt-4 flex rounded-full bg-white p-1 shadow-sm ring-1 ring-black/5 dark:bg-zinc-800">
+        {(
+          [
+            ["tracker", "📋 Tracker"],
+            ["stats", "📊 Statistics"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => {
+              setView(v);
+              setManage(false);
+              setAdding(false);
+              if (v === "tracker" && yearKey === "all") setYearKey("y1");
+            }}
+            aria-pressed={view === v}
+            className={`rounded-full px-5 py-2 text-sm font-extrabold transition-all active:scale-95 ${
+              view === v
+                ? "bg-[#0A4F29] text-white shadow"
+                : "text-zinc-500 dark:text-zinc-300"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Year selector — count is assessed / attending */}
       <div className="mt-4 flex w-full flex-wrap justify-center gap-2">
+        {view === "stats" && (
+          <button
+            onClick={() => setYearKey("all")}
+            className={`rounded-full px-4 py-2 text-sm font-extrabold transition-all active:scale-95 ${
+              allYears
+                ? "bg-[#0A4F29] text-white shadow"
+                : "bg-white text-zinc-600 shadow-sm dark:bg-zinc-800 dark:text-zinc-200"
+            }`}
+          >
+            All classes
+          </button>
+        )}
         {groups.map((g) => {
           const act = g.students.filter((s) => !lockedRow(g, s));
           const n = act.filter(
             (s) => Object.keys(store[studentKey(g.key, s.name)] ?? {}).length,
           ).length;
-          const on = g.key === yearKey;
+          const on = g.key === yearKey && !allYears;
           return (
             <button
               key={g.key}
@@ -221,7 +307,9 @@ export default function ClassTracker({
               }`}
             >
               {g.year}
-              <span className={`ml-1.5 text-xs ${on ? "text-white/70" : "text-zinc-400"}`}>
+              <span
+                className={`ml-1.5 text-xs ${on ? "text-white/70" : "text-zinc-400"}`}
+              >
                 {n}/{act.length}
               </span>
             </button>
@@ -229,209 +317,242 @@ export default function ClassTracker({
         })}
       </div>
 
-      {/* Per-term summary + actions */}
-      <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {TERMS.map((t, i) => (
-            <span
-              key={t}
-              className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900/50"
-            >
-              Term {t}: {doneByTerm[i]}/{active.length}
-            </span>
-          ))}
-          {lockedCount > 0 && (
-            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/50">
-              🔒 {lockedCount} not registered
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setAdding((a) => !a);
-              setAddErr("");
-              setNewName("");
-            }}
-            className="rounded-full bg-[#0A4F29] px-4 py-2 text-xs font-bold text-white shadow-sm active:scale-95"
-          >
-            ➕ Add student
-          </button>
-          <button
-            onClick={() => setManage((m) => !m)}
-            aria-pressed={manage}
-            className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
-              manage
-                ? "bg-rose-500 text-white ring-rose-500"
-                : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
-            }`}
-          >
-            {manage ? "✓ Done" : "🗑️ Manage"}
-          </button>
-          <button
-            onClick={exportCsv}
-            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
-          >
-            ⬇️ Export CSV
-          </button>
-        </div>
-      </div>
-
-      {/* Add-student form */}
-      {adding && (
-        <div className="mt-3 flex w-full flex-wrap items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
-          <span className="text-xs font-extrabold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-            New student · {group.year}
-          </span>
-          <input
-            autoFocus
-            value={newName}
-            onChange={(e) => {
-              setNewName(e.target.value);
-              setAddErr("");
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") submitAdd();
-              if (e.key === "Escape") setAdding(false);
-            }}
-            placeholder="Full name"
-            className="min-w-[180px] flex-1 rounded-xl border-2 border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-zinc-700 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          <button
-            onClick={submitAdd}
-            className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
-          >
-            Add
-          </button>
-          <button
-            onClick={() => setAdding(false)}
-            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-500 ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800"
-          >
-            Cancel
-          </button>
-          {addErr && (
-            <span className="w-full text-xs font-bold text-rose-500">{addErr}</span>
-          )}
-        </div>
-      )}
-
-      {manage && (
-        <p className="mt-2 w-full text-center text-xs font-semibold text-rose-500">
-          Manage mode — tap 🗑️ on a saved cell to delete that report, or beside an
-          added name to remove them.
-        </p>
-      )}
-
-      {/* Tracker grid */}
-      <div className="mt-3 w-full overflow-x-auto rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-        <table className="w-full min-w-[600px] border-collapse text-left">
-          <thead>
-            <tr className="border-b border-zinc-100 text-xs font-bold uppercase tracking-wide text-zinc-400 dark:border-zinc-800">
-              <th className="px-4 py-3">Student</th>
-              {TERMS.map((t) => (
-                <th key={t} className="px-3 py-3 text-center">
-                  Term {t}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {group.students.map((s, i) => {
-              const r = rowsFor(s.name);
-              const locked = lockedRow(group, s);
-              return (
-                <tr
-                  key={s.name}
-                  className={
-                    i % 2 ? "bg-zinc-50/60 dark:bg-zinc-800/40" : "bg-transparent"
-                  }
+      {view === "stats" ? (
+        <ClassStats
+          scopeLabel={scopeLabel}
+          students={scopeStudents}
+          store={store}
+        />
+      ) : (
+        <>
+          {/* Per-term summary + actions */}
+          <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {TERMS.map((t, i) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900/50"
                 >
-                  <td className="px-4 py-2.5 align-middle">
-                    <div className="flex items-center gap-2">
-                      {/* Padlock: tap to lock / unlock this child */}
-                      <button
-                        onClick={() => {
-                          if (locked) {
-                            if (confirm(`${s.name} has registered — unlock them?`))
-                              setLocked(group.key, s.name, false);
-                          } else {
-                            setLocked(group.key, s.name, true);
-                          }
-                        }}
-                        aria-label={locked ? "Unlock this student" : "Lock this student"}
-                        title={
-                          locked
-                            ? "Not registered yet — tap to unlock"
-                            : "Tap to lock (not registered yet)"
-                        }
-                        className={`shrink-0 rounded-md px-1.5 py-1 transition-colors active:scale-90 ${
-                          locked
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
-                            : "text-zinc-300 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        <LockIcon locked={locked} />
-                      </button>
-                      <span
-                        className={`text-sm font-bold ${
-                          locked
-                            ? "text-zinc-400 dark:text-zinc-500"
-                            : "text-zinc-700 dark:text-zinc-100"
-                        }`}
-                      >
-                        {s.name}
-                      </span>
-                      {s.added && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          new
-                        </span>
-                      )}
-                      {manage && s.added && (
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remove ${s.name} from ${group.year}?`))
-                              removeAdded(group.key, s.name);
-                          }}
-                          aria-label="Remove this student"
-                          className="rounded-md px-1 text-zinc-300 hover:text-rose-500"
-                        >
-                          🗑️
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                  Term {t}: {doneByTerm[i]}/{active.length}
+                </span>
+              ))}
+              {lockedCount > 0 && (
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/50">
+                  🔒 {lockedCount} not registered
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setAdding((a) => !a);
+                  setAddErr("");
+                  setNewName("");
+                }}
+                className="rounded-full bg-[#0A4F29] px-4 py-2 text-xs font-bold text-white shadow-sm active:scale-95"
+              >
+                ➕ Add student
+              </button>
+              <button
+                onClick={() => setManage((m) => !m)}
+                aria-pressed={manage}
+                className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
+                  manage
+                    ? "bg-rose-500 text-white ring-rose-500"
+                    : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+                }`}
+              >
+                {manage ? "✓ Done" : "🗑️ Manage"}
+              </button>
+              <button
+                onClick={exportCsv}
+                className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
+              >
+                ⬇️ Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Add-student form */}
+          {adding && (
+            <div className="mt-3 flex w-full flex-wrap items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+                New student · {group.year}
+              </span>
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  setAddErr("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitAdd();
+                  if (e.key === "Escape") setAdding(false);
+                }}
+                placeholder="Full name"
+                className="min-w-[180px] flex-1 rounded-xl border-2 border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-zinc-700 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+              <button
+                onClick={submitAdd}
+                className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setAdding(false)}
+                className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-500 ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800"
+              >
+                Cancel
+              </button>
+              {addErr && (
+                <span className="w-full text-xs font-bold text-rose-500">
+                  {addErr}
+                </span>
+              )}
+            </div>
+          )}
+
+          {manage && (
+            <p className="mt-2 w-full text-center text-xs font-semibold text-rose-500">
+              Manage mode — tap 🗑️ on a saved cell to delete that report, or
+              beside an added name to remove them.
+            </p>
+          )}
+
+          {/* Tracker grid */}
+          <div className="mt-3 w-full overflow-x-auto rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+            <table className="w-full min-w-[600px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-zinc-100 text-xs font-bold uppercase tracking-wide text-zinc-400 dark:border-zinc-800">
+                  <th className="px-4 py-3">Student</th>
                   {TERMS.map((t) => (
-                    <td key={t} className="px-3 py-2.5 text-center align-middle">
-                      <Cell
-                        rec={r[t]}
-                        manage={manage}
-                        locked={locked}
-                        onOpen={(rec) => openReport(rec.report)}
-                        onDelete={() => {
-                          if (confirm(`Delete ${s.name}'s Term ${t} report?`))
-                            deleteRecord(group.key, s.name, t);
-                        }}
-                        onAssess={() => onAssess({ name: s.name, term: t })}
-                      />
-                    </td>
+                    <th key={t} className="px-3 py-3 text-center">
+                      Term {t}
+                    </th>
                   ))}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {group.students.map((s, i) => {
+                  const r = rowsFor(s.name);
+                  const locked = lockedRow(group, s);
+                  return (
+                    <tr
+                      key={s.name}
+                      className={
+                        i % 2
+                          ? "bg-zinc-50/60 dark:bg-zinc-800/40"
+                          : "bg-transparent"
+                      }
+                    >
+                      <td className="px-4 py-2.5 align-middle">
+                        <div className="flex items-center gap-2">
+                          {/* Padlock: tap to lock / unlock this child */}
+                          <button
+                            onClick={() => {
+                              if (locked) {
+                                if (
+                                  confirm(
+                                    `${s.name} has registered — unlock them?`,
+                                  )
+                                )
+                                  setLocked(group.key, s.name, false);
+                              } else {
+                                setLocked(group.key, s.name, true);
+                              }
+                            }}
+                            aria-label={
+                              locked
+                                ? "Unlock this student"
+                                : "Lock this student"
+                            }
+                            title={
+                              locked
+                                ? "Not registered yet — tap to unlock"
+                                : "Tap to lock (not registered yet)"
+                            }
+                            className={`shrink-0 rounded-md px-1.5 py-1 transition-colors active:scale-90 ${
+                              locked
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                                : "text-zinc-300 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-300"
+                            }`}
+                          >
+                            <LockIcon locked={locked} />
+                          </button>
+                          <span
+                            className={`text-sm font-bold ${
+                              locked
+                                ? "text-zinc-400 dark:text-zinc-500"
+                                : "text-zinc-700 dark:text-zinc-100"
+                            }`}
+                          >
+                            {s.name}
+                          </span>
+                          {s.added && (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                              new
+                            </span>
+                          )}
+                          {manage && s.added && (
+                            <button
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `Remove ${s.name} from ${group.year}?`,
+                                  )
+                                )
+                                  removeAdded(group.key, s.name);
+                              }}
+                              aria-label="Remove this student"
+                              className="rounded-md px-1 text-zinc-300 hover:text-rose-500"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      {TERMS.map((t) => (
+                        <td
+                          key={t}
+                          className="px-3 py-2.5 text-center align-middle"
+                        >
+                          <Cell
+                            rec={r[t]}
+                            manage={manage}
+                            locked={locked}
+                            onOpen={(rec) => openReport(rec.report)}
+                            onDelete={() => {
+                              if (
+                                confirm(`Delete ${s.name}'s Term ${t} report?`)
+                              )
+                                deleteRecord(group.key, s.name, t);
+                            }}
+                            onAssess={() => onAssess({ name: s.name, term: t })}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Legend + storage note */}
-      <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-        {Object.entries(CAT_TONE).map(([label, t]) => (
-          <span key={label} className="flex items-center gap-1.5">
-            <span className={`h-2.5 w-2.5 rounded-full ${t.dot}`} />
-            {label.replace(" Reader", "")}
-          </span>
-        ))}
-        <span className="flex items-center gap-1.5">🔒 Not registered yet</span>
-      </div>
+          {/* Legend + storage note */}
+          <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            {Object.entries(CAT_TONE).map(([label, t]) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className={`h-2.5 w-2.5 rounded-full ${t.dot}`} />
+                {label.replace(" Reader", "")}
+              </span>
+            ))}
+            <span className="flex items-center gap-1.5">
+              🔒 Not registered yet
+            </span>
+          </div>
+        </>
+      )}
       <p className="mt-3 max-w-xl text-center text-xs font-semibold text-zinc-400">
         {totalSaved(store)} report{totalSaved(store) === 1 ? "" : "s"} saved.{" "}
         {cloud === "on" ? (
@@ -497,7 +618,9 @@ function Cell({
         <span className="flex flex-1 items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 opacity-70 ring-1 ring-black/5 dark:bg-zinc-800">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${t.dot}`} />
           <span className="min-w-0">
-            <span className={`block text-sm font-extrabold leading-none ${t.text}`}>
+            <span
+              className={`block text-sm font-extrabold leading-none ${t.text}`}
+            >
               {rec.report.lexile}
             </span>
             <span className="block truncate text-[10px] font-semibold text-zinc-400">

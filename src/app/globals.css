@@ -34,10 +34,33 @@
   --color-candy-lilac: #e6dcff;
 }
 
+
+/* Reading-level (Lexile) ordinal ramp — one green hue, light → dark, easiest
+   band to hardest. Checked with the data-viz palette validator against both
+   the light and the dark chart surface (monotone lightness, visible steps,
+   light end still readable). Used by the Class Tracker statistics. */
+:root {
+  --lex-1: #7cc39a; /* Emerging   BR–99L  */
+  --lex-2: #59b183; /* Early      100–299 */
+  --lex-3: #3f9a6b; /* Developing 300–499 */
+  --lex-4: #2c8154; /* Independent 500–699 */
+  --lex-5: #1d6740; /* Advanced   700–849 */
+  --lex-6: #0a4f29; /* Proficient 850L+   */
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1c1726;
     --foreground: #f6f1ff;
+
+    /* On a dark surface the ramp runs the other way: the hardest band is the
+       lightest, so magnitude still reads as "more ink". */
+    --lex-1: #2a8455;
+    --lex-2: #3e9b68;
+    --lex-3: #5cb381;
+    --lex-4: #7ec99c;
+    --lex-5: #a2ddb8;
+    --lex-6: #c6efd4;
   }
 }
 
