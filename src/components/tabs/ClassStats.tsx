@@ -362,6 +362,48 @@ export default function ClassStats({
           </section>
         </>
       )}
+
+      {/* What the two numbers mean — the same wording as the child's report */}
+      <section className="mt-4 w-full rounded-2xl bg-sky-50 p-5 ring-1 ring-sky-100 dark:bg-sky-950/30 dark:ring-sky-900/50">
+        <h3 className="text-sm font-extrabold text-sky-900 dark:text-sky-200">
+          👪 What these numbers mean
+        </h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-white p-3 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
+            <div className="text-xs font-extrabold text-sky-900 dark:text-sky-200">
+              Lexile / band — <i>what</i> they can read
+            </div>
+            <p className="mt-1 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
+              The difficulty of text the child can handle, measured from the
+              word check. Bigger number = harder books.
+            </p>
+            <p className="mt-1 text-[11px] font-bold text-sky-700 dark:text-sky-300">
+              BR–99L Emerging · 100–299L Early · 300–499L Developing · 500–699L
+              Independent · 700–849L Advanced · 850L+ Proficient
+            </p>
+          </div>
+          <div className="rounded-xl bg-white p-3 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
+            <div className="text-xs font-extrabold text-sky-900 dark:text-sky-200">
+              Score % — <i>how well</i> they read it
+            </div>
+            <p className="mt-1 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
+              How they read the passage in front of them: accuracy 40%, fluency
+              30%, understanding 30%. This score names the reader category.
+            </p>
+            <p className="mt-1 text-[11px] font-bold text-sky-700 dark:text-sky-300">
+              90–100% Independent · 75–89% Instructional · 60–74% Developing ·
+              below 60% Emerging
+            </p>
+          </div>
+        </div>
+        <p className="mt-3 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
+          <b>The two do not have to match.</b> A higher Lexile with a lower
+          score means the child is reading harder text but not yet smoothly —
+          the level where guided reading helps most. A lower Lexile with a high
+          score means they read their level confidently and are ready to be
+          stretched.
+        </p>
+      </section>
     </div>
   );
 }
@@ -490,6 +532,34 @@ function exportStats(scopeLabel: string, term: TermNo, stats: TermStats) {
       stats.min ? lexileLabel(stats.min.lexile) : "",
       stats.max ? lexileLabel(stats.max.lexile) : "",
     ].join(","),
+  );
+
+  lines.push("");
+  lines.push("What the columns mean");
+  lines.push(
+    csv(
+      "Lexile / Lexile band = WHAT the child can read - the difficulty of text they can handle, from the word check. Bigger = harder books.",
+    ),
+  );
+  lines.push(
+    csv(
+      "Bands: BR-99L Emerging | 100-299L Early | 300-499L Developing | 500-699L Independent | 700-849L Advanced | 850L+ Proficient",
+    ),
+  );
+  lines.push(
+    csv(
+      "Score % = HOW WELL they read the passage given to them: accuracy 40%, fluency 30%, understanding 30%. This score names the reader category.",
+    ),
+  );
+  lines.push(
+    csv(
+      "Reader category: 90-100% Independent | 75-89% Instructional | 60-74% Developing | below 60% Emerging",
+    ),
+  );
+  lines.push(
+    csv(
+      "The two do not have to match. A higher Lexile with a lower score means the child is reading harder text but not yet smoothly - the level where guided reading helps most. A lower Lexile with a high score means they read their level confidently and are ready to be stretched.",
+    ),
   );
 
   const slug = scopeLabel.replace(/\s+/g, "-").toLowerCase();
