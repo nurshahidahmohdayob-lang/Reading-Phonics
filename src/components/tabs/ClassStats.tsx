@@ -21,6 +21,7 @@ import {
   type TermStats,
 } from "@/lib/lexileStats";
 import { openReport } from "@/lib/reportPrint";
+import { openStatsReport } from "@/lib/statsPrint";
 
 const TERMS: TermNo[] = [1, 2, 3];
 
@@ -83,11 +84,19 @@ export default function ClassStats({
           })}
         </div>
         <button
-          onClick={() => exportStats(scopeLabel, term, stats)}
+          onClick={() =>
+            openStatsReport({
+              scopeLabel,
+              term,
+              stats,
+              growth,
+              deltas: allDeltas(students, store, term),
+            })
+          }
           disabled={!assessed}
           className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
         >
-          ⬇️ Export data (CSV)
+          🖨️ Open printable report
         </button>
       </div>
 
@@ -454,6 +463,24 @@ function earlierTerm(
   return null;
 }
 
+/** Every child's change since their last assessed term, keyed "yearKey:name".
+    Children with no earlier result are left out. */
+function allDeltas(
+  students: Scoped[],
+  store: TrackerStore,
+  term: TermNo,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of students) {
+    const rows = store[studentKey(s.yearKey, s.name)];
+    const now = rows?.[term] ? lexileValue(rows[term]!.report.lexile) : null;
+    if (now === null) continue;
+    const prev = earlierTerm(store, s, term);
+    if (prev !== null) out[`${s.yearKey}:${s.name}`] = now - prev;
+  }
+  return out;
+}
+
 /** Mean Lexile change for children assessed in BOTH Term 1 and `term`. */
 function growthSinceTerm1(
   students: Scoped[],
@@ -472,117 +499,4 @@ function growthSinceTerm1(
     n++;
   }
   return { delta: n ? Math.round(sum / n) : 0, n };
-}
-
-/* ---------- CSV ---------- */
-
-function exportStats(scopeLabel: string, term: TermNo, stats: TermStats) {
-  const head = [
-    "Student",
-    "Class",
-    "Term",
-    "Lexile",
-    "Lexile band",
-    "Band range",
-    "Reader category",
-    "Score %",
-    "Assessed on",
-  ];
-  const lines = [head.join(",")];
-  for (const r of stats.results) {
-    lines.push(
-      [
-        csv(r.name),
-        csv(r.year),
-        String(term),
-        csv(r.lexileText),
-        csv(r.band.label),
-        csv(r.band.range),
-        csv(r.record.report.categoryLabel),
-        String(r.record.report.composite),
-        csv(r.record.savedAt.slice(0, 10)),
-      ].join(","),
-    );
-  }
-  lines.push("");
-  lines.push(["Lexile band", "Range", "Children", "% of assessed"].join(","));
-  for (const { band, students: kids } of stats.byBand) {
-    lines.push(
-      [
-        csv(band.label),
-        csv(band.range),
-        String(kids.length),
-        stats.results.length
-          ? String(Math.round((kids.length / stats.results.length) * 100))
-          : "0",
-      ].join(","),
-    );
-  }
-  lines.push("");
-  lines.push(
-    ["Assessed", "Average Lexile", "Median Lexile", "Lowest", "Highest"].join(
-      ",",
-    ),
-  );
-  lines.push(
-    [
-      String(stats.results.length),
-      stats.mean === null ? "" : lexileLabel(stats.mean),
-      stats.median === null ? "" : lexileLabel(stats.median),
-      stats.min ? lexileLabel(stats.min.lexile) : "",
-      stats.max ? lexileLabel(stats.max.lexile) : "",
-    ].join(","),
-  );
-
-  lines.push("");
-  lines.push("What the columns mean");
-  lines.push(
-    csv(
-      "Lexile / Lexile band = WHAT the child can read - the difficulty of text they can handle, from the word check. Bigger = harder books.",
-    ),
-  );
-  lines.push(
-    csv(
-      "Bands: BR-99L Emerging | 100-299L Early | 300-499L Developing | 500-699L Independent | 700-849L Advanced | 850L+ Proficient",
-    ),
-  );
-  lines.push(
-    csv(
-      "Score % = HOW WELL they read the passage given to them: accuracy 40%, fluency 30%, understanding 30%. This score names the reader category.",
-    ),
-  );
-  lines.push(
-    csv(
-      "Reader category: 90-100% Independent | 75-89% Instructional | 60-74% Developing | below 60% Emerging",
-    ),
-  );
-  lines.push(
-    csv(
-      "The two do not have to match. A higher Lexile with a lower score means the child is reading harder text but not yet smoothly - the level where guided reading helps most. A lower Lexile with a high score means they read their level confidently and are ready to be stretched.",
-    ),
-  );
-
-  const slug = scopeLabel.replace(/\s+/g, "-").toLowerCase();
-  download(
-    `reading-stats-${slug}-term-${term}.csv`,
-    lines.join("\n"),
-    "text/csv",
-  );
-}
-
-function csv(s: string): string {
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-function download(name: string, text: string, mime: string) {
-  const blob = new Blob([text], { type: mime });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(a.href);
-    a.remove();
-  }, 1000);
 }
