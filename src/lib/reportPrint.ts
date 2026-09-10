@@ -341,19 +341,3 @@ export function openReport(d: ReportData): void {
   win.document.write(reportHtml(d));
   win.document.close();
 }
-
-/** Save the report straight to a file — used when emailing it to a parent,
-    so there's something to attach. */
-export function downloadReport(d: ReportData): void {
-  if (typeof window === "undefined") return;
-  const blob = new Blob([reportHtml(d)], { type: "text/html" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = reportFilename(d);
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(a.href);
-    a.remove();
-  }, 1000);
-}

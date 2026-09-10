@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type Status = "loading" | "out" | "in";
 
@@ -9,6 +10,10 @@ type Status = "loading" | "out" | "in";
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [name, setName] = useState("");
+  const pathname = usePathname();
+  // A parent's report link is public by design — it carries one child's
+  // report inside the link and shows nothing else, so it never asks to sign in.
+  const isPublic = !!pathname && pathname.startsWith("/report");
 
   useEffect(() => {
     let alive = true;
@@ -37,6 +42,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       setStatus("out");
     }
   }
+
+  if (isPublic) return <>{children}</>;
 
   if (status === "loading") {
     return (

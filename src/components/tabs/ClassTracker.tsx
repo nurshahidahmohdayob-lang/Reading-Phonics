@@ -7,8 +7,9 @@
    fresh assessment for that child and term.
 
    The last column holds the parent's email: save it once, then ✉️ writes the
-   report up in the teacher's own mail app, with the report file saved ready
-   to attach (see lib/emailReport.ts).
+   report up in the teacher's own mail app, with a link that opens just that
+   child's report (see lib/emailReport.ts and lib/reportLink.ts). 🔗 copies
+   the same link for WhatsApp or webmail.
 
    The Statistics view turns the same records into graphs: how many children
    sit in each Lexile band, the class average per term, and every child sorted
@@ -44,7 +45,7 @@ import {
   looksLikeEmail,
   type ParentBook,
 } from "@/lib/parentContacts";
-import { emailReport } from "@/lib/emailReport";
+import { emailReport, copyReportLink } from "@/lib/emailReport";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
 
@@ -567,8 +568,9 @@ export default function ClassTracker({
           </div>
 
           <p className="mt-2 w-full text-center text-xs font-semibold text-zinc-400">
-            ✉️ saves the report file and opens your mail app with the message
-            already written — attach the saved file and press send.
+            ✉️ opens your mail app with the message written out and a link to
+            just that child’s report — press send. 🔗 copies the same link for
+            WhatsApp or webmail.
           </p>
 
           {/* Legend + storage note */}
@@ -636,6 +638,7 @@ function ParentCell({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(saved);
   const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
 
   function save() {
     const clean = draft.trim();
@@ -725,21 +728,47 @@ function ParentCell({
           🗑️
         </button>
       ) : (
-        <button
-          onClick={() =>
-            latest &&
-            emailReport(saved, latest.rec.report, latest.term, teacherName)
-          }
-          disabled={!latest}
-          title={
-            latest
-              ? `Email ${name}'s Term ${latest.term} report to ${saved}`
-              : "No report saved yet"
-          }
-          className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
-        >
-          ✉️
-        </button>
+        <>
+          <button
+            onClick={() => {
+              if (latest)
+                void emailReport(
+                  saved,
+                  latest.rec.report,
+                  latest.term,
+                  teacherName,
+                );
+            }}
+            disabled={!latest}
+            title={
+              latest
+                ? `Email ${name}'s Term ${latest.term} report to ${saved}`
+                : "No report saved yet"
+            }
+            className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+          >
+            ✉️
+          </button>
+          <button
+            onClick={() => {
+              if (!latest) return;
+              void copyReportLink(latest.rec.report).then((ok) => {
+                if (!ok) return;
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1600);
+              });
+            }}
+            disabled={!latest}
+            title={
+              latest
+                ? `Copy the link to ${name}'s Term ${latest.term} report`
+                : "No report saved yet"
+            }
+            className="shrink-0 rounded-lg bg-white px-2 py-2 text-xs font-bold text-zinc-500 shadow-sm ring-1 ring-black/5 active:scale-90 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            {copied ? "✓" : "🔗"}
+          </button>
+        </>
       )}
     </div>
   );
