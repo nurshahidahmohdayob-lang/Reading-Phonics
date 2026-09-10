@@ -41,29 +41,6 @@ export function emailBody(
   );
   if (!d.beginning) lines.push(`Book level: ${d.levelGrade}`);
   lines.push("");
-  lines.push("What these two numbers mean:");
-  lines.push(
-    "- Lexile is WHAT your child can read — how difficult a text they can handle. A bigger number means harder books.",
-  );
-  lines.push(
-    "- The score % is HOW WELL they read the passage in front of them: accuracy 40%, fluency 30%, understanding 30%.",
-  );
-  lines.push(
-    "- The two do not have to match. A higher Lexile with a lower score means your child is reading harder text but not yet smoothly — exactly where guided reading helps most.",
-  );
-
-  const tips = d.support.slice(0, 3);
-  if (tips.length) {
-    lines.push("");
-    lines.push(`How you can help ${d.studentName} at home:`);
-    for (const t of tips) lines.push(`- ${t}`);
-  }
-  if (d.practice.length) {
-    lines.push("");
-    lines.push(`Words to practise: ${d.practice.slice(0, 10).join(", ")}`);
-  }
-
-  lines.push("");
   lines.push(`Open ${d.studentName}'s full report here:`);
   lines.push(link);
   lines.push(
