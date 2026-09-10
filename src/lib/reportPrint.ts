@@ -1,6 +1,8 @@
 /** Opens a child's reading-assessment result in a new tab as a clean,
     interactive, printable HTML report. Modelled on flashcardPrint.ts. */
 
+import { EXPLAINER_CSS, explainerHtml } from "./explainer";
+
 export type ReportStrand = {
   label: string;
   weight: number;
@@ -97,15 +99,7 @@ ul.tips li { margin: 5px 0; font-weight: 600; }
 .bandrow .br { float: right; font-weight: 700; color: #71717a; font-size: 12px; }
 .bandrow .curtag { color: #e11d48; font-weight: 800; font-size: 12px; margin-left: 8px; }
 .bandrow .ba { font-size: 12px; color: #52525b; font-weight: 600; margin-top: 2px; }
-.explain { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px 16px; }
-.explain .eh { font-weight: 800; font-size: 14px; color: #075985; }
-.explain .egrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-.explain .ebox { background: #fff; border: 1px solid #bae6fd; border-radius: 10px; padding: 9px 12px; }
-.explain .et { font-weight: 800; font-size: 13px; color: #075985; }
-.explain .ebox p { margin: 3px 0 0; font-size: 12px; font-weight: 600; color: #0c4a6e; }
-.explain .escale { color: #0369a1 !important; font-size: 11px !important; font-weight: 700 !important; }
-.explain .enote { margin: 9px 0 0; font-size: 12px; font-weight: 600; color: #0c4a6e; }
-@media (max-width: 640px) { .explain .egrid { grid-template-columns: 1fr; } }
+${EXPLAINER_CSS}
 .foot { margin-top: 18px; font-size: 11px; color: #a1a1aa; border-top: 1px solid #f4f4f5; padding-top: 10px; }
 .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .stats { font-weight: 700; font-size: 13px; color: #3f3f46; margin: 0; }
@@ -250,22 +244,7 @@ export function reportHtml(d: ReportData): string {
       <div class="card"><div class="k">Lexile</div><div class="v">${esc(d.lexile)}</div><div class="vs">${esc(d.lexileBand)}</div></div>
     </div>
 
-    <div class="section explain">
-      <div class="eh">👪 What these numbers mean</div>
-      <div class="egrid">
-        <div class="ebox">
-          <div class="et">Lexile — <i>what</i> they can read</div>
-          <p>The difficulty of text your child can handle, measured from the word check. Bigger number = harder books.</p>
-          <p class="escale">BR–99L Emerging · 100–299L Early · 300–499L Developing · 500–699L Independent · 700–849L Advanced · 850L+ Proficient</p>
-        </div>
-        <div class="ebox">
-          <div class="et">Overall score % — <i>how well</i> they read it</div>
-          <p>How they read the passage in front of them: accuracy 40%, fluency 30%, understanding 30%. This score is what names the reader level.</p>
-          <p class="escale">90–100% Independent · 75–89% Instructional · 60–74% Developing · below 60% Emerging</p>
-        </div>
-      </div>
-      <p class="enote"><b>The two do not have to match — and often shouldn't.</b> A <b>higher Lexile with a lower score</b> means your child is reading harder text but not yet smoothly; that is exactly the level where guided reading helps most. A <b>lower Lexile with a high score</b> means they read their level confidently and are ready to be stretched. <b>Accuracy level</b> is narrower still — just the words read correctly in this one passage — so it can differ again, and that's perfectly normal.</p>
-    </div>
+    ${explainerHtml("your child")}
 
     <div class="cols2">
       <div class="section">

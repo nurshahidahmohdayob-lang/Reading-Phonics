@@ -22,6 +22,7 @@ import {
 } from "@/lib/lexileStats";
 import { openReport } from "@/lib/reportPrint";
 import { openStatsReport } from "@/lib/statsPrint";
+import { LEXILE_SCALE, SCORE_SCALE } from "@/lib/explainer";
 
 const TERMS: TermNo[] = [1, 2, 3];
 
@@ -372,45 +373,43 @@ export default function ClassStats({
         </>
       )}
 
-      {/* What the two numbers mean — the same wording as the child's report */}
-      <section className="mt-4 w-full rounded-2xl bg-sky-50 p-5 ring-1 ring-sky-100 dark:bg-sky-950/30 dark:ring-sky-900/50">
+      {/* What the two numbers mean — the same wording as the reports */}
+      <section className="mt-4 w-full rounded-2xl bg-sky-50/70 p-5 ring-1 ring-sky-100 dark:bg-sky-950/25 dark:ring-sky-900/50">
         <h3 className="text-sm font-extrabold text-sky-900 dark:text-sky-200">
           👪 What these numbers mean
         </h3>
+        <p className="mt-0.5 text-xs font-semibold text-sky-800/60 dark:text-sky-200/50">
+          Two different measures — read them together.
+        </p>
+
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-white p-3 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
-            <div className="text-xs font-extrabold text-sky-900 dark:text-sky-200">
-              Lexile / band — <i>what</i> they can read
-            </div>
-            <p className="mt-1 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
-              The difficulty of text the child can handle, measured from the
-              word check. Bigger number = harder books.
-            </p>
-            <p className="mt-1 text-[11px] font-bold text-sky-700 dark:text-sky-300">
-              BR–99L Emerging · 100–299L Early · 300–499L Developing · 500–699L
-              Independent · 700–849L Advanced · 850L+ Proficient
-            </p>
-          </div>
-          <div className="rounded-xl bg-white p-3 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
-            <div className="text-xs font-extrabold text-sky-900 dark:text-sky-200">
-              Score % — <i>how well</i> they read it
-            </div>
-            <p className="mt-1 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
-              How they read the passage in front of them: accuracy 40%, fluency
-              30%, understanding 30%. This score names the reader category.
-            </p>
-            <p className="mt-1 text-[11px] font-bold text-sky-700 dark:text-sky-300">
-              90–100% Independent · 75–89% Instructional · 60–74% Developing ·
-              below 60% Emerging
-            </p>
-          </div>
+          <ExplainCard
+            title="Lexile"
+            kicker="what the child can read"
+            body="How difficult a text the child can handle, measured from the word check. A bigger number means harder books."
+            scale={LEXILE_SCALE}
+          />
+          <ExplainCard
+            title="Score %"
+            kicker="how well they read it"
+            body="How they read the passage in front of them — accuracy 40%, fluency 30%, understanding 30%. This score is what names the reader category."
+            scale={SCORE_SCALE}
+          />
         </div>
-        <p className="mt-3 text-xs font-semibold text-sky-900/80 dark:text-sky-100/70">
-          <b>The two do not have to match.</b> A higher Lexile with a lower
-          score means the child is reading harder text but not yet smoothly —
-          the level where guided reading helps most. A lower Lexile with a high
-          score means they read their level confidently and are ready to be
-          stretched.
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Case
+            head="Higher Lexile · lower score"
+            body="Reading harder text, but not yet smoothly — exactly the level where guided reading helps most."
+          />
+          <Case
+            head="Lower Lexile · higher score"
+            body="Reading this level confidently and with understanding — ready to be stretched."
+          />
+        </div>
+
+        <p className="mt-3 text-xs font-semibold text-sky-800/60 dark:text-sky-200/50">
+          So the two are not meant to match.
         </p>
       </section>
     </div>
@@ -418,6 +417,64 @@ export default function ClassStats({
 }
 
 /* ---------- pieces ---------- */
+
+/** One half of the explainer: a measure, what it answers, and its scale. */
+function ExplainCard({
+  title,
+  kicker,
+  body,
+  scale,
+}: {
+  title: string;
+  kicker: string;
+  body: string;
+  scale: [string, string][];
+}) {
+  return (
+    <div className="rounded-xl bg-white p-3.5 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
+      <div className="text-sm font-extrabold text-sky-900 dark:text-sky-200">
+        {title}
+      </div>
+      <div className="text-[10px] font-extrabold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+        {kicker}
+      </div>
+      <p className="mt-1.5 text-xs font-semibold leading-relaxed text-sky-900/70 dark:text-sky-100/60">
+        {body}
+      </p>
+      <dl className="mt-2">
+        {scale.map(([k, v], i) => (
+          <div
+            key={k}
+            className={`flex justify-between py-1 text-xs ${
+              i ? "border-t border-sky-50 dark:border-sky-900/40" : ""
+            }`}
+          >
+            <dt className="font-extrabold text-sky-900 dark:text-sky-200">
+              {k}
+            </dt>
+            <dd className="font-semibold text-sky-800/60 dark:text-sky-200/50">
+              {v}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** "If you see this, it means…" */
+function Case({ head, body }: { head: string; body: string }) {
+  return (
+    <div className="rounded-xl bg-white p-3 ring-1 ring-sky-100 dark:bg-zinc-900 dark:ring-sky-900/50">
+      <div className="text-xs font-extrabold text-sky-900 dark:text-sky-200">
+        {head}
+      </div>
+      <p className="mt-0.5 text-xs font-semibold leading-relaxed text-sky-900/70 dark:text-sky-100/60">
+        {body}
+      </p>
+    </div>
+  );
+}
 
 function Tile({ k, v, s }: { k: string; v: string; s: string }) {
   return (

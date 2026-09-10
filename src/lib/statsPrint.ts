@@ -3,6 +3,7 @@
     sharing and for “Save as PDF”. Modelled on reportPrint.ts. */
 
 import { LEXILE_BANDS, lexileLabel, type TermStats } from "./lexileStats";
+import { EXPLAINER_CSS, explainerHtml } from "./explainer";
 
 /** The ordinal Lexile ramp, light → dark (same values as globals.css). */
 const RAMP = ["#7cc39a", "#59b183", "#3f9a6b", "#2c8154", "#1d6740", "#0a4f29"];
@@ -70,15 +71,7 @@ th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacin
 td { padding: 6px 8px; border-bottom: 1px solid #f4f4f5; font-weight: 600; }
 td.num, th.num { text-align: right; }
 
-/* explainer */
-.explain { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px 16px; margin-top: 24px; }
-.explain .eh { font-weight: 800; font-size: 14px; color: #075985; }
-.explain .egrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-.explain .ebox { background: #fff; border: 1px solid #bae6fd; border-radius: 10px; padding: 9px 12px; }
-.explain .et { font-weight: 800; font-size: 13px; color: #075985; }
-.explain .ebox p { margin: 3px 0 0; font-size: 12px; font-weight: 600; color: #0c4a6e; }
-.explain .escale { color: #0369a1 !important; font-size: 11px !important; font-weight: 700 !important; }
-.explain .enote { margin: 9px 0 0; font-size: 12px; font-weight: 600; color: #0c4a6e; }
+${EXPLAINER_CSS}
 .foot { margin-top: 18px; font-size: 11px; color: #a1a1aa; border-top: 1px solid #f4f4f5; padding-top: 10px; }
 @media (max-width: 640px) {
   .page { padding: 20px 16px; }
@@ -263,22 +256,7 @@ export function openStatsReport(d: StatsReportData): void {
       </table>
     </div>
 
-    <div class="explain">
-      <div class="eh">👪 What these numbers mean</div>
-      <div class="egrid">
-        <div class="ebox">
-          <div class="et">Lexile / band — <i>what</i> they can read</div>
-          <p>The difficulty of text the child can handle, measured from the word check. Bigger number = harder books.</p>
-          <p class="escale">BR–99L Emerging · 100–299L Early · 300–499L Developing · 500–699L Independent · 700–849L Advanced · 850L+ Proficient</p>
-        </div>
-        <div class="ebox">
-          <div class="et">Score % — <i>how well</i> they read it</div>
-          <p>How they read the passage in front of them: accuracy 40%, fluency 30%, understanding 30%. This score names the reader category.</p>
-          <p class="escale">90–100% Independent · 75–89% Instructional · 60–74% Developing · below 60% Emerging</p>
-        </div>
-      </div>
-      <p class="enote"><b>The two do not have to match.</b> A <b>higher Lexile with a lower score</b> means the child is reading harder text but not yet smoothly — the level where guided reading helps most. A <b>lower Lexile with a high score</b> means they read their level confidently and are ready to be stretched.</p>
-    </div>
+    ${explainerHtml("the child")}
 
     <div class="foot">Phonics Pals &amp; Guided Reading · Zera International School · generated ${esc(dateStr)}</div>
   </div>
