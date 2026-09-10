@@ -11,6 +11,10 @@
    child's report (see lib/emailReport.ts and lib/reportLink.ts). 🔗 copies
    the same link for WhatsApp or webmail.
 
+   🔄 Sync checks the class lists against the school system and offers to add
+   any children it has that the tracker doesn't (see lib/rosterSync.ts). It
+   never renames or removes anyone — reports are filed under a child's name.
+
    The Statistics view turns the same records into graphs: how many children
    sit in each Lexile band, the class average per term, and every child sorted
    into their band (see ClassStats.tsx).
@@ -46,6 +50,8 @@ import {
   type ParentBook,
 } from "@/lib/parentContacts";
 import { emailReport, copyReportLink } from "@/lib/emailReport";
+import { compareRoster, type ClassDiff } from "@/lib/rosterSync";
+import type { SchoolStudent } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
 
@@ -170,6 +176,7 @@ export default function ClassTracker({
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [addErr, setAddErr] = useState("");
+  const [sync, setSync] = useState<SyncState>({ kind: "idle" });
 
   const group = groups.find((g) => g.key === yearKey) ?? groups[0];
 
@@ -216,6 +223,65 @@ export default function ClassTracker({
     setNewName("");
     setAddErr("");
     setAdding(false);
+  }
+
+  /** Ask the school system for its class lists and compare them with ours. */
+  async function runSync() {
+    setSync({ kind: "loading" });
+    try {
+      const res = await fetch("/api/students");
+      const data = await res.json();
+      if (data?.configured === false) {
+        setSync({
+          kind: "error",
+          message:
+            "The school system isn’t connected on this site yet — its student key needs adding to the site settings.",
+        });
+        return;
+      }
+      if (!data?.ok) {
+        setSync({
+          kind: "error",
+          message:
+            typeof data?.error === "string"
+              ? data.error
+              : "Couldn’t reach the school system.",
+        });
+        return;
+      }
+      const diffs = compareRoster(data.students as SchoolStudent[], groups);
+      setSync({
+        kind: "ready",
+        diffs,
+        // Ticked by default, except the ones that look like a child we
+        // already have under a different spelling.
+        picked: new Set(
+          diffs.flatMap((d) =>
+            d.toAdd
+              .filter((a) => !a.similar)
+              .map((a) => `${d.yearKey}:${a.student.name}`),
+          ),
+        ),
+      });
+    } catch {
+      setSync({ kind: "error", message: "Couldn’t reach the school system." });
+    }
+  }
+
+  /** Add the ticked children. Nothing is renamed or removed. */
+  function applySync() {
+    if (sync.kind !== "ready") return;
+    let added = 0;
+    for (const d of sync.diffs) {
+      const existing =
+        groups.find((g) => g.key === d.yearKey)?.students.map((s) => s.name) ??
+        [];
+      for (const a of d.toAdd) {
+        if (!sync.picked.has(`${d.yearKey}:${a.student.name}`)) continue;
+        if (addStudent(d.yearKey, a.student.name, existing)) added++;
+      }
+    }
+    setSync({ kind: "done", added });
   }
 
   function exportCsv() {
@@ -371,6 +437,14 @@ export default function ClassTracker({
                 ➕ Add student
               </button>
               <button
+                onClick={() => void runSync()}
+                disabled={sync.kind === "loading"}
+                title="Check the class lists against the school system"
+                className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
+              >
+                {sync.kind === "loading" ? "⏳ Checking…" : "🔄 Sync students"}
+              </button>
+              <button
                 onClick={() => setManage((m) => !m)}
                 aria-pressed={manage}
                 className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
@@ -389,6 +463,21 @@ export default function ClassTracker({
               </button>
             </div>
           </div>
+
+          {sync.kind !== "idle" && sync.kind !== "loading" && (
+            <SyncPanel
+              state={sync}
+              onToggle={(key) => {
+                if (sync.kind !== "ready") return;
+                const picked = new Set(sync.picked);
+                if (picked.has(key)) picked.delete(key);
+                else picked.add(key);
+                setSync({ ...sync, picked });
+              }}
+              onApply={applySync}
+              onClose={() => setSync({ kind: "idle" })}
+            />
+          )}
 
           {/* Add-student form */}
           {adding && (
@@ -602,6 +691,181 @@ export default function ClassTracker({
         )}
       </p>
     </div>
+  );
+}
+
+type SyncState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; diffs: ClassDiff[]; picked: Set<string> }
+  | { kind: "done"; added: number };
+
+/** What the school system has that the tracker doesn't, and vice versa. */
+function SyncPanel({
+  state,
+  onToggle,
+  onApply,
+  onClose,
+}: {
+  state: SyncState;
+  onToggle: (key: string) => void;
+  onApply: () => void;
+  onClose: () => void;
+}) {
+  const shell =
+    "mt-3 w-full rounded-2xl bg-white p-4 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900";
+
+  if (state.kind === "error") {
+    return (
+      <div className={shell}>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-bold text-rose-600 dark:text-rose-300">
+            {state.message}
+          </p>
+          <CloseX onClose={onClose} />
+        </div>
+      </div>
+    );
+  }
+
+  if (state.kind === "done") {
+    return (
+      <div className={shell}>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+            {state.added
+              ? `Added ${state.added} student${state.added === 1 ? "" : "s"} from the school system.`
+              : "Nothing added — the class lists already match."}
+          </p>
+          <CloseX onClose={onClose} />
+        </div>
+      </div>
+    );
+  }
+
+  if (state.kind !== "ready") return null;
+
+  const totalNew = state.diffs.reduce((n, d) => n + d.toAdd.length, 0);
+  const picked = state.picked.size;
+
+  return (
+    <div className={shell}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-extrabold text-zinc-700 dark:text-zinc-100">
+            🔄 Compared with the school system
+          </h3>
+          <p className="mt-0.5 text-xs font-semibold text-zinc-400">
+            Nobody is renamed or removed — only the children you tick are added.
+          </p>
+        </div>
+        <CloseX onClose={onClose} />
+      </div>
+
+      <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+        {state.diffs.map((d) => (
+          <div
+            key={d.yearKey}
+            className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50"
+          >
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-xs font-extrabold text-zinc-700 dark:text-zinc-100">
+                {d.year}
+              </span>
+              {d.noClass ? (
+                <span className="text-[11px] font-bold text-zinc-400">
+                  no {d.year} class in the school system — left alone
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-zinc-400">
+                  {d.matched} matched
+                  {d.toAdd.length ? ` · ${d.toAdd.length} new` : ""}
+                </span>
+              )}
+            </div>
+
+            {d.toAdd.length > 0 && (
+              <div className="mt-2 flex flex-col gap-1">
+                {d.toAdd.map(({ student: s, similar }) => {
+                  const key = `${d.yearKey}:${s.name}`;
+                  return (
+                    <label
+                      key={key}
+                      className="flex cursor-pointer items-start gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-200"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={state.picked.has(key)}
+                        onChange={() => onToggle(key)}
+                        className="mt-0.5 h-3.5 w-3.5 accent-[#0A4F29]"
+                      />
+                      <span>
+                        {s.name}
+                        {s.preferred && s.preferred !== s.name && (
+                          <span className="ml-1 font-semibold text-zinc-400">
+                            “{s.preferred}”
+                          </span>
+                        )}
+                        {s.pending && (
+                          <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                            pending
+                          </span>
+                        )}
+                        {similar && (
+                          <span className="block font-semibold text-amber-600 dark:text-amber-400">
+                            spelled differently here? you have “{similar}” —
+                            leave unticked unless they are two children
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {d.onlyHere.length > 0 && (
+              <p className="mt-2 text-[11px] font-semibold text-zinc-400">
+                Only in the tracker: {d.onlyHere.join(", ")}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={onApply}
+          disabled={!picked}
+          className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+        >
+          {picked
+            ? `Add ${picked} student${picked === 1 ? "" : "s"}`
+            : totalNew
+              ? "Tick who to add"
+              : "Nothing new to add"}
+        </button>
+        <button
+          onClick={onClose}
+          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-500 ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CloseX({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      onClick={onClose}
+      aria-label="Close"
+      className="shrink-0 rounded-lg px-2 py-1 text-sm font-bold text-zinc-400 hover:text-zinc-600"
+    >
+      ✕
+    </button>
   );
 }
 
