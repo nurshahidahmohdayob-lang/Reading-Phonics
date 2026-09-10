@@ -50,7 +50,7 @@ import {
   type ParentBook,
 } from "@/lib/parentContacts";
 import { emailReport, copyReportLink } from "@/lib/emailReport";
-import { compareRoster, type ClassDiff } from "@/lib/rosterSync";
+import { compareRoster, sameChild, type ClassDiff } from "@/lib/rosterSync";
 import type { SchoolStudent } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
@@ -177,6 +177,7 @@ export default function ClassTracker({
   const [newName, setNewName] = useState("");
   const [addErr, setAddErr] = useState("");
   const [sync, setSync] = useState<SyncState>({ kind: "idle" });
+  const [bulk, setBulk] = useState(false);
 
   const group = groups.find((g) => g.key === yearKey) ?? groups[0];
 
@@ -437,6 +438,21 @@ export default function ClassTracker({
                 ➕ Add student
               </button>
               <button
+                onClick={() => {
+                  setBulk((b) => !b);
+                  setSync({ kind: "idle" });
+                }}
+                aria-pressed={bulk}
+                title="Paste a list of parent emails and fill them all in"
+                className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
+                  bulk
+                    ? "bg-[#0A4F29] text-white ring-transparent"
+                    : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+                }`}
+              >
+                ✉️ Parent emails
+              </button>
+              <button
                 onClick={() => void runSync()}
                 disabled={sync.kind === "loading"}
                 title="Check the class lists against the school system"
@@ -463,6 +479,20 @@ export default function ClassTracker({
               </button>
             </div>
           </div>
+
+          {bulk && (
+            <BulkEmails
+              students={groups.flatMap((g) =>
+                g.students.map((st) => ({
+                  name: st.name,
+                  year: g.year,
+                  yearKey: g.key,
+                })),
+              )}
+              book={parents}
+              onClose={() => setBulk(false)}
+            />
+          )}
 
           {sync.kind !== "idle" && sync.kind !== "loading" && (
             <SyncPanel
@@ -690,6 +720,180 @@ export default function ClassTracker({
           <span>Checking cloud sync…</span>
         )}
       </p>
+    </div>
+  );
+}
+
+/** Paste a whole list of parent emails at once — one child per line, in any
+    order, matched to the class lists by name the same way the school-system
+    sync matches them. */
+function BulkEmails({
+  students,
+  book,
+  onClose,
+}: {
+  students: { name: string; year: string; yearKey: string }[];
+  book: ParentBook;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [saved, setSaved] = useState(0);
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  type Row = {
+    line: string;
+    email?: string;
+    match?: { name: string; year: string; yearKey: string };
+    replaces?: string;
+    problem?: string;
+  };
+
+  const rows: Row[] = lines.map((line) => {
+    const email = line.match(/[^\s,;<>()"]+@[^\s,;<>()"]+\.[^\s,;<>()"]+/)?.[0];
+    if (!email) return { line, problem: "no email address on this line" };
+    const name = line
+      .replace(email, " ")
+      .replace(/[,;<>"]/g, " ")
+      .trim();
+    if (!name) return { line, email, problem: "no name on this line" };
+    const hits = students.filter((st) => sameChild(name, "", st.name));
+    if (hits.length === 0)
+      return { line, email, problem: `no child called “${name}”` };
+    if (hits.length > 1)
+      return { line, email, problem: `“${name}” matches more than one child` };
+    const existing = parentEmail(book, hits[0].yearKey, hits[0].name);
+    return {
+      line,
+      email,
+      match: hits[0],
+      replaces: existing && existing !== email ? existing : undefined,
+    };
+  });
+
+  const good = rows.filter((r) => r.match && r.email);
+  const bad = rows.filter((r) => r.problem);
+
+  function apply() {
+    for (const r of good)
+      setParentEmail(r.match!.yearKey, r.match!.name, r.email!);
+    setSaved(good.length);
+    setText("");
+  }
+
+  return (
+    <div className="mt-3 w-full rounded-2xl bg-white p-4 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-extrabold text-zinc-700 dark:text-zinc-100">
+            ✉️ Fill in parent emails
+          </h3>
+          <p className="mt-0.5 text-xs font-semibold text-zinc-400">
+            Paste your list — one child per line, the name and the parent’s
+            email in any order. A copy-paste of two spreadsheet columns works.
+          </p>
+        </div>
+        <CloseX onClose={onClose} />
+      </div>
+
+      <textarea
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setSaved(0);
+        }}
+        rows={6}
+        placeholder={
+          "Aloysius Cheng, mum.cheng@gmail.com\nAsher Ng  asher.parent@gmail.com\nAustyn Liew Ze Yu\tdad.liew@outlook.com"
+        }
+        className="mt-3 w-full rounded-xl border-2 border-zinc-200 bg-white px-3 py-2 font-mono text-xs font-semibold text-zinc-700 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+      />
+
+      {saved > 0 && (
+        <p className="mt-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+          Saved {saved} parent email{saved === 1 ? "" : "s"} — the ✉️ button is
+          ready on those rows.
+        </p>
+      )}
+
+      {lines.length > 0 && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
+            <div className="text-xs font-extrabold text-zinc-600 dark:text-zinc-200">
+              Ready to save · {good.length}
+            </div>
+            <div className="mt-1.5 flex flex-col gap-1">
+              {good.slice(0, 40).map((r, i) => (
+                <div
+                  key={i}
+                  className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-300"
+                >
+                  <span className="font-extrabold text-zinc-700 dark:text-zinc-100">
+                    {r.match!.name}
+                  </span>{" "}
+                  <span className="text-zinc-400">{r.match!.year}</span> →{" "}
+                  {r.email}
+                  {r.replaces && (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      {" "}
+                      (replaces {r.replaces})
+                    </span>
+                  )}
+                </div>
+              ))}
+              {good.length > 40 && (
+                <div className="text-[11px] font-bold text-zinc-400">
+                  …and {good.length - 40} more
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
+            <div className="text-xs font-extrabold text-zinc-600 dark:text-zinc-200">
+              Couldn’t match · {bad.length}
+            </div>
+            {bad.length === 0 ? (
+              <p className="mt-1.5 text-[11px] font-semibold text-zinc-400">
+                Every line matched a child.
+              </p>
+            ) : (
+              <div className="mt-1.5 flex flex-col gap-1">
+                {bad.slice(0, 40).map((r, i) => (
+                  <div
+                    key={i}
+                    className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-300"
+                  >
+                    <span className="text-zinc-400">{r.line}</span> —{" "}
+                    <span className="text-rose-500">{r.problem}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={apply}
+          disabled={!good.length}
+          className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+        >
+          {good.length
+            ? `Save ${good.length} email${good.length === 1 ? "" : "s"}`
+            : "Paste your list above"}
+        </button>
+        <button
+          onClick={onClose}
+          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-500 ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800"
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 }
