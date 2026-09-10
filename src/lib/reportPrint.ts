@@ -134,14 +134,9 @@ ul.tips li { margin: 5px 0; font-weight: 600; }
 }
 `;
 
-export function openReport(d: ReportData): void {
-  if (typeof window === "undefined") return;
-
-  const filename =
-    (d.studentName || "student")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") + "-reading-report.html";
+/** The child's report as a standalone HTML document. */
+export function reportHtml(d: ReportData): string {
+  const filename = reportFilename(d);
 
   const strandRows = d.strands
     .map((s) => {
@@ -321,12 +316,44 @@ export function openReport(d: ReportData): void {
 </body>
 </html>`;
 
+  return html;
+}
+
+/** `bella-tan-reading-report.html` — the name used for downloads. */
+export function reportFilename(d: ReportData): string {
+  return (
+    (d.studentName || "student")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") + "-reading-report.html"
+  );
+}
+
+/** Open the report in a new tab, ready to read, print or download. */
+export function openReport(d: ReportData): void {
+  if (typeof window === "undefined") return;
   const win = window.open("", "_blank");
   if (!win) {
     alert("Please allow pop-ups for this site to open the printable report.");
     return;
   }
   win.document.open();
-  win.document.write(html);
+  win.document.write(reportHtml(d));
   win.document.close();
+}
+
+/** Save the report straight to a file — used when emailing it to a parent,
+    so there's something to attach. */
+export function downloadReport(d: ReportData): void {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([reportHtml(d)], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = reportFilename(d);
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
 }

@@ -6,6 +6,10 @@
    reading level and opens / downloads that saved report; an empty cell starts a
    fresh assessment for that child and term.
 
+   The last column holds the parent's email: save it once, then ✉️ writes the
+   report up in the teacher's own mail app, with the report file saved ready
+   to attach (see lib/emailReport.ts).
+
    The Statistics view turns the same records into graphs: how many children
    sit in each Lexile band, the class average per term, and every child sorted
    into their band (see ClassStats.tsx).
@@ -33,6 +37,14 @@ import {
   type RosterEdits,
 } from "@/lib/rosterStore";
 import { openReport } from "@/lib/reportPrint";
+import {
+  useParentContacts,
+  parentEmail,
+  setParentEmail,
+  looksLikeEmail,
+  type ParentBook,
+} from "@/lib/parentContacts";
+import { emailReport } from "@/lib/emailReport";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
 
@@ -140,11 +152,15 @@ function buildGroups(edits: RosterEdits, store: TrackerStore) {
 
 export default function ClassTracker({
   onAssess,
+  teacherName,
 }: {
   onAssess: (init: { name: string; term: TermNo }) => void;
+  /** Signed-in staff name — signs the emails to parents. */
+  teacherName?: string;
 }) {
   const { store, cloud } = useTracker();
   const edits = useRosterEdits();
+  const parents = useParentContacts();
   const groups = buildGroups(edits, store);
 
   const [view, setView] = useState<"tracker" | "stats">("tracker");
@@ -422,7 +438,7 @@ export default function ClassTracker({
 
           {/* Tracker grid */}
           <div className="mt-3 w-full overflow-x-auto rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-            <table className="w-full min-w-[600px] border-collapse text-left">
+            <table className="w-full min-w-[840px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-zinc-100 text-xs font-bold uppercase tracking-wide text-zinc-400 dark:border-zinc-800">
                   <th className="px-4 py-3">Student</th>
@@ -431,6 +447,7 @@ export default function ClassTracker({
                       Term {t}
                     </th>
                   ))}
+                  <th className="px-3 py-3">Parent email</th>
                 </tr>
               </thead>
               <tbody>
@@ -532,12 +549,27 @@ export default function ClassTracker({
                           />
                         </td>
                       ))}
+                      <td className="px-3 py-2.5 align-middle">
+                        <ParentCell
+                          yearKey={group.key}
+                          name={s.name}
+                          book={parents}
+                          latest={latestRecord(r)}
+                          manage={manage}
+                          teacherName={teacherName}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+
+          <p className="mt-2 w-full text-center text-xs font-semibold text-zinc-400">
+            ✉️ saves the report file and opens your mail app with the message
+            already written — attach the saved file and press send.
+          </p>
 
           {/* Legend + storage note */}
           <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
@@ -567,6 +599,148 @@ export default function ClassTracker({
           <span>Checking cloud sync…</span>
         )}
       </p>
+    </div>
+  );
+}
+
+/** The most recent report a child has, whichever term it was saved in. */
+function latestRecord(
+  rows: Partial<Record<TermNo, TrackerRecord>>,
+): { rec: TrackerRecord; term: TermNo } | null {
+  let best: { rec: TrackerRecord; term: TermNo } | null = null;
+  for (const t of TERMS) {
+    const rec = rows[t];
+    if (!rec) continue;
+    if (!best || rec.savedAt > best.rec.savedAt) best = { rec, term: t };
+  }
+  return best;
+}
+
+/** The parent's email, and the ✉️ that sends them the latest report. */
+function ParentCell({
+  yearKey,
+  name,
+  book,
+  latest,
+  manage,
+  teacherName,
+}: {
+  yearKey: string;
+  name: string;
+  book: ParentBook;
+  latest: { rec: TrackerRecord; term: TermNo } | null;
+  manage: boolean;
+  teacherName?: string;
+}) {
+  const saved = parentEmail(book, yearKey, name);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(saved);
+  const [err, setErr] = useState("");
+
+  function save() {
+    const clean = draft.trim();
+    if (clean && !looksLikeEmail(clean)) {
+      setErr("Check that address");
+      return;
+    }
+    setParentEmail(yearKey, name, clean);
+    setErr("");
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <input
+          autoFocus
+          type="email"
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setErr("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") {
+              setDraft(saved);
+              setEditing(false);
+            }
+          }}
+          placeholder="parent@email.com"
+          className={`w-[170px] rounded-lg border-2 bg-white px-2 py-1.5 text-xs font-bold text-zinc-700 outline-none dark:bg-zinc-800 dark:text-zinc-100 ${
+            err
+              ? "border-rose-300 focus:border-rose-500"
+              : "border-emerald-200 focus:border-emerald-500 dark:border-zinc-700"
+          }`}
+        />
+        <button
+          onClick={save}
+          className="rounded-lg bg-[#0A4F29] px-2.5 py-1.5 text-xs font-bold text-white active:scale-95"
+        >
+          Save
+        </button>
+        {err && (
+          <span className="text-[10px] font-bold text-rose-500">{err}</span>
+        )}
+      </div>
+    );
+  }
+
+  if (!saved) {
+    return (
+      <button
+        onClick={() => {
+          setDraft("");
+          setEditing(true);
+        }}
+        disabled={manage}
+        className="flex h-9 w-full max-w-[190px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 text-xs font-bold text-zinc-400 transition-colors hover:border-emerald-300 hover:text-emerald-600 disabled:opacity-40 dark:border-zinc-700"
+      >
+        ＋ Add parent email
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => {
+          setDraft(saved);
+          setEditing(true);
+        }}
+        title={`${saved} — tap to edit`}
+        className="min-w-0 flex-1 truncate rounded-lg bg-zinc-50 px-2.5 py-1.5 text-left text-xs font-bold text-zinc-600 ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+      >
+        {saved}
+      </button>
+      {manage ? (
+        <button
+          onClick={() => {
+            if (confirm(`Remove the parent email for ${name}?`))
+              setParentEmail(yearKey, name, "");
+          }}
+          aria-label="Remove this parent email"
+          className="shrink-0 rounded-lg bg-rose-100 px-2 py-2 text-rose-600 shadow-sm active:scale-90 dark:bg-rose-950/50 dark:text-rose-300"
+        >
+          🗑️
+        </button>
+      ) : (
+        <button
+          onClick={() =>
+            latest &&
+            emailReport(saved, latest.rec.report, latest.term, teacherName)
+          }
+          disabled={!latest}
+          title={
+            latest
+              ? `Email ${name}'s Term ${latest.term} report to ${saved}`
+              : "No report saved yet"
+          }
+          className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+        >
+          ✉️
+        </button>
+      )}
     </div>
   );
 }

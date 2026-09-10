@@ -328,10 +328,15 @@ export default function Home() {
   const [assessKey, setAssessKey] = useState(0); // bump to remount for a fresh run
   // Whether the signed-in staff member may see the Class Tracker.
   const [trackerOwner, setTrackerOwner] = useState(false);
+  // Signed-in staff name — signs the emails the tracker writes to parents.
+  const [teacherName, setTeacherName] = useState("");
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
-      .then((d) => setTrackerOwner(!!d?.trackerOwner))
+      .then((d) => {
+        setTrackerOwner(!!d?.trackerOwner);
+        setTeacherName(typeof d?.name === "string" ? d.name : "");
+      })
       .catch(() => {});
   }, []);
 
@@ -459,7 +464,10 @@ export default function Home() {
             )}
             {section === "storyplay" && <StoryPlay />}
             {section === "tracker" && trackerOwner && (
-              <ClassTracker onAssess={(init) => openAssessment(init)} />
+              <ClassTracker
+                onAssess={(init) => openAssessment(init)}
+                teacherName={teacherName}
+              />
             )}
             {section === "guide" && (
               <Guide
