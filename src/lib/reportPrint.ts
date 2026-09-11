@@ -32,6 +32,8 @@ export type ReportData = {
   age: number;
   strands: ReportStrand[];
   support: string[];
+  /** Words the child stumbled on. Kept for the assessment screen; the report
+      itself no longer lists them. */
   practice: string[];
   running: {
     words: number;
@@ -92,8 +94,6 @@ h1 { font-size: 24px; margin: 0 0 2px; }
 .callout .r { font-size: 13px; opacity: .9; margin-top: 3px; }
 ul.tips { margin: 6px 0 0; padding-left: 20px; }
 ul.tips li { margin: 5px 0; font-weight: 600; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chip { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px; padding: 3px 9px; font-weight: 800; font-size: 14px; }
 .bandrow { border: 1px solid #e4e4e7; border-radius: 10px; padding: 8px 12px; margin-top: 6px; }
 .bandrow.cur { border-color: #fb7185; box-shadow: 0 0 0 2px #fecdd3; }
 .bandrow .bl { font-weight: 800; }
@@ -210,9 +210,6 @@ export function reportHtml(d: ReportData): string {
     : "";
 
   const tips = d.support.map((t) => `<li>${esc(t)}</li>`).join("");
-  const chips = d.practice
-    .map((w) => `<span class="chip">${esc(w)}</span>`)
-    .join("");
 
   const running = d.running
     ? `<p class="stats">${d.running.words} words · ${d.running.errors} errors · ${d.running.selfCorrections} self-corrections${d.running.wpm != null ? ` · ${d.running.wpm} wpm (goal ${esc(d.running.wpmGoal)})` : ""}</p>`
@@ -275,7 +272,6 @@ export function reportHtml(d: ReportData): string {
     <div class="section support">
       <h2>How to support ${esc(d.studentName)}</h2>
       <ul class="tips">${tips}</ul>
-      ${chips ? `<div style="font-weight:800;margin-top:8px;font-size:13px">Practise these words:</div><div class="chips">${chips}</div>` : ""}
     </div>
 
   </div>

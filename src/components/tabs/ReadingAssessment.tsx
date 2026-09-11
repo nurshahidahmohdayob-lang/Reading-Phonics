@@ -1789,7 +1789,7 @@ function Report({
     );
   if (accuracy != null && accuracy < 95)
     support.push(
-      "Decoding: re-read decodable texts, blend sounds left-to-right, and pre-teach the practice words below.",
+      "Decoding: re-read decodable texts, blend sounds left-to-right, and pre-teach the words they stumbled on.",
     );
   if (read && fluencyScore < 75)
     support.push(
