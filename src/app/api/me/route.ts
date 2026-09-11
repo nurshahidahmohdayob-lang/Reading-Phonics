@@ -11,6 +11,8 @@ export async function GET() {
   return Response.json({
     signedIn: true,
     name: session.name,
+    // Their own address — used as the "send from" when emailing parents.
+    email: session.email,
     trackerOwner: isTrackerOwner(session.email),
   });
 }

@@ -214,7 +214,14 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
             strokeWidth="2"
             strokeLinecap="round"
           />
-          <text x="12" y="30" fontSize="13" fontWeight="800" fill="#FB923C" fontFamily="Georgia">
+          <text
+            x="12"
+            y="30"
+            fontSize="13"
+            fontWeight="800"
+            fill="#FB923C"
+            fontFamily="Georgia"
+          >
             a
           </text>
           <g transform="rotate(45 33 28)">
@@ -231,13 +238,37 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           <rect x="4" y="18" width="13" height="14" rx="3" fill="#F87171" />
           <rect x="17.5" y="15" width="13" height="14" rx="3" fill="#60A5FA" />
           <rect x="31" y="18" width="13" height="14" rx="3" fill="#34D399" />
-          <text x="10.5" y="29" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+          <text
+            x="10.5"
+            y="29"
+            fontSize="10"
+            fontWeight="800"
+            textAnchor="middle"
+            fill="#fff"
+            fontFamily="Georgia"
+          >
             C
           </text>
-          <text x="24" y="26" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+          <text
+            x="24"
+            y="26"
+            fontSize="10"
+            fontWeight="800"
+            textAnchor="middle"
+            fill="#fff"
+            fontFamily="Georgia"
+          >
             A
           </text>
-          <text x="37.5" y="29" fontSize="10" fontWeight="800" textAnchor="middle" fill="#fff" fontFamily="Georgia">
+          <text
+            x="37.5"
+            y="29"
+            fontSize="10"
+            fontWeight="800"
+            textAnchor="middle"
+            fill="#fff"
+            fontFamily="Georgia"
+          >
             T
           </text>
         </svg>
@@ -253,7 +284,13 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           />
           <circle cx="20" cy="22" r="1.7" fill="#7C2D12" />
           <circle cx="28" cy="22" r="1.7" fill="#7C2D12" />
-          <path d="M20 27a4 3 0 0 0 8 0" stroke="#7C2D12" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path
+            d="M20 27a4 3 0 0 0 8 0"
+            stroke="#7C2D12"
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
         </svg>
       );
     case "stories": // open storybook
@@ -261,8 +298,18 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
         <svg {...p}>
           <path d="M24 12c-4-3-9-4-15-3v26c6-1 11 0 15 3z" fill="#93C5FD" />
           <path d="M24 12c4-3 9-4 15-3v26c-6-1-11 0-15 3z" fill="#3B82F6" />
-          <path d="M11 15c3-.5 7-.3 10 1M11 21c3-.5 7-.3 10 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M37 15c-3-.5-7-.3-10 1M37 21c-3-.5-7-.3-10 1" stroke="#DBEAFE" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M11 15c3-.5 7-.3 10 1M11 21c3-.5 7-.3 10 1"
+            stroke="#fff"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M37 15c-3-.5-7-.3-10 1M37 21c-3-.5-7-.3-10 1"
+            stroke="#DBEAFE"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
           <rect x="22.5" y="10" width="3" height="30" rx="1.5" fill="#1D4ED8" />
         </svg>
       );
@@ -281,8 +328,22 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
       return (
         <svg {...p}>
           <rect x="18" y="6" width="12" height="22" rx="6" fill="#A78BFA" />
-          <rect x="21" y="10" width="6" height="4" rx="2" fill="#fff" opacity="0.6" />
-          <path d="M13 24a11 11 0 0 0 22 0" fill="none" stroke="#7C3AED" strokeWidth="3" strokeLinecap="round" />
+          <rect
+            x="21"
+            y="10"
+            width="6"
+            height="4"
+            rx="2"
+            fill="#fff"
+            opacity="0.6"
+          />
+          <path
+            d="M13 24a11 11 0 0 0 22 0"
+            fill="none"
+            stroke="#7C3AED"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
           <rect x="22.5" y="35" width="3" height="6" rx="1.5" fill="#7C3AED" />
           <rect x="16" y="41" width="16" height="3" rx="1.5" fill="#7C3AED" />
           <path d="M38 9l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#FBBF24" />
@@ -294,10 +355,32 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           <rect x="9" y="8" width="30" height="34" rx="4" fill="#FB7185" />
           <rect x="14" y="12" width="20" height="26" rx="2" fill="#fff" />
           <rect x="18" y="5" width="12" height="7" rx="2" fill="#E11D48" />
-          <path d="M17 19l2 2 3-3" stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M17 26l2 2 3-3" stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M25 20h6M25 27h6" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
-          <path d="M30 30l1.4 3 3.1.4-2.2 2.2.5 3.1-2.8-1.5-2.8 1.5.5-3.1L23.5 33.4l3.1-.4z" fill="#FBBF24" />
+          <path
+            d="M17 19l2 2 3-3"
+            stroke="#22C55E"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M17 26l2 2 3-3"
+            stroke="#22C55E"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M25 20h6M25 27h6"
+            stroke="#CBD5E1"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M30 30l1.4 3 3.1.4-2.2 2.2.5 3.1-2.8-1.5-2.8 1.5.5-3.1L23.5 33.4l3.1-.4z"
+            fill="#FBBF24"
+          />
         </svg>
       );
     case "tracker": // register with rows of ticks per term
@@ -330,12 +413,14 @@ export default function Home() {
   const [trackerOwner, setTrackerOwner] = useState(false);
   // Signed-in staff name — signs the emails the tracker writes to parents.
   const [teacherName, setTeacherName] = useState("");
+  const [teacherEmail, setTeacherEmail] = useState("");
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
       .then((d) => {
         setTrackerOwner(!!d?.trackerOwner);
         setTeacherName(typeof d?.name === "string" ? d.name : "");
+        setTeacherEmail(typeof d?.email === "string" ? d.email : "");
       })
       .catch(() => {});
   }, []);
@@ -382,7 +467,9 @@ export default function Home() {
               className="h-9 w-auto shrink-0 object-contain sm:h-11"
             />
             <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-xs font-extrabold text-white">Zera</span>
+              <span className="block text-xs font-extrabold text-white">
+                Zera
+              </span>
               <span className="block text-[10px] font-semibold uppercase tracking-wide text-white/70">
                 International School
               </span>
@@ -416,27 +503,31 @@ export default function Home() {
       {/* Home menu — a clean, modern 2-column card grid */}
       {!section ? (
         <main className="relative z-10 mt-3 grid min-h-0 w-full max-w-4xl flex-1 grid-cols-2 gap-2.5 [grid-auto-rows:1fr] sm:gap-3">
-          {SECTIONS.filter((s) => s.id !== "tracker" || trackerOwner).map((s) => (
-            <button
-              key={s.id}
-              onClick={() => (s.id === "assessment" ? openAssessment() : go(s.id))}
-              className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/85 shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14">
-                <ToolIcon id={s.id} className="h-9 w-9 sm:h-11 sm:w-11" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span
-                  className={`block text-sm font-extrabold leading-tight sm:text-base ${s.text}`}
-                >
-                  {s.label}
+          {SECTIONS.filter((s) => s.id !== "tracker" || trackerOwner).map(
+            (s) => (
+              <button
+                key={s.id}
+                onClick={() =>
+                  s.id === "assessment" ? openAssessment() : go(s.id)
+                }
+                className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/85 shadow-sm transition-transform group-hover:scale-110 sm:h-14 sm:w-14">
+                  <ToolIcon id={s.id} className="h-9 w-9 sm:h-11 sm:w-11" />
                 </span>
-                <span className="mt-0.5 hidden truncate text-xs font-semibold text-zinc-600/90 sm:block">
-                  {s.blurb}
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-sm font-extrabold leading-tight sm:text-base ${s.text}`}
+                  >
+                    {s.label}
+                  </span>
+                  <span className="mt-0.5 hidden truncate text-xs font-semibold text-zinc-600/90 sm:block">
+                    {s.blurb}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            ),
+          )}
         </main>
       ) : (
         <div className="relative z-10 mt-6 flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -467,14 +558,13 @@ export default function Home() {
               <ClassTracker
                 onAssess={(init) => openAssessment(init)}
                 teacherName={teacherName}
+                teacherEmail={teacherEmail}
               />
             )}
             {section === "guide" && (
               <Guide
                 onOpen={(id) =>
-                  id === "assessment"
-                    ? openAssessment()
-                    : go(id as SectionId)
+                  id === "assessment" ? openAssessment() : go(id as SectionId)
                 }
               />
             )}

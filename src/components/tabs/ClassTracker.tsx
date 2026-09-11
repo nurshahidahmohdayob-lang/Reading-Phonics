@@ -51,6 +51,12 @@ import {
   type ParentBook,
 } from "@/lib/parentContacts";
 import { emailReport, copyReportLink } from "@/lib/emailReport";
+import {
+  useMailVia,
+  setMailVia,
+  MAIL_VIA_LABEL,
+  type MailVia,
+} from "@/lib/mailPrefs";
 import { compareRoster, sameChild, type ClassDiff } from "@/lib/rosterSync";
 import type { SchoolStudent } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
@@ -161,14 +167,18 @@ function buildGroups(edits: RosterEdits, store: TrackerStore) {
 export default function ClassTracker({
   onAssess,
   teacherName,
+  teacherEmail,
 }: {
   onAssess: (init: { name: string; term: TermNo }) => void;
   /** Signed-in staff name — signs the emails to parents. */
   teacherName?: string;
+  /** Signed-in staff address — the mailbox parents' emails go from. */
+  teacherEmail?: string;
 }) {
   const { store, cloud } = useTracker();
   const edits = useRosterEdits();
   const parents = useParentContacts();
+  const mailVia = useMailVia();
   const groups = buildGroups(edits, store);
 
   const [view, setView] = useState<"tracker" | "stats">("tracker");
@@ -678,6 +688,7 @@ export default function ClassTracker({
                           latest={latestRecord(r)}
                           manage={manage}
                           teacherName={teacherName}
+                          teacherEmail={teacherEmail}
                         />
                       </td>
                     </tr>
@@ -687,10 +698,26 @@ export default function ClassTracker({
             </table>
           </div>
 
-          <p className="mt-2 w-full text-center text-xs font-semibold text-zinc-400">
-            ✉️ opens your mail app with the message written out and a link to
-            just that child’s report — press send. 🔗 copies the same link for
-            WhatsApp or webmail.
+          <p className="mt-2 flex w-full flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-xs font-semibold text-zinc-400">
+            <span>
+              ✉️ writes the message with a link to just that child’s report and
+              opens it in
+            </span>
+            <select
+              value={mailVia}
+              onChange={(e) => setMailVia(e.target.value as MailVia)}
+              className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-zinc-600 ring-1 ring-black/10 dark:bg-zinc-800 dark:text-zinc-200"
+            >
+              {(Object.keys(MAIL_VIA_LABEL) as MailVia[]).map((v) => (
+                <option key={v} value={v}>
+                  {MAIL_VIA_LABEL[v]}
+                </option>
+              ))}
+            </select>
+            <span>
+              {teacherEmail ? `— sending as ${teacherEmail}. ` : "— "}
+              Press send there. 🔗 copies the same link.
+            </span>
           </p>
 
           {/* Legend + storage note */}
@@ -1095,6 +1122,7 @@ function ParentCell({
   latest,
   manage,
   teacherName,
+  teacherEmail,
 }: {
   yearKey: string;
   name: string;
@@ -1102,6 +1130,7 @@ function ParentCell({
   latest: { rec: TrackerRecord; term: TermNo } | null;
   manage: boolean;
   teacherName?: string;
+  teacherEmail?: string;
 }) {
   const saved = parentEmail(book, yearKey, name);
   const [editing, setEditing] = useState(false);
@@ -1206,6 +1235,7 @@ function ParentCell({
                   latest.rec.report,
                   latest.term,
                   teacherName,
+                  teacherEmail,
                 );
             }}
             disabled={!latest}
