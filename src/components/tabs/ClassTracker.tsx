@@ -766,6 +766,56 @@ function BulkEmails({
 }) {
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(0);
+  const [fetching, setFetching] = useState(false);
+  const [fetchNote, setFetchNote] = useState("");
+
+  /** Pull every guardian address the school system has and drop them into the
+      box, so the same preview-and-save flow applies. */
+  async function fetchFromSchool() {
+    setFetching(true);
+    setFetchNote("");
+    try {
+      const res = await fetch("/api/students");
+      const data = await res.json();
+      if (data?.configured === false) {
+        setFetchNote(
+          "The school system isn’t connected on this site yet — its student key needs adding to the site settings.",
+        );
+        return;
+      }
+      if (!data?.ok) {
+        setFetchNote("Couldn’t reach the school system.");
+        return;
+      }
+      if (data.guardians === "denied") {
+        setFetchNote(
+          "The school system won’t share guardian details with this key — ask for the “guardians.read” ability to be added to it, then try again.",
+        );
+        return;
+      }
+      const list = (data.students as SchoolStudent[]).filter(
+        (st) => st.parentEmails?.length,
+      );
+      if (!list.length) {
+        setFetchNote(
+          "The school system has no parent emails for these classes.",
+        );
+        return;
+      }
+      setText(
+        list
+          .map((st) => `${st.name}, ${st.parentEmails.join(", ")}`)
+          .join("\n"),
+      );
+      setFetchNote(
+        `Found parent emails for ${list.length} child${list.length === 1 ? "" : "ren"} — check the list below, then save.`,
+      );
+    } catch {
+      setFetchNote("Couldn’t reach the school system.");
+    } finally {
+      setFetching(false);
+    }
+  }
 
   const lines = text
     .split(/\r?\n/)
@@ -781,12 +831,15 @@ function BulkEmails({
   };
 
   const rows: Row[] = lines.map((line) => {
-    const email = line.match(/[^\s,;<>()"]+@[^\s,;<>()"]+\.[^\s,;<>()"]+/)?.[0];
-    if (!email) return { line, problem: "no email address on this line" };
-    const name = line
-      .replace(email, " ")
-      .replace(/[,;<>"]/g, " ")
-      .trim();
+    const found =
+      line.match(/[^\s,;<>()"]+@[^\s,;<>()"]+\.[^\s,;<>()"]+/g) ?? [];
+    if (!found.length)
+      return { line, problem: "no email address on this line" };
+    // A child can have two guardians — keep both, comma-separated.
+    const email = found.join(", ");
+    let name = line;
+    for (const e of found) name = name.replace(e, " ");
+    name = name.replace(/[,;<>"]/g, " ").trim();
     if (!name) return { line, email, problem: "no name on this line" };
     const hits = students.filter((st) => sameChild(name, "", st.name));
     if (hits.length === 0)
@@ -820,11 +873,28 @@ function BulkEmails({
             ✉️ Fill in parent emails
           </h3>
           <p className="mt-0.5 text-xs font-semibold text-zinc-400">
-            Paste your list — one child per line, the name and the parent’s
-            email in any order. A copy-paste of two spreadsheet columns works.
+            Fetch them from the school system, or paste your own list — one
+            child per line, name and email in any order, two parents allowed.
           </p>
         </div>
         <CloseX onClose={onClose} />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void fetchFromSchool()}
+          disabled={fetching}
+          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          {fetching
+            ? "⏳ Asking the school system…"
+            : "🔄 Fetch from the school system"}
+        </button>
+        {fetchNote && (
+          <span className="text-xs font-bold text-zinc-500 dark:text-zinc-300">
+            {fetchNote}
+          </span>
+        )}
       </div>
 
       <textarea

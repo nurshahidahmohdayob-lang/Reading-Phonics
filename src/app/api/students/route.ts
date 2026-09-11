@@ -20,8 +20,8 @@ export async function GET() {
   }
 
   try {
-    const students = await schoolStudents();
-    return NextResponse.json({ ok: true, students });
+    const { students, guardians } = await schoolStudents();
+    return NextResponse.json({ ok: true, students, guardians });
   } catch (err) {
     if (err instanceof StudentsApiNotConfigured) {
       return NextResponse.json({ ok: false, configured: false });

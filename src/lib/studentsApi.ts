@@ -34,7 +34,11 @@ export type SchoolStudent = {
   yearKey: string;
   /** True while the school system still has them as Pending (not enrolled). */
   pending: boolean;
+  /** Their guardians' email addresses, if the key may read guardians. */
+  parentEmails: string[];
 };
+
+import { guardianEmails, type GuardianLookup } from "./guardiansApi";
 
 export class StudentsApiNotConfigured extends Error {}
 
@@ -96,9 +100,14 @@ async function fetchAll(): Promise<ApiStudent[]> {
   return out;
 }
 
-/** Children currently in a Year 1–6 class, ready to compare with the roster. */
-export async function schoolStudents(): Promise<SchoolStudent[]> {
+/** Children currently in a Year 1–6 class, ready to compare with the roster,
+    each with their guardians' email addresses where the key allows it. */
+export async function schoolStudents(): Promise<{
+  students: SchoolStudent[];
+  guardians: GuardianLookup["state"];
+}> {
   const rows = await fetchAll();
+  const guardians = await guardianEmails();
   const out: SchoolStudent[] = [];
   for (const r of rows) {
     // 1 = Active, 0 = Pending (accepted but not started). Everything else —
@@ -119,10 +128,15 @@ export async function schoolStudents(): Promise<SchoolStudent[]> {
       year: `Year ${m[1]}`,
       yearKey: `y${m[1]}`,
       pending: r.status === 0,
+      parentEmails:
+        guardians.state === "ok"
+          ? (guardians.byStudent[String(r.id)] ?? []).map((g) => g.email)
+          : [],
     });
   }
-  return out.sort(
+  out.sort(
     (a, b) =>
       a.yearKey.localeCompare(b.yearKey) || a.name.localeCompare(b.name),
   );
+  return { students: out, guardians: guardians.state };
 }
