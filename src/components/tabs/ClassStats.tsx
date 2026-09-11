@@ -21,7 +21,7 @@ import {
   type TermStats,
 } from "@/lib/lexileStats";
 import { openReport } from "@/lib/reportPrint";
-import { openStatsReport } from "@/lib/statsPrint";
+import { openStatsReport, downloadStatsReport } from "@/lib/statsPrint";
 import { LEXILE_SCALE, SCORE_SCALE } from "@/lib/explainer";
 
 const TERMS: TermNo[] = [1, 2, 3];
@@ -48,6 +48,14 @@ export default function ClassStats({
   // Growth is measured on matched children only — those with a report in both
   // Term 1 and this term — so a newly assessed child can't fake a jump.
   const growth = growthSinceTerm1(students, store, term);
+
+  const reportData = () => ({
+    scopeLabel,
+    term,
+    stats,
+    growth,
+    deltas: allDeltas(students, store, term),
+  });
 
   const maxCount = Math.max(1, ...stats.byBand.map((b) => b.students.length));
   // One shared scale for the per-child bars, rounded up to a tidy 100L.
@@ -84,21 +92,23 @@ export default function ClassStats({
             );
           })}
         </div>
-        <button
-          onClick={() =>
-            openStatsReport({
-              scopeLabel,
-              term,
-              stats,
-              growth,
-              deltas: allDeltas(students, store, term),
-            })
-          }
-          disabled={!assessed}
-          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
-        >
-          🖨️ Open printable report
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => openStatsReport(reportData())}
+            disabled={!assessed}
+            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            🖨️ Open report
+          </button>
+          <button
+            onClick={() => downloadStatsReport(reportData())}
+            disabled={!assessed}
+            title="Save the statistics as an HTML file"
+            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            ⬇️ Download HTML
+          </button>
+        </div>
       </div>
 
       {assessed === 0 ? (

@@ -101,9 +101,8 @@ export type StatsReportData = {
   deltas: Record<string, number>;
 };
 
-export function openStatsReport(d: StatsReportData): void {
-  if (typeof window === "undefined") return;
-
+/** The whole statistics page as one standalone HTML document. */
+export function statsReportHtml(d: StatsReportData): string {
   const { stats, scopeLabel, term } = d;
   const assessed = stats.results.length;
   const dateStr = new Date().toLocaleDateString(undefined, {
@@ -111,7 +110,7 @@ export function openStatsReport(d: StatsReportData): void {
     month: "long",
     year: "numeric",
   });
-  const filename = `${scopeLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-term-${term}-reading-statistics.html`;
+  const filename = statsReportFilename(d);
 
   const maxCount = Math.max(1, ...stats.byBand.map((b) => b.students.length));
   const axisMax = Math.max(
@@ -277,12 +276,38 @@ export function openStatsReport(d: StatsReportData): void {
 </body>
 </html>`;
 
+  return html;
+}
+
+/** `year-2-term-1-reading-statistics.html` */
+export function statsReportFilename(d: StatsReportData): string {
+  return `${d.scopeLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-term-${d.term}-reading-statistics.html`;
+}
+
+/** Open the statistics report in a new tab, ready to read or print. */
+export function openStatsReport(d: StatsReportData): void {
+  if (typeof window === "undefined") return;
   const win = window.open("", "_blank");
   if (!win) {
     alert("Please allow pop-ups for this site to open the statistics report.");
     return;
   }
   win.document.open();
-  win.document.write(html);
+  win.document.write(statsReportHtml(d));
   win.document.close();
+}
+
+/** Save the statistics report straight to a file. */
+export function downloadStatsReport(d: StatsReportData): void {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([statsReportHtml(d)], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = statsReportFilename(d);
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
 }
