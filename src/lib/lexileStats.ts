@@ -88,7 +88,7 @@ export type StudentResult = {
   year: string;
   yearKey: string;
   lexile: number;
-  /** As printed on the report, e.g. "1010L" or "BR99". */
+  /** As printed on the report, e.g. "1010L" or "BR99L". */
   lexileText: string;
   band: LexBand;
   record: TrackerRecord;
@@ -131,7 +131,7 @@ export function termStats(
       year: s.year,
       yearKey: s.yearKey,
       lexile: lex,
-      lexileText: rec.report.lexile,
+      lexileText: displayLexile(rec.report.lexile),
       band: bandOf(lex),
       record: rec,
     });
@@ -168,5 +168,12 @@ export function termStats(
 
 /** Show a stored Lexile the way the reports do. */
 export function lexileLabel(lex: number): string {
-  return lex < 100 ? "BR99" : `${lex}L`;
+  return lex < 100 ? "BR99L" : `${lex}L`;
+}
+
+/** Tidy a Lexile as written on a report. Older records were saved as "BR99";
+    every measure ends in L, so show them that way wherever they appear. */
+export function displayLexile(raw: string): string {
+  const s = (raw || "").trim();
+  return /^BR\d*$/i.test(s) ? `${s.toUpperCase()}L` : s;
 }

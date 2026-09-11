@@ -42,6 +42,7 @@ import {
   type RosterEdits,
 } from "@/lib/rosterStore";
 import { openReport } from "@/lib/reportPrint";
+import { displayLexile } from "@/lib/lexileStats";
 import {
   useParentContacts,
   parentEmail,
@@ -1292,7 +1293,7 @@ function Cell({
             <span
               className={`block text-sm font-extrabold leading-none ${t.text}`}
             >
-              {rec.report.lexile}
+              {displayLexile(rec.report.lexile)}
             </span>
             <span className="block truncate text-[10px] font-semibold text-zinc-400">
               {rec.report.levelGrade}
@@ -1319,7 +1320,7 @@ function Cell({
       <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${t.dot}`} />
       <span className="min-w-0">
         <span className={`block text-sm font-extrabold leading-none ${t.text}`}>
-          {rec.report.lexile}
+          {displayLexile(rec.report.lexile)}
         </span>
         <span className="block truncate text-[10px] font-semibold text-zinc-400">
           {rec.report.levelGrade}

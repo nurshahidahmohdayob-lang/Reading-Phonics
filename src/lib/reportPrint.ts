@@ -2,6 +2,7 @@
     interactive, printable HTML report. Modelled on flashcardPrint.ts. */
 
 import { EXPLAINER_CSS, explainerHtml } from "./explainer";
+import { displayLexile } from "./lexileStats";
 
 export type ReportStrand = {
   label: string;
@@ -241,7 +242,7 @@ export function reportHtml(d: ReportData): string {
     <div class="row">
       <div class="card"><div class="k">Reader level</div><div class="v">${esc(d.categoryLabel)}</div><div class="vs">Overall ${d.composite}% · ${esc(d.categoryRange)}</div></div>
       <div class="card"><div class="k">Reading level</div><div class="v">${esc(d.levelGrade)}${d.beginning ? "" : ` · Term ${d.term}`}</div><div class="vs">${d.beginning ? "Still building first words" : `Age ${d.age}`}</div></div>
-      <div class="card"><div class="k">Lexile</div><div class="v">${esc(d.lexile)}</div><div class="vs">${esc(d.lexileBand)}</div></div>
+      <div class="card"><div class="k">Lexile</div><div class="v">${esc(displayLexile(d.lexile))}</div><div class="vs">${esc(d.lexileBand)}</div></div>
     </div>
 
     ${explainerHtml("your child")}

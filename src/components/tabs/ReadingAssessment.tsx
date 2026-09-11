@@ -17,11 +17,7 @@ import { alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { openReport, type ReportData } from "@/lib/reportPrint";
-import {
-  useRosterEdits,
-  allStudents,
-  findStudent,
-} from "@/lib/rosterStore";
+import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
 import { saveRecord, type TermNo } from "@/lib/tracker";
 
 /* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
@@ -31,37 +27,63 @@ import { saveRecord, type TermNo } from "@/lib/tracker";
    so it sorts as the easiest). */
 const LADDER: { w: string; lvl: number; lex: number }[] = [
   // Year 1 · BR99–418L
-  { w: "Mom", lvl: 0, lex: 50 }, { w: "Dad", lvl: 0, lex: 50 }, // BR99
-  { w: "my", lvl: 0, lex: 50 }, { w: "is", lvl: 0, lex: 50 }, // BR99
-  { w: "here", lvl: 0, lex: 50 }, { w: "and", lvl: 0, lex: 50 }, // BR99
-  { w: "went", lvl: 0, lex: 190 }, { w: "are", lvl: 0, lex: 190 },
-  { w: "they", lvl: 0, lex: 247 }, { w: "with", lvl: 0, lex: 247 },
-  { w: "came", lvl: 0, lex: 304 }, { w: "saw", lvl: 0, lex: 304 },
-  { w: "one", lvl: 0, lex: 361 }, { w: "then", lvl: 0, lex: 361 },
-  { w: "opened", lvl: 0, lex: 418 }, { w: "must", lvl: 0, lex: 418 },
+  { w: "Mom", lvl: 0, lex: 50 },
+  { w: "Dad", lvl: 0, lex: 50 }, // BR99
+  { w: "my", lvl: 0, lex: 50 },
+  { w: "is", lvl: 0, lex: 50 }, // BR99
+  { w: "here", lvl: 0, lex: 50 },
+  { w: "and", lvl: 0, lex: 50 }, // BR99
+  { w: "went", lvl: 0, lex: 190 },
+  { w: "are", lvl: 0, lex: 190 },
+  { w: "they", lvl: 0, lex: 247 },
+  { w: "with", lvl: 0, lex: 247 },
+  { w: "came", lvl: 0, lex: 304 },
+  { w: "saw", lvl: 0, lex: 304 },
+  { w: "one", lvl: 0, lex: 361 },
+  { w: "then", lvl: 0, lex: 361 },
+  { w: "opened", lvl: 0, lex: 418 },
+  { w: "must", lvl: 0, lex: 418 },
   // Year 2 · 470–570L
-  { w: "know", lvl: 1, lex: 475 }, { w: "most", lvl: 1, lex: 475 },
-  { w: "could", lvl: 1, lex: 530 }, { w: "really", lvl: 1, lex: 530 }, // 530/420
-  { w: "moment", lvl: 1, lex: 470 }, { w: "suddenly", lvl: 1, lex: 470 },
-  { w: "important", lvl: 1, lex: 520 }, { w: "searched", lvl: 1, lex: 520 },
-  { w: "courage", lvl: 1, lex: 570 }, { w: "especially", lvl: 1, lex: 570 },
+  { w: "know", lvl: 1, lex: 475 },
+  { w: "most", lvl: 1, lex: 475 },
+  { w: "could", lvl: 1, lex: 530 },
+  { w: "really", lvl: 1, lex: 530 }, // 530/420
+  { w: "moment", lvl: 1, lex: 470 },
+  { w: "suddenly", lvl: 1, lex: 470 },
+  { w: "important", lvl: 1, lex: 520 },
+  { w: "searched", lvl: 1, lex: 520 },
+  { w: "courage", lvl: 1, lex: 570 },
+  { w: "especially", lvl: 1, lex: 570 },
   // Year 3 · 620–687L
-  { w: "measure", lvl: 2, lex: 620 }, { w: "silence", lvl: 2, lex: 620 },
-  { w: "attempt", lvl: 2, lex: 687 }, { w: "exclaimed", lvl: 2, lex: 687 },
+  { w: "measure", lvl: 2, lex: 620 },
+  { w: "silence", lvl: 2, lex: 620 },
+  { w: "attempt", lvl: 2, lex: 687 },
+  { w: "exclaimed", lvl: 2, lex: 687 },
   // Year 4 · 754–830L
-  { w: "species", lvl: 3, lex: 754 }, { w: "figure", lvl: 3, lex: 754 },
-  { w: "delicious", lvl: 3, lex: 820 }, { w: "timid", lvl: 3, lex: 820 }, // 820/740
-  { w: "incredibly", lvl: 3, lex: 785 }, { w: "exaggerated", lvl: 3, lex: 785 },
-  { w: "vacant", lvl: 3, lex: 830 }, { w: "moisture", lvl: 3, lex: 830 },
+  { w: "species", lvl: 3, lex: 754 },
+  { w: "figure", lvl: 3, lex: 754 },
+  { w: "delicious", lvl: 3, lex: 820 },
+  { w: "timid", lvl: 3, lex: 820 }, // 820/740
+  { w: "incredibly", lvl: 3, lex: 785 },
+  { w: "exaggerated", lvl: 3, lex: 785 },
+  { w: "vacant", lvl: 3, lex: 830 },
+  { w: "moisture", lvl: 3, lex: 830 },
   // Year 5 · 875–920L
-  { w: "dissatisfied", lvl: 4, lex: 875 }, { w: "contribution", lvl: 4, lex: 875 },
-  { w: "tolerance", lvl: 4, lex: 920 }, { w: "acknowledge", lvl: 4, lex: 920 },
+  { w: "dissatisfied", lvl: 4, lex: 875 },
+  { w: "contribution", lvl: 4, lex: 875 },
+  { w: "tolerance", lvl: 4, lex: 920 },
+  { w: "acknowledge", lvl: 4, lex: 920 },
   // Year 6 · 965–1050L
-  { w: "multitude", lvl: 5, lex: 965 }, { w: "consequences", lvl: 5, lex: 965 },
-  { w: "treachery", lvl: 5, lex: 1010 }, { w: "belligerent", lvl: 5, lex: 1010 }, // 1010/925
-  { w: "loathe", lvl: 5, lex: 967 }, { w: "ingenuous", lvl: 5, lex: 967 },
-  { w: "quench", lvl: 5, lex: 1009 }, { w: "catastrophe", lvl: 5, lex: 1009 },
-  { w: "simultaneous", lvl: 5, lex: 1050 }, { w: "vengeance", lvl: 5, lex: 1050 },
+  { w: "multitude", lvl: 5, lex: 965 },
+  { w: "consequences", lvl: 5, lex: 965 },
+  { w: "treachery", lvl: 5, lex: 1010 },
+  { w: "belligerent", lvl: 5, lex: 1010 }, // 1010/925
+  { w: "loathe", lvl: 5, lex: 967 },
+  { w: "ingenuous", lvl: 5, lex: 967 },
+  { w: "quench", lvl: 5, lex: 1009 },
+  { w: "catastrophe", lvl: 5, lex: 1009 },
+  { w: "simultaneous", lvl: 5, lex: 1050 },
+  { w: "vengeance", lvl: 5, lex: 1050 },
 ];
 // Stop the word check once the child has read this many words wrongly (in
 // total, not in a row) — then suggest the reading level and go to Stage 2.
@@ -70,7 +92,9 @@ const STOP_AFTER_MISSES = 2;
 /** Where the reader stopped in Stage 1: the hardest word read correctly, by
     Lexile. That Lexile IS the word-check reading level — Stage 2 then decides
     whether to move up to the next level. Returns null if nothing was read. */
-function wordStop(ratings: Record<string, Rating>): { lvl: number; lex: number } | null {
+function wordStop(
+  ratings: Record<string, Rating>,
+): { lvl: number; lex: number } | null {
   let best: { lvl: number; lex: number } | null = null;
   for (const it of LADDER) {
     if (ratings[it.w] === "green" && (best === null || it.lex > best.lex)) {
@@ -111,7 +135,8 @@ function placeByTerm(
 
 /* ---------- Shared types ---------- */
 
-type Phase = "intro" | "words" | "suggest" | "passage" | "comprehension" | "report";
+type Phase =
+  "intro" | "words" | "suggest" | "passage" | "comprehension" | "report";
 type ReadResult = {
   accuracy: number; // %
   totalWords: number;
@@ -206,8 +231,9 @@ export default function ReadingAssessment({
               : `${lvl.grade} · Age ${lvl.age}`}
           </p>
           <p className="rounded-2xl bg-white/60 px-4 py-2 text-sm font-semibold text-rose-800">
-            Now read a story at this level. Only if {studentName.trim() || "the child"}{" "}
-            reads it well do we move up to the next level.
+            Now read a story at this level. Only if{" "}
+            {studentName.trim() || "the child"} reads it well do we move up to
+            the next level.
           </p>
           <div className="mt-1 flex flex-col gap-2 sm:flex-row">
             <button
@@ -287,14 +313,19 @@ export default function ReadingAssessment({
         <div className="text-7xl">📋</div>
         <h2 className="text-2xl font-extrabold">Reading Assessment</h2>
         <p className="max-w-md text-sm font-semibold opacity-80">
-          A full read-aloud check that measures decoding, fluency,
-          comprehension and vocabulary — and gives a reading level you can match
-          to books.
+          A full read-aloud check that measures decoding, fluency, comprehension
+          and vocabulary — and gives a reading level you can match to books.
         </p>
         <div className="flex flex-wrap justify-center gap-2 text-xs font-bold text-rose-700">
-          <span className="rounded-full bg-white/70 px-3 py-1">🔤 Accuracy 40%</span>
-          <span className="rounded-full bg-white/70 px-3 py-1">⏱️ Fluency 30%</span>
-          <span className="rounded-full bg-white/70 px-3 py-1">💡 Comprehension 30%</span>
+          <span className="rounded-full bg-white/70 px-3 py-1">
+            🔤 Accuracy 40%
+          </span>
+          <span className="rounded-full bg-white/70 px-3 py-1">
+            ⏱️ Fluency 30%
+          </span>
+          <span className="rounded-full bg-white/70 px-3 py-1">
+            💡 Comprehension 30%
+          </span>
         </div>
         <input
           type="text"
@@ -438,7 +469,11 @@ function WordRunner({
         </span>
         {rated ? (
           <span className="font-bold">
-            {rated === "green" ? "✓ Got it!" : rated === "yellow" ? "Almost" : "Not yet"}
+            {rated === "green"
+              ? "✓ Got it!"
+              : rated === "yellow"
+                ? "Almost"
+                : "Not yet"}
           </span>
         ) : (
           <span className="rounded-full bg-white/70 px-4 py-1.5 text-sm font-bold text-rose-700">
@@ -506,13 +541,16 @@ function OpenBook({
       </h3>
       <div
         className="relative w-full rounded-[1.4rem] p-2.5 shadow-2xl"
-        style={{ background: "linear-gradient(135deg, #B5651D, #93491A 55%, #7C3D14)" }}
+        style={{
+          background: "linear-gradient(135deg, #B5651D, #93491A 55%, #7C3D14)",
+        }}
       >
         <div
           className="relative rounded-xl"
           style={{
             background: "linear-gradient(#FFFDF4, #FBF3DC)",
-            boxShadow: "0 3px 0 #F1E7CC, 0 6px 0 #E7DBBC, inset 0 0 24px rgba(160,120,60,.14)",
+            boxShadow:
+              "0 3px 0 #F1E7CC, 0 6px 0 #E7DBBC, inset 0 0 24px rgba(160,120,60,.14)",
           }}
         >
           <div className="grid sm:grid-cols-2">
@@ -592,8 +630,12 @@ function PassageReader({
     stop();
     const spoken = transcript.split(/\s+/).filter(Boolean);
     const status = alignReading(words, spoken);
-    const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
-    setMicWpm(elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null);
+    const elapsed = startedAt.current
+      ? (Date.now() - startedAt.current) / 1000
+      : null;
+    setMicWpm(
+      elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null,
+    );
     const flagged = words
       .filter((_, i) => status[i] !== "correct")
       .map((w) => w.replace(/[.,!?;:"]/g, ""))
@@ -606,7 +648,16 @@ function PassageReader({
 
   function finishManual(accuracy: number) {
     const errors = Math.round(words.length * (1 - accuracy / 100));
-    onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm: null }, []);
+    onDone(
+      {
+        accuracy,
+        totalWords: words.length,
+        errors,
+        selfCorrections: sc,
+        wpm: null,
+      },
+      [],
+    );
   }
 
   // Finalise: accuracy from the (mic-seeded, teacher-adjusted) misread count.
@@ -620,7 +671,10 @@ function PassageReader({
       wpm = elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
     }
     const missed = missedWords.slice(0, errors);
-    onDone({ accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm }, missed);
+    onDone(
+      { accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm },
+      missed,
+    );
   }
 
   return (
@@ -648,7 +702,10 @@ function PassageReader({
       {/* Open book */}
       <div
         className="relative mt-3 w-full max-w-2xl rounded-[1.6rem] p-3 shadow-2xl sm:p-4"
-        style={{ background: "linear-gradient(135deg, #B5651D 0%, #93491A 55%, #7C3D14 100%)" }}
+        style={{
+          background:
+            "linear-gradient(135deg, #B5651D 0%, #93491A 55%, #7C3D14 100%)",
+        }}
       >
         <div
           className="absolute -top-1 right-10 h-12 w-6 rounded-b-md shadow-md"
@@ -661,12 +718,15 @@ function PassageReader({
           className="relative rounded-xl"
           style={{
             background: "linear-gradient(#FFFDF4, #FBF3DC)",
-            boxShadow: "0 3px 0 #F1E7CC, 0 6px 0 #E7DBBC, 0 9px 0 #DCCFAA, inset 0 0 28px rgba(160,120,60,.14)",
+            boxShadow:
+              "0 3px 0 #F1E7CC, 0 6px 0 #E7DBBC, 0 9px 0 #DCCFAA, inset 0 0 28px rgba(160,120,60,.14)",
           }}
         >
           <div className="grid sm:grid-cols-2">
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-9 sm:border-r sm:border-amber-900/10">
-              <div className="text-8xl leading-none drop-shadow-md">{cur.emoji}</div>
+              <div className="text-8xl leading-none drop-shadow-md">
+                {cur.emoji}
+              </div>
               <span className="text-xs font-semibold text-amber-700/50">
                 page {page + 1} of {pages.length}
               </span>
@@ -736,7 +796,9 @@ function PassageReader({
         </div>
       ) : (
         <p className="mt-5 max-w-sm text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-          🎤 This browser can&apos;t listen automatically. Open the app in Google Chrome for auto-detect — or simply type how many words were read wrongly below.
+          🎤 This browser can&apos;t listen automatically. Open the app in
+          Google Chrome for auto-detect — or simply type how many words were
+          read wrongly below.
         </p>
       )}
 
@@ -787,7 +849,9 @@ function PassageReader({
             </p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
-              <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Total</span>
+              <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
+                Total
+              </span>
               <input
                 type="number"
                 min={0}
@@ -795,7 +859,13 @@ function PassageReader({
                 value={wrong}
                 onChange={(e) =>
                   setWrong(
-                    Math.max(0, Math.min(words.length, Math.round(Number(e.target.value) || 0))),
+                    Math.max(
+                      0,
+                      Math.min(
+                        words.length,
+                        Math.round(Number(e.target.value) || 0),
+                      ),
+                    ),
                   )
                 }
                 aria-label="Words read wrongly"
@@ -803,7 +873,13 @@ function PassageReader({
               />
             </div>
             <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400">
-              = {Math.round(((words.length - Math.min(words.length, wrong)) / words.length) * 100)}% accuracy
+              ={" "}
+              {Math.round(
+                ((words.length - Math.min(words.length, wrong)) /
+                  words.length) *
+                  100,
+              )}
+              % accuracy
               {didMic && micWpm != null && ` · ${micWpm} wpm`}
             </p>
             <button
@@ -818,13 +894,22 @@ function PassageReader({
             …or a quick estimate:
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2.5">
-            <button onClick={() => finishManual(98)} className="rounded-full bg-green-500 px-5 py-3 font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(98)}
+              className="rounded-full bg-green-500 px-5 py-3 font-bold text-white shadow-sm active:scale-95"
+            >
               Read it well
             </button>
-            <button onClick={() => finishManual(93)} className="rounded-full bg-amber-500 px-5 py-3 font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(93)}
+              className="rounded-full bg-amber-500 px-5 py-3 font-bold text-white shadow-sm active:scale-95"
+            >
               Some help
             </button>
-            <button onClick={() => finishManual(85)} className="rounded-full bg-rose-400 px-5 py-3 font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(85)}
+              className="rounded-full bg-rose-400 px-5 py-3 font-bold text-white shadow-sm active:scale-95"
+            >
               Found it hard
             </button>
           </div>
@@ -854,7 +939,12 @@ function Comprehension({
   const questions = passage.questions;
   const [qi, setQi] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const tally = useRef<CompResult>({ compCorrect: 0, compTotal: 0, vocabCorrect: 0, vocabTotal: 0 });
+  const tally = useRef<CompResult>({
+    compCorrect: 0,
+    compTotal: 0,
+    vocabCorrect: 0,
+    vocabTotal: 0,
+  });
   const quiz = questions[qi];
 
   function choose(i: number) {
@@ -898,7 +988,11 @@ function Comprehension({
       </p>
 
       <div className="mt-4 grid w-full gap-6 lg:grid-cols-2 lg:items-start">
-        <OpenBook title={passage.title} emoji={passage.emoji} pages={passage.pages} />
+        <OpenBook
+          title={passage.title}
+          emoji={passage.emoji}
+          pages={passage.pages}
+        />
 
         <div className="flex flex-col items-center">
           <div className="flex gap-1.5">
@@ -906,7 +1000,11 @@ function Comprehension({
               <span
                 key={i}
                 className={`h-2.5 w-2.5 rounded-full ${
-                  i < qi ? "bg-rose-400" : i === qi ? "bg-rose-300 ring-2 ring-rose-200" : "bg-zinc-200 dark:bg-zinc-700"
+                  i < qi
+                    ? "bg-rose-400"
+                    : i === qi
+                      ? "bg-rose-300 ring-2 ring-rose-200"
+                      : "bg-zinc-200 dark:bg-zinc-700"
                 }`}
               />
             ))}
@@ -1005,7 +1103,9 @@ const CATEGORIES = [
 ];
 
 function categoryFor(score: number) {
-  return CATEGORIES.find((c) => score >= c.min) ?? CATEGORIES[CATEGORIES.length - 1];
+  return (
+    CATEGORIES.find((c) => score >= c.min) ?? CATEGORIES[CATEGORIES.length - 1]
+  );
 }
 
 /** Collapsible legend explaining each reader category, current one highlighted. */
@@ -1085,7 +1185,13 @@ export const ACCURACY_BANDS = [
 ];
 
 /** Collapsible legend explaining each accuracy band, current one highlighted. */
-function AccuracyGuide({ currentLabel, pct }: { currentLabel?: string; pct?: number }) {
+function AccuracyGuide({
+  currentLabel,
+  pct,
+}: {
+  currentLabel?: string;
+  pct?: number;
+}) {
   return (
     <details className="mt-3 w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
       <summary className="flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-extrabold text-zinc-600 select-none dark:text-zinc-200">
@@ -1164,11 +1270,19 @@ type TryResult = {
 
 /** Split a one-paragraph story into ~2-sentence pages so it can be flipped. */
 function paginate(book: Story): { text: string; emoji: string }[] {
-  const full = book.pages.map((p) => p.text).join(" ").trim();
-  const sentences = full.match(/[^.!?]+[.!?]+/g)?.map((s) => s.trim()) ?? [full];
+  const full = book.pages
+    .map((p) => p.text)
+    .join(" ")
+    .trim();
+  const sentences = full.match(/[^.!?]+[.!?]+/g)?.map((s) => s.trim()) ?? [
+    full,
+  ];
   const pages: { text: string; emoji: string }[] = [];
   for (let i = 0; i < sentences.length; i += 2) {
-    pages.push({ text: sentences.slice(i, i + 2).join(" "), emoji: book.emoji });
+    pages.push({
+      text: sentences.slice(i, i + 2).join(" "),
+      emoji: book.emoji,
+    });
   }
   return pages.length ? pages : [{ text: full, emoji: book.emoji }];
 }
@@ -1193,7 +1307,11 @@ type Step =
  *  • exploring down — can read it (≥95%) → settle here; still too hard (<95%) →
  *    ease down again.
  */
-function nextStep(label: BenchmarkBand["label"], trialIdx: number, mode: StepMode): Step {
+function nextStep(
+  label: BenchmarkBand["label"],
+  trialIdx: number,
+  mode: StepMode,
+): Step {
   const maxIdx = levels.length - 1;
   if (mode === "down") {
     if (label === "Developing")
@@ -1203,7 +1321,8 @@ function nextStep(label: BenchmarkBand["label"], trialIdx: number, mode: StepMod
     return { kind: "settle", levelIdx: trialIdx };
   }
   // mode "up"
-  if (label === "Developing") return { kind: "settle", levelIdx: Math.max(0, trialIdx - 1) };
+  if (label === "Developing")
+    return { kind: "settle", levelIdx: Math.max(0, trialIdx - 1) };
   if (label === "Independent")
     return trialIdx < maxIdx
       ? { kind: "advance", levelIdx: trialIdx + 1, mode: "up" }
@@ -1414,7 +1533,11 @@ function BookReader({
     useSpeechRecognition();
   const startedAt = useRef<number | null>(null);
   const pages = paginate(book);
-  const words = pages.map((p) => p.text).join(" ").split(/\s+/).filter(Boolean);
+  const words = pages
+    .map((p) => p.text)
+    .join(" ")
+    .split(/\s+/)
+    .filter(Boolean);
 
   useEffect(() => () => stop(), [stop]);
 
@@ -1425,8 +1548,11 @@ function BookReader({
     const correct = status.filter((s) => s === "correct").length;
     const errors = words.length - correct;
     const accuracy = Math.round((correct / words.length) * 100);
-    const elapsed = startedAt.current ? (Date.now() - startedAt.current) / 1000 : null;
-    const wpm = elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
+    const elapsed = startedAt.current
+      ? (Date.now() - startedAt.current) / 1000
+      : null;
+    const wpm =
+      elapsed && elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
     onFinish({ accuracy, totalWords: words.length, errors, wpm });
   }
 
@@ -1459,7 +1585,9 @@ function BookReader({
             {result.accuracy}%
           </p>
           {band && (
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${band.tone}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${band.tone}`}
+            >
               {band.label} · {band.meaning}
             </span>
           )}
@@ -1508,13 +1636,22 @@ function BookReader({
             {supported ? "…or mark how it went:" : "How did the reading go?"}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <button onClick={() => finishManual(98)} className="rounded-full bg-green-500 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(98)}
+              className="rounded-full bg-green-500 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95"
+            >
               Read it well
             </button>
-            <button onClick={() => finishManual(93)} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(93)}
+              className="rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95"
+            >
               Some help
             </button>
-            <button onClick={() => finishManual(85)} className="rounded-full bg-rose-400 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95">
+            <button
+              onClick={() => finishManual(85)}
+              className="rounded-full bg-rose-400 px-4 py-2 text-sm font-bold text-white shadow-sm active:scale-95"
+            >
               Found it hard
             </button>
           </div>
@@ -1595,7 +1732,9 @@ function Report({
       ? read
         ? Math.round((0.4 * accScore + 0.3 * fluencyScore) / 0.7)
         : 0
-      : Math.round(0.4 * accScore + 0.3 * fluencyScore + 0.3 * understandingScore);
+      : Math.round(
+          0.4 * accScore + 0.3 * fluencyScore + 0.3 * understandingScore,
+        );
   const category = categoryFor(composite);
 
   // ----- reading level: anchored to the Stage 1 word check -----
@@ -1612,14 +1751,18 @@ function Report({
   // Year-1 reader. Report BR rather than falling back to the Year-1 Lexile.
   const beginning = stopLexile === null;
   const lexile = stopLexile ?? finalLevel.lexileLow;
-  const lexileText = beginning ? "BR99" : lexLabel(lexile);
+  const lexileText = beginning ? "BR99L" : lexLabel(lexile);
   const lexileBandText = beginning ? "Beginning Reader" : lexileBand(lexile);
   const levelGradeText = beginning
     ? "Still building first words"
     : `${finalLevel.grade} · Age ${finalLevel.age}`;
 
   // ----- placement decision (Reading Level Placement Guide) -----
-  const placement = placementDecision(accuracy, read ? fluencyScore : null, compScore);
+  const placement = placementDecision(
+    accuracy,
+    read ? fluencyScore : null,
+    compScore,
+  );
   // Seeded from this child's reading so different readers see different books,
   // but the same report stays stable across re-renders (pure during render).
   const bookSeed = (read?.totalWords ?? 0) + (read?.errors ?? 0) + suggestIdx;
@@ -1680,7 +1823,12 @@ function Report({
       composite,
       accuracyBand:
         accuracy != null && band
-          ? { pct: accuracy, label: band.label, range: band.range, note: band.note }
+          ? {
+              pct: accuracy,
+              label: band.label,
+              range: band.range,
+              note: band.note,
+            }
           : null,
       beginning,
       levelGrade: beginning ? "Beginning Reader" : finalLevel.grade,
@@ -1808,8 +1956,10 @@ function Report({
             </span>
           </span>
           <span className="text-sm font-bold text-zinc-500">
-            <span className="text-rose-600 dark:text-rose-300">{wordWrong}</span> of{" "}
-            {wordsAttempted} read wrongly
+            <span className="text-rose-600 dark:text-rose-300">
+              {wordWrong}
+            </span>{" "}
+            of {wordsAttempted} read wrongly
           </span>
         </div>
       )}
@@ -1824,12 +1974,20 @@ function Report({
             <div key={s.label} className="flex items-center gap-3">
               <span className="w-36 shrink-0 text-sm font-bold text-zinc-600 dark:text-zinc-300">
                 {s.label}{" "}
-                <span className="text-xs font-semibold text-zinc-400">{s.weight}%</span>
+                <span className="text-xs font-semibold text-zinc-400">
+                  {s.weight}%
+                </span>
               </span>
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                 <div
                   className={`h-full rounded-full ${
-                    s.score == null ? "bg-zinc-300" : s.score >= 80 ? "bg-green-400" : s.score >= 55 ? "bg-amber-400" : "bg-rose-400"
+                    s.score == null
+                      ? "bg-zinc-300"
+                      : s.score >= 80
+                        ? "bg-green-400"
+                        : s.score >= 55
+                          ? "bg-amber-400"
+                          : "bg-rose-400"
                   }`}
                   style={{ width: `${s.score ?? 0}%` }}
                 />
@@ -1841,7 +1999,8 @@ function Report({
           ))}
         </div>
         <p className="mt-3 text-xs font-semibold text-zinc-400">
-          Comprehension blends {comp && comp !== "skipped" ? comp.compTotal + comp.vocabTotal : 8}{" "}
+          Comprehension blends{" "}
+          {comp && comp !== "skipped" ? comp.compTotal + comp.vocabTotal : 8}{" "}
           questions{vocabScore != null && ` (vocabulary ${vocabScore}%)`}. As an
           informal check, read this as a guide (±1 term) — for a firm level, run
           a second passage at this level and compare.
@@ -1878,7 +2037,13 @@ function Report({
             pill={band?.label}
             pillTone={band?.tone}
           />
-          {read.wpm != null && <Stat label="Words / min" value={`${read.wpm}`} sub={`goal ${level.wpmLow}–${level.wpmHigh}`} />}
+          {read.wpm != null && (
+            <Stat
+              label="Words / min"
+              value={`${read.wpm}`}
+              sub={`goal ${level.wpmLow}–${level.wpmHigh}`}
+            />
+          )}
         </div>
       )}
 
@@ -1980,9 +2145,15 @@ function Stat({
       <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-400">
         {label}
       </span>
-      {sub && <span className="mt-0.5 text-[10px] font-semibold text-zinc-400">{sub}</span>}
+      {sub && (
+        <span className="mt-0.5 text-[10px] font-semibold text-zinc-400">
+          {sub}
+        </span>
+      )}
       {pill && (
-        <span className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${pillTone}`}>
+        <span
+          className={`mt-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${pillTone}`}
+        >
           {pill}
         </span>
       )}

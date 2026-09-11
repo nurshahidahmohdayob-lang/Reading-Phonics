@@ -12,6 +12,7 @@
    no attachment to lose, and it can't reach any other child's report. */
 
 import type { ReportData } from "./reportPrint";
+import { displayLexile } from "./lexileStats";
 import { reportLink } from "./reportLink";
 import type { TermNo } from "./tracker";
 
@@ -37,7 +38,7 @@ export function emailBody(
     `Reader level: ${d.categoryLabel} — overall score ${d.composite}%`,
   );
   lines.push(
-    `Lexile measure: ${d.lexile}${d.lexileBand ? ` (${d.lexileBand})` : ""}`,
+    `Lexile measure: ${displayLexile(d.lexile)}${d.lexileBand ? ` (${d.lexileBand})` : ""}`,
   );
   if (!d.beginning) lines.push(`Book level: ${d.levelGrade}`);
   lines.push("");
