@@ -4,6 +4,7 @@
 
 import { LEXILE_BANDS, lexileLabel, type TermStats } from "./lexileStats";
 import { EXPLAINER_CSS, explainerHtml } from "./explainer";
+import { reportHtml } from "./reportPrint";
 
 /** The ordinal Lexile ramp, light → dark (same values as globals.css). */
 const RAMP = ["#7cc39a", "#59b183", "#3f9a6b", "#2c8154", "#1d6740", "#0a4f29"];
@@ -61,7 +62,8 @@ h1 { font-size: 24px; margin: 0 0 2px; }
 .group .gr { color: #a1a1aa; font-weight: 700; font-size: 11px; margin-left: 6px; }
 .group .ga { font-size: 11px; color: #71717a; font-weight: 600; margin-top: 1px; }
 .names { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
-.chip { background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 3px 9px; font-weight: 800; font-size: 12px; }
+.chip { background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 4px 10px; font-weight: 800; font-size: 12px; color: #18181b; font-family: inherit; cursor: pointer; }
+.chip:hover { border-color: #0a4f29; }
 .chip small { color: #a1a1aa; margin-left: 5px; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
 
@@ -166,7 +168,7 @@ export function statsReportHtml(d: StatsReportData): string {
       (b) => `<div class="group">
         <div><span class="dot" style="background:${b.colour}"></span><span class="gh">${esc(b.band.label)}</span><span class="gr">${esc(b.band.range)} · ${b.students.length} child${b.students.length === 1 ? "" : "ren"}</span></div>
         <div class="ga">${esc(b.band.about)}</div>
-        <div class="names">${b.students.map((s) => `<span class="chip">${esc(s.name)}<small>${esc(s.lexileText)}</small></span>`).join("")}</div>
+        <div class="names">${b.students.map((s) => `<button type="button" class="chip" data-report="${stats.results.indexOf(s)}" title="Open ${esc(s.name)}’s report">${esc(s.name)}<small>${esc(s.lexileText)}</small></button>`).join("")}</div>
       </div>`,
     )
     .join("");
@@ -184,6 +186,12 @@ export function statsReportHtml(d: StatsReportData): string {
     </tr>`,
     )
     .join("");
+
+  // Each child's full report travels inside this file, so a name still opens
+  // their report when the file is saved and opened later, with no internet.
+  const reports = JSON.stringify(
+    stats.results.map((r) => reportHtml(r.record.report)),
+  ).replace(/</g, "\\u003c");
 
   const topBand = stats.byBand.reduce((best, b) =>
     b.students.length > best.students.length ? b : best,
@@ -257,10 +265,24 @@ export function statsReportHtml(d: StatsReportData): string {
 
     ${explainerHtml("the child")}
 
+    <p class="note" style="margin-top:8px">Tap a child’s name above to open their full report.</p>
+
     <div class="foot">Phonics Pals &amp; Guided Reading · Zera International School · generated ${esc(dateStr)}</div>
   </div>
 
+  <script type="application/json" id="reports">${reports}</script>
   <script>
+    var REPORTS = JSON.parse(document.getElementById('reports').textContent);
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('.chip[data-report]') : null;
+      if (!el) return;
+      var html = REPORTS[Number(el.getAttribute('data-report'))];
+      if (!html) return;
+      var w = window.open('', '_blank');
+      if (!w) { alert('Please allow pop-ups to open the report.'); return; }
+      w.document.open(); w.document.write(html); w.document.close();
+    });
+
     function downloadPage() {
       var doc = '<!doctype html>' + document.documentElement.outerHTML;
       var blob = new Blob([doc], { type: 'text/html' });
