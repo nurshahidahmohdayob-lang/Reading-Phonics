@@ -75,6 +75,24 @@ function shared(schoolName: string, preferred: string, rosterName: string) {
   );
 }
 
+/** The closest name we hold to this one — for "did you mean?" hints. Needs at
+    least two words in common, so unrelated children are never suggested. */
+export function closestName(
+  name: string,
+  candidates: string[],
+): string | undefined {
+  let best: string | undefined;
+  let bestScore = 1;
+  for (const c of candidates) {
+    const score = shared(name, "", c);
+    if (score > bestScore) {
+      bestScore = score;
+      best = c;
+    }
+  }
+  return best;
+}
+
 export type NewStudent = {
   student: SchoolStudent;
   /** A tracker name this may really be, spelled differently. */

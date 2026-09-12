@@ -13,7 +13,11 @@ export type ApiGuardian = {
   preferred_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  students?: { student_id: string | number; relationship?: string | null }[];
+  students?: {
+    student_id: string | number;
+    /** A lifecycle code from the school system (e.g. 0, 1), not a word. */
+    relationship?: string | number | null;
+  }[];
 };
 
 export type GuardianContact = {
@@ -72,7 +76,11 @@ export async function guardianEmails(): Promise<GuardianLookup> {
         const list = byStudent[key] ?? (byStudent[key] = []);
         // A parent can appear once per child; don't double up.
         if (!list.some((c) => c.email.toLowerCase() === email.toLowerCase())) {
-          list.push({ email, name, relationship: (link.relationship ?? "").trim() });
+          list.push({
+            email,
+            name,
+            relationship: String(link.relationship ?? "").trim(),
+          });
         }
       }
     }

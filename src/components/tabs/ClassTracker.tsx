@@ -57,7 +57,12 @@ import {
   MAIL_VIA_LABEL,
   type MailVia,
 } from "@/lib/mailPrefs";
-import { compareRoster, sameChild, type ClassDiff } from "@/lib/rosterSync";
+import {
+  compareRoster,
+  sameChild,
+  closestName,
+  type ClassDiff,
+} from "@/lib/rosterSync";
 import type { SchoolStudent } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
@@ -804,7 +809,17 @@ function BulkEmails({
       }
       setText(
         list
-          .map((st) => `${st.name}, ${st.parentEmails.join(", ")}`)
+          .map((st) => {
+            // The school system and the class lists write names differently;
+            // the preferred name is often what bridges them ("Yang Fu Yu"
+            // there is "Yang Fuyu (Dorcas)" on the class list).
+            const who =
+              st.preferred &&
+              !st.name.toLowerCase().includes(st.preferred.toLowerCase())
+                ? `${st.name} (${st.preferred})`
+                : st.name;
+            return `${who}, ${st.parentEmails.join(", ")}`;
+          })
           .join("\n"),
       );
       setFetchNote(
@@ -842,8 +857,20 @@ function BulkEmails({
     name = name.replace(/[,;<>"]/g, " ").trim();
     if (!name) return { line, email, problem: "no name on this line" };
     const hits = students.filter((st) => sameChild(name, "", st.name));
-    if (hits.length === 0)
-      return { line, email, problem: `no child called “${name}”` };
+    if (hits.length === 0) {
+      // Close but not the same spelling? Say whose row to correct.
+      const near = closestName(
+        name,
+        students.map((st) => st.name),
+      );
+      return {
+        line,
+        email,
+        problem: near
+          ? `“${name}” — did you mean “${near}”? Edit the name above to match, then save.`
+          : `no child called “${name}” — add them with 🔄 Sync students first`,
+      };
+    }
     if (hits.length > 1)
       return { line, email, problem: `“${name}” matches more than one child` };
     const existing = parentEmail(book, hits[0].yearKey, hits[0].name);
