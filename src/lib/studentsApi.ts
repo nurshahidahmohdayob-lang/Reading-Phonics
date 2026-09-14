@@ -40,6 +40,15 @@ export type SchoolStudent = {
 
 import { guardianEmails, type GuardianLookup } from "./guardiansApi";
 
+/** Any enrolled child with their guardians' addresses — class or no class.
+    Many children (all of Year 5, for one) have no class set in the school
+    system, so parent emails can't depend on it. */
+export type ParentContact = {
+  name: string;
+  preferred: string;
+  parentEmails: string[];
+};
+
 export class StudentsApiNotConfigured extends Error {}
 
 function config(): { base: string; token: string } {
@@ -104,39 +113,48 @@ async function fetchAll(): Promise<ApiStudent[]> {
     each with their guardians' email addresses where the key allows it. */
 export async function schoolStudents(): Promise<{
   students: SchoolStudent[];
+  contacts: ParentContact[];
   guardians: GuardianLookup["state"];
 }> {
   const rows = await fetchAll();
   const guardians = await guardianEmails();
   const out: SchoolStudent[] = [];
+  const contacts: ParentContact[] = [];
   for (const r of rows) {
     // 1 = Active, 0 = Pending (accepted but not started). Everything else —
     // suspended, withdrawn, graduated, waiting list — stays out.
     if (r.status !== 1 && r.status !== 0) continue;
-    const m = /^\s*Year\s*([1-6])\b/i.exec(r.class ?? "");
-    if (!m) continue;
     const name = tidyName(
       [r.first_name, r.last_name].filter(Boolean).join(" ") ||
         r.nric_name ||
         "",
     );
     if (!name) continue;
+    const parentEmails =
+      guardians.state === "ok"
+        ? (guardians.byStudent[String(r.id)] ?? []).map((g) => g.email)
+        : [];
+    const preferred = tidyName(r.preferred_name ?? "");
+
+    // Parent emails: every enrolled child, whether or not a class is set.
+    if (parentEmails.length) contacts.push({ name, preferred, parentEmails });
+
+    // Class lists: only children actually placed in a Year 1–6 class.
+    const m = /^\s*Year\s*([1-6])\b/i.exec(r.class ?? "");
+    if (!m) continue;
     out.push({
       id: r.id,
       name,
-      preferred: tidyName(r.preferred_name ?? ""),
+      preferred,
       year: `Year ${m[1]}`,
       yearKey: `y${m[1]}`,
       pending: r.status === 0,
-      parentEmails:
-        guardians.state === "ok"
-          ? (guardians.byStudent[String(r.id)] ?? []).map((g) => g.email)
-          : [],
+      parentEmails,
     });
   }
   out.sort(
     (a, b) =>
       a.yearKey.localeCompare(b.yearKey) || a.name.localeCompare(b.name),
   );
-  return { students: out, guardians: guardians.state };
+  return { students: out, contacts, guardians: guardians.state };
 }

@@ -61,9 +61,10 @@ import {
   compareRoster,
   sameChild,
   closestName,
+  wordsInCommon,
   type ClassDiff,
 } from "@/lib/rosterSync";
-import type { SchoolStudent } from "@/lib/studentsApi";
+import type { SchoolStudent, ParentContact } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
 import type { Scoped } from "@/lib/lexileStats";
 
@@ -773,6 +774,7 @@ function BulkEmails({
   const [saved, setSaved] = useState(0);
   const [fetching, setFetching] = useState(false);
   const [fetchNote, setFetchNote] = useState("");
+  const [fetched, setFetched] = useState(false);
 
   /** Pull every guardian address the school system has and drop them into the
       box, so the same preview-and-save flow applies. */
@@ -798,8 +800,30 @@ function BulkEmails({
         );
         return;
       }
-      const list = (data.students as SchoolStudent[]).filter(
-        (st) => st.parentEmails?.length,
+      // Every enrolled child with a parent address — many (all of Year 5,
+      // for one) have no class set in the school system, so don't rely on it.
+      // Only offer a line when it is one of OUR children: an exact name
+      // match, or — for a child of ours with no exact match — a name sharing
+      // at least three words (a spelling difference, like Yao / Yeo). Two
+      // shared words isn't enough: across the whole school that pairs
+      // different children and would send a report to the wrong family.
+      const ours = students.map((st) => st.name);
+      const contacts = (data.contacts ?? []) as ParentContact[];
+      const unmatchedOurs = ours.filter(
+        (n) => !contacts.some((ct) => sameChild(ct.name, ct.preferred, n)),
+      );
+      // Children in the school system's Year classes who aren't on our lists
+      // yet — shown so they can be added with Sync students.
+      const inYearClasses = new Set(
+        ((data.students ?? []) as SchoolStudent[]).map((st) => st.name),
+      );
+      const list = contacts.filter(
+        (ct) =>
+          ours.some((n) => sameChild(ct.name, ct.preferred, n)) ||
+          unmatchedOurs.some(
+            (n) => wordsInCommon(`${ct.name} ${ct.preferred}`, n) >= 3,
+          ) ||
+          inYearClasses.has(ct.name),
       );
       if (!list.length) {
         setFetchNote(
@@ -807,6 +831,7 @@ function BulkEmails({
         );
         return;
       }
+      setFetched(true);
       setText(
         list
           .map((st) => {
@@ -883,6 +908,21 @@ function BulkEmails({
   });
 
   const good = rows.filter((r) => r.match && r.email);
+
+  // After a fetch: our children the school system has no address for, so the
+  // teacher knows exactly whose to type in by hand.
+  const stillMissing = fetched
+    ? students
+        .filter(
+          (st) =>
+            !parentEmail(book, st.yearKey, st.name) &&
+            !good.some(
+              (r) =>
+                r.match!.yearKey === st.yearKey && r.match!.name === st.name,
+            ),
+        )
+        .map((st) => st.name)
+    : [];
   const bad = rows.filter((r) => r.problem);
 
   function apply() {
@@ -936,6 +976,14 @@ function BulkEmails({
         }
         className="mt-3 w-full rounded-xl border-2 border-zinc-200 bg-white px-3 py-2 font-mono text-xs font-semibold text-zinc-700 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       />
+
+      {stillMissing.length > 0 && (
+        <p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+          <b>No parent email in the school system for {stillMissing.length}:</b>{" "}
+          {stillMissing.join(", ")}. Tap their row’s “Add parent email” to type
+          one in.
+        </p>
+      )}
 
       {saved > 0 && (
         <p className="mt-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">

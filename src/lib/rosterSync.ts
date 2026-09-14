@@ -75,14 +75,21 @@ function shared(schoolName: string, preferred: string, rosterName: string) {
   );
 }
 
+/** How many words two names have in common (joined-up forms count). */
+export function wordsInCommon(name: string, other: string): number {
+  return shared(name, "", other);
+}
+
 /** The closest name we hold to this one — for "did you mean?" hints. Needs at
-    least two words in common, so unrelated children are never suggested. */
+    least THREE words in common: across a whole school, two common given names
+    ("Yu Xuan", "Jia En") routinely pair different children, and a wrong hint
+    here could send a report to another family. */
 export function closestName(
   name: string,
   candidates: string[],
 ): string | undefined {
   let best: string | undefined;
-  let bestScore = 1;
+  let bestScore = 2;
   for (const c of candidates) {
     const score = shared(name, "", c);
     if (score > bestScore) {
