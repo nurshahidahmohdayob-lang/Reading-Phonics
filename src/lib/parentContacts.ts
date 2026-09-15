@@ -54,6 +54,25 @@ export function setParentEmail(yearKey: string, name: string, email: string) {
   write(book);
 }
 
+/** Fill in addresses for children who don't have one yet, in one write.
+    Never overwrites an address already saved (so nothing a teacher typed is
+    lost). Returns how many were added. */
+export function fillMissingParentEmails(
+  entries: { yearKey: string; name: string; email: string }[],
+): number {
+  const book = read();
+  let added = 0;
+  for (const e of entries) {
+    const k = studentKey(e.yearKey, e.name);
+    const email = e.email.trim();
+    if (!email || book[k]) continue;
+    book[k] = email;
+    added++;
+  }
+  if (added) write(book);
+  return added;
+}
+
 /** Reactive snapshot; re-renders on any change here or in another tab. */
 export function useParentContacts(): ParentBook {
   const [book, setBook] = useState<ParentBook>({});

@@ -23,7 +23,7 @@
    the teacher unlocks them (tap the padlock by the name). Teachers can also add
    a student to any class. Both are saved per device via lib/rosterStore.ts. */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ROSTER, studentKey } from "@/app/roster";
 import {
   useTracker,
@@ -47,6 +47,7 @@ import {
   useParentContacts,
   parentEmail,
   setParentEmail,
+  fillMissingParentEmails,
   looksLikeEmail,
   type ParentBook,
 } from "@/lib/parentContacts";
@@ -184,6 +185,14 @@ export default function ClassTracker({
   const { store, cloud } = useTracker();
   const edits = useRosterEdits();
   const parents = useParentContacts();
+
+  // Parent emails fill themselves in: when the tracker opens, any child
+  // without an address gets their guardians' from the school system. Only an
+  // exact, unambiguous name match is used — near misses stay for the teacher
+  // in "✉️ Parent emails" — and a saved address is never replaced.
+  const [autoFilled, setAutoFilled] = useState(0);
+  const groupsRef = useRef<ReturnType<typeof buildGroups>>([]);
+  const autoFillStarted = useRef(false);
   const mailVia = useMailVia();
   const groups = buildGroups(edits, store);
 
@@ -195,6 +204,45 @@ export default function ClassTracker({
   const [addErr, setAddErr] = useState("");
   const [sync, setSync] = useState<SyncState>({ kind: "idle" });
   const [bulk, setBulk] = useState(false);
+
+  useEffect(() => {
+    groupsRef.current = groups;
+  });
+
+  useEffect(() => {
+    if (autoFillStarted.current) return;
+    autoFillStarted.current = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/students");
+        const data = await res.json();
+        if (!data?.ok || data.guardians !== "ok") return;
+        const contacts = (data.contacts ?? []) as ParentContact[];
+        const kids = groupsRef.current.flatMap((g) =>
+          g.students.map((st) => ({ yearKey: g.key, name: st.name })),
+        );
+        const entries: { yearKey: string; name: string; email: string }[] = [];
+        for (const kid of kids) {
+          const hits = contacts.filter((ct) =>
+            sameChild(ct.name, ct.preferred, kid.name),
+          );
+          if (hits.length !== 1) continue; // none, or more than one — skip
+          const ct = hits[0];
+          // …and that record must not also fit another of our children.
+          const alsoFits = kids.some(
+            (other) =>
+              other !== kid && sameChild(ct.name, ct.preferred, other.name),
+          );
+          if (alsoFits) continue;
+          entries.push({ ...kid, email: ct.parentEmails.join(", ") });
+        }
+        const added = fillMissingParentEmails(entries);
+        if (added) setAutoFilled(added);
+      } catch {
+        /* school system unreachable — the manual tools still work */
+      }
+    })();
+  }, []);
 
   const group = groups.find((g) => g.key === yearKey) ?? groups[0];
 
@@ -564,6 +612,13 @@ export default function ClassTracker({
                 </span>
               )}
             </div>
+          )}
+
+          {autoFilled > 0 && (
+            <p className="mt-2 w-full text-center text-xs font-bold text-emerald-700 dark:text-emerald-300">
+              ✉️ Added {autoFilled} parent email{autoFilled === 1 ? "" : "s"}{" "}
+              from the school system.
+            </p>
           )}
 
           {manage && (
