@@ -81,3 +81,33 @@ export async function decodeReport(hash: string): Promise<ReportData | null> {
 export async function reportLink(d: ReportData): Promise<string> {
   return `${siteBase()}/report#${await encodeReport(d)}`;
 }
+
+/** Links for a batch of reports. Short ones (…/r/k7f2q9abcd) when the app's
+    cloud storage is connected — they fit anywhere, including a Word mail
+    merge, which cuts fields at 255 characters. Otherwise the self-contained
+    long links, with `short: false` so the caller can say so. */
+export async function reportLinks(
+  reports: ReportData[],
+): Promise<{ links: string[]; short: boolean }> {
+  try {
+    const res = await fetch("/api/report-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reports }),
+    });
+    const data = await res.json();
+    if (
+      data?.ok &&
+      Array.isArray(data.ids) &&
+      data.ids.length === reports.length
+    ) {
+      return {
+        links: (data.ids as string[]).map((id) => `${siteBase()}/r/${id}`),
+        short: true,
+      };
+    }
+  } catch {
+    /* offline, or no storage — use the long links */
+  }
+  return { links: await Promise.all(reports.map(reportLink)), short: false };
+}

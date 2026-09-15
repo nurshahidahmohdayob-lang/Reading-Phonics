@@ -16,7 +16,7 @@
 
 import type { ReportData } from "./reportPrint";
 import { displayLexile } from "./lexileStats";
-import { reportLink } from "./reportLink";
+import { reportLinks } from "./reportLink";
 import { composeUrl, readMailVia } from "./mailPrefs";
 import type { TermNo } from "./tracker";
 
@@ -71,7 +71,7 @@ export async function emailReport(
   from?: string,
 ): Promise<void> {
   if (typeof window === "undefined") return;
-  const link = await reportLink(d);
+  const [link] = (await reportLinks([d])).links;
   const via = readMailVia();
   const url = composeUrl(
     via,
@@ -88,7 +88,7 @@ export async function emailReport(
 /** Put just the parent link on the clipboard — for WhatsApp, webmail, etc. */
 export async function copyReportLink(d: ReportData): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  const link = await reportLink(d);
+  const [link] = (await reportLinks([d])).links;
   try {
     await navigator.clipboard.writeText(link);
     return true;

@@ -52,6 +52,7 @@ import {
   type ParentBook,
 } from "@/lib/parentContacts";
 import { emailReport, copyReportLink } from "@/lib/emailReport";
+import { reportLinks } from "@/lib/reportLink";
 import {
   useSentLog,
   sentAt,
@@ -213,6 +214,7 @@ export default function ClassTracker({
   const [addErr, setAddErr] = useState("");
   const [sync, setSync] = useState<SyncState>({ kind: "idle" });
   const [bulk, setBulk] = useState(false);
+  const [merge, setMerge] = useState(false);
 
   useEffect(() => {
     groupsRef.current = groups;
@@ -545,6 +547,22 @@ export default function ClassTracker({
                 ✉️ Parent emails
               </button>
               <button
+                onClick={() => {
+                  setMerge((v) => !v);
+                  setBulk(false);
+                  setSync({ kind: "idle" });
+                }}
+                aria-pressed={merge}
+                title="Send every parent their own child's report in one go, with Word mail merge"
+                className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
+                  merge
+                    ? "bg-[#0A4F29] text-white ring-transparent"
+                    : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+                }`}
+              >
+                📨 Mail merge
+              </button>
+              <button
                 onClick={() => void runSync()}
                 disabled={sync.kind === "loading"}
                 title="Check the class lists against the school system"
@@ -571,6 +589,25 @@ export default function ClassTracker({
               </button>
             </div>
           </div>
+
+          {merge && (
+            <MailMerge
+              classes={groups.map((g) => ({
+                year: g.year,
+                key: g.key,
+                students: g.students.map((st) => ({
+                  name: st.name,
+                  locked: lockedRow(g, st),
+                })),
+              }))}
+              store={store}
+              book={parents}
+              sent={sent}
+              currentKey={group.key}
+              teacherName={teacherName}
+              onClose={() => setMerge(false)}
+            />
+          )}
 
           {bulk && (
             <BulkEmails
@@ -1150,6 +1187,296 @@ function BulkEmails({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type MergeRow = {
+  yearKey: string;
+  name: string;
+  year: string;
+  term: TermNo;
+  email: string;
+  rec: TrackerRecord;
+};
+
+/** Send every parent their own child's report in one go — through Word mail
+    merge and the teacher's own Outlook, so each email goes from their Zera
+    address and lands in Sent Items. The app makes the spreadsheet (one row
+    per parent, with a short link to that child's report), hands over the
+    message to paste into Word, and ticks the reports as sent afterwards. */
+function MailMerge({
+  classes,
+  store,
+  book,
+  sent,
+  currentKey,
+  teacherName,
+  onClose,
+}: {
+  classes: {
+    year: string;
+    key: string;
+    students: { name: string; locked: boolean }[];
+  }[];
+  store: TrackerStore;
+  book: ParentBook;
+  sent: SentLog;
+  currentKey: string;
+  teacherName?: string;
+  onClose: () => void;
+}) {
+  const [scope, setScope] = useState(currentKey);
+  const [everyone, setEveryone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [made, setMade] = useState<{
+    items: MergeRow[];
+    short: boolean;
+    file: string;
+  } | null>(null);
+  const [marked, setMarked] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Who goes in the file: attending children with a report and a parent
+  // email — by default only those whose latest report hasn't gone out yet.
+  const ready: MergeRow[] = [];
+  const noEmail: string[] = [];
+  let alreadySent = 0;
+  for (const c of classes) {
+    if (scope !== "all" && c.key !== scope) continue;
+    for (const st of c.students) {
+      if (st.locked) continue;
+      const latest = latestRecord(store[studentKey(c.key, st.name)] ?? {});
+      if (!latest) continue;
+      const email = parentEmail(book, c.key, st.name);
+      if (!email) {
+        noEmail.push(st.name);
+        continue;
+      }
+      const isSent = isSentCurrent(
+        sent,
+        c.key,
+        st.name,
+        latest.term,
+        latest.rec.savedAt,
+      );
+      if (isSent && !everyone) {
+        alreadySent++;
+        continue;
+      }
+      ready.push({
+        yearKey: c.key,
+        name: st.name,
+        year: c.year,
+        term: latest.term,
+        // Outlook separates several recipients with semicolons.
+        email: email
+          .split(/\s*[,;]\s*/)
+          .filter(Boolean)
+          .join("; "),
+        rec: latest.rec,
+      });
+    }
+  }
+
+  const message = [
+    "Dear Parent/Guardian,",
+    "",
+    "Here is [Child]'s reading assessment for [Term].",
+    "",
+    "Reader level: [ReaderLevel]",
+    "Lexile measure: [Lexile]",
+    "",
+    "Open [Child]'s full report here:",
+    "[ReportLink]",
+    "",
+    "It opens in any web browser — no sign-in needed.",
+    "",
+    "Kind regards,",
+    ...(teacherName ? [teacherName] : []),
+    "Phonics Pals & Guided Reading · Zera International School",
+  ].join("\n");
+
+  async function makeFile() {
+    if (!ready.length) return;
+    setBusy(true);
+    try {
+      const { links, short } = await reportLinks(
+        ready.map((r) => r.rec.report),
+      );
+      const head = [
+        "Email",
+        "Child",
+        "Class",
+        "Term",
+        "ReaderLevel",
+        "Lexile",
+        "ReportLink",
+      ];
+      const lines = [head.join(",")];
+      ready.forEach((r, i) =>
+        lines.push(
+          [
+            r.email,
+            r.name,
+            r.year,
+            `Term ${r.term}`,
+            r.rec.report.categoryLabel,
+            displayLexile(r.rec.report.lexile),
+            links[i],
+          ]
+            .map(csv)
+            .join(","),
+        ),
+      );
+      const scopeName =
+        scope === "all"
+          ? "all-classes"
+          : (classes.find((c) => c.key === scope)?.year ?? scope)
+              .toLowerCase()
+              .replace(/\s+/g, "-");
+      const file = `mail-merge-${scopeName}.csv`;
+      // A byte-order mark so Word and Excel read the dashes and names as UTF-8.
+      download(file, "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
+      setMade({ items: ready, short, file });
+      setMarked(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function markAllSent() {
+    if (!made) return;
+    for (const r of made.items) markSent(r.yearKey, r.name, r.term);
+    setMarked(true);
+  }
+
+  return (
+    <div className="mt-3 w-full rounded-2xl bg-white p-4 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-extrabold text-zinc-700 dark:text-zinc-100">
+            📨 Send every report in one go
+          </h3>
+          <p className="mt-0.5 text-xs font-semibold text-zinc-400">
+            Word mail merge sends each parent their own child’s report from your
+            Outlook — from your Zera address, into your Sent Items.
+          </p>
+        </div>
+        <CloseX onClose={onClose} />
+      </div>
+
+      {/* 1 — who */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-300">
+        <span>Send to</span>
+        <select
+          value={scope}
+          onChange={(e) => {
+            setScope(e.target.value);
+            setMade(null);
+          }}
+          className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-zinc-600 ring-1 ring-black/10 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          <option value="all">All classes</option>
+          {classes.map((c) => (
+            <option key={c.key} value={c.key}>
+              {c.year}
+            </option>
+          ))}
+        </select>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="checkbox"
+            checked={everyone}
+            onChange={(e) => {
+              setEveryone(e.target.checked);
+              setMade(null);
+            }}
+            className="h-3.5 w-3.5 accent-[#0A4F29]"
+          />
+          include reports already sent
+        </label>
+      </div>
+
+      <p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+        <b className="text-zinc-700 dark:text-zinc-100">
+          {ready.length} parent email{ready.length === 1 ? "" : "s"} ready
+        </b>
+        {alreadySent > 0 && !everyone && ` · ${alreadySent} already sent`}
+        {noEmail.length > 0 &&
+          ` · no parent email for ${noEmail.length}: ${noEmail.join(", ")}`}
+      </p>
+
+      {/* 2 — the steps */}
+      <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+        <li>
+          <button
+            onClick={() => void makeFile()}
+            disabled={!ready.length || busy}
+            className="rounded-full bg-[#0A4F29] px-4 py-1.5 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+          >
+            {busy
+              ? "⏳ Making the links…"
+              : `⬇️ Download the mail merge file (${ready.length})`}
+          </button>
+          {made && (
+            <span className="ml-2 font-bold text-emerald-700 dark:text-emerald-300">
+              Saved {made.file}
+            </span>
+          )}
+          {made && !made.short && (
+            <span className="mt-1 block font-bold text-amber-600 dark:text-amber-400">
+              Heads up: these links are long because the app’s cloud storage
+              isn’t connected yet, and Word can cut long fields off — which
+              would break the links. Connect the storage before sending.
+            </span>
+          )}
+        </li>
+        <li>
+          Open <b>Word</b> → blank document → <b>Mailings</b> →{" "}
+          <b>Select Recipients</b> → <b>Use an Existing List…</b> → choose the
+          file you just downloaded.
+        </li>
+        <li>
+          Paste the message below. Replace each <b>[Field]</b> with{" "}
+          <b>Mailings → Insert Merge Field</b> → the matching field.
+          <div className="mt-1.5 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/60">
+            <pre className="whitespace-pre-wrap font-sans text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+              {message}
+            </pre>
+            <button
+              onClick={() => {
+                void navigator.clipboard.writeText(message).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1600);
+                });
+              }}
+              className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-zinc-600 ring-1 ring-black/10 active:scale-95 dark:bg-zinc-900 dark:text-zinc-200"
+            >
+              {copied ? "✓ Copied" : "📋 Copy message"}
+            </button>
+          </div>
+        </li>
+        <li>
+          <b>Finish &amp; Merge → Merge to E-mail</b>: To = <b>Email</b>,
+          Subject = <i>Your child’s reading report</i>, format <b>HTML</b> →{" "}
+          <b>OK</b>. Outlook must be open and signed in as your Zera account (if
+          Word can’t find Outlook, turn off <b>New Outlook</b> in the Outlook
+          menu).
+        </li>
+        <li>
+          Once Outlook has sent them:{" "}
+          <button
+            onClick={markAllSent}
+            disabled={!made || marked}
+            className="rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-emerald-300 dark:ring-emerald-900/50"
+          >
+            {marked
+              ? `✓ Marked ${made?.items.length ?? 0} as sent`
+              : `✓ Mark these ${made?.items.length ?? ready.length} as sent`}
+          </button>
+        </li>
+      </ol>
     </div>
   );
 }
