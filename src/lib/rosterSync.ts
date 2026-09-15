@@ -19,6 +19,7 @@
    likely to be a data gap than a child who has left. */
 
 import type { SchoolStudent } from "./studentsApi";
+import { rosterAliases } from "@/app/roster";
 
 const NOISE = new Set(["bin", "binti", "a/p", "a/l", "ap", "al"]);
 
@@ -49,8 +50,21 @@ function covered(parts: string[], pool: Set<string>): number {
   return parts.filter((p) => pool.has(p)).length;
 }
 
-/** Is this the same child, written two ways? */
+/** Is this the same child, written two ways? Also tries any other spelling
+    recorded for the child on the class lists (roster `aka`), for names the
+    word-matching can't bridge — e.g. "Jie Yao Chok" for "Chok Jie Yeo". */
 export function sameChild(
+  schoolName: string,
+  preferred: string,
+  rosterName: string,
+): boolean {
+  if (namesMatch(schoolName, preferred, rosterName)) return true;
+  return rosterAliases(rosterName).some((alias) =>
+    namesMatch(schoolName, preferred, alias),
+  );
+}
+
+function namesMatch(
   schoolName: string,
   preferred: string,
   rosterName: string,

@@ -14,6 +14,9 @@ export type Student = {
   name: string;
   /** Not registered yet — starts locked in the tracker. */
   pending?: boolean;
+  /** Other spellings of this child's name — e.g. how the school system has
+      it — so school-system matching (parent emails, Sync students) finds them. */
+  aka?: string[];
 };
 
 export type ClassGroup = {
@@ -125,7 +128,7 @@ export const ROSTER: ClassGroup[] = [
     key: "y6",
     students: [
       { name: "Bunny Ng Yu Shan" },
-      { name: "Chok Jie Yeo (Adrian)" },
+      { name: "Chok Jie Yeo (Adrian)", aka: ["Jie Yao Chok"] },
       { name: "Hadif Hefny Bin Hasnor Hakim" },
       { name: "Nattania Rao A/P Jaganmohan" },
       { name: "Neo Gao Jun" },
@@ -158,6 +161,15 @@ export const ALL_STUDENTS: {
     pending: !!s.pending,
   })),
 );
+
+/** Other spellings recorded for a child on the class lists (see `aka`). */
+export function rosterAliases(name: string): string[] {
+  const wanted = name.trim().toLowerCase();
+  for (const g of ROSTER)
+    for (const st of g.students)
+      if (st.aka?.length && st.name.toLowerCase() === wanted) return st.aka;
+  return [];
+}
 
 /** Stable per-student key for stored records (year + normalised name). */
 export function studentKey(yearKey: string, name: string): string {
