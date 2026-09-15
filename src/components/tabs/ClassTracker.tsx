@@ -53,6 +53,14 @@ import {
 } from "@/lib/parentContacts";
 import { emailReport, copyReportLink } from "@/lib/emailReport";
 import {
+  useSentLog,
+  sentAt,
+  markSent,
+  clearSent,
+  isSentCurrent,
+  type SentLog,
+} from "@/lib/sentLog";
+import {
   useMailVia,
   setMailVia,
   MAIL_VIA_LABEL,
@@ -185,6 +193,7 @@ export default function ClassTracker({
   const { store, cloud } = useTracker();
   const edits = useRosterEdits();
   const parents = useParentContacts();
+  const sent = useSentLog();
 
   // Parent emails fill themselves in: when the tracker opens, any child
   // without an address gets their guardians' from the school system. Only an
@@ -256,6 +265,13 @@ export default function ClassTracker({
   const doneByTerm = TERMS.map(
     (t) => active.filter((s) => rowsFor(s.name)[t]).length,
   );
+
+  // Reports sent to parents, for this class's attending children who have one.
+  const withReport = active.filter((s) => latestRecord(rowsFor(s.name)));
+  const sentCount = withReport.filter((s) => {
+    const l = latestRecord(rowsFor(s.name))!;
+    return isSentCurrent(sent, group.key, s.name, l.term, l.rec.savedAt);
+  }).length;
 
   // Statistics can also look across every class at once ("All classes").
   const allYears = view === "stats" && yearKey === "all";
@@ -485,6 +501,17 @@ export default function ClassTracker({
                   Term {t}: {doneByTerm[i]}/{active.length}
                 </span>
               ))}
+              {withReport.length > 0 && (
+                <span
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${
+                    sentCount === withReport.length
+                      ? "bg-emerald-600 text-white ring-emerald-600"
+                      : "bg-sky-50 text-sky-800 ring-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900/50"
+                  }`}
+                >
+                  ✉️ Sent to parents: {sentCount}/{withReport.length}
+                </span>
+              )}
               {lockedCount > 0 && (
                 <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/50">
                   🔒 {lockedCount} not registered
@@ -746,6 +773,7 @@ export default function ClassTracker({
                           yearKey={group.key}
                           name={s.name}
                           book={parents}
+                          sent={sent}
                           latest={latestRecord(r)}
                           manage={manage}
                           teacherName={teacherName}
@@ -1319,6 +1347,7 @@ function ParentCell({
   yearKey,
   name,
   book,
+  sent,
   latest,
   manage,
   teacherName,
@@ -1327,6 +1356,7 @@ function ParentCell({
   yearKey: string;
   name: string;
   book: ParentBook;
+  sent: SentLog;
   latest: { rec: TrackerRecord; term: TermNo } | null;
   manage: boolean;
   teacherName?: string;
@@ -1348,6 +1378,47 @@ function ParentCell({
     setErr("");
     setEditing(false);
   }
+
+  // Sent tracking. ✉️ ticks the latest report as sent; the tick can be undone
+  // (the app can't see Send being pressed in the mail app) or set by hand for
+  // a report shared another way.
+  const sentWhen = latest ? sentAt(sent, yearKey, name, latest.term) : null;
+  const current =
+    !!latest &&
+    isSentCurrent(sent, yearKey, name, latest.term, latest.rec.savedAt);
+  const statusLine = !latest ? null : current ? (
+    <button
+      onClick={() => {
+        if (confirm(`Mark ${name}'s Term ${latest.term} report as not sent?`))
+          clearSent(yearKey, name, latest.term);
+      }}
+      title="Sent — tap to undo"
+      className="self-start rounded-md px-1 text-[11px] font-extrabold text-emerald-700 hover:underline dark:text-emerald-300"
+    >
+      ✓ Sent Term {latest.term} · {shortDate(sentWhen!)}
+    </button>
+  ) : (
+    <span className="flex items-center gap-1.5 px-1 text-[11px] font-bold">
+      <span
+        className={
+          sentWhen
+            ? "text-amber-600 dark:text-amber-400"
+            : "text-zinc-400 dark:text-zinc-500"
+        }
+      >
+        {sentWhen
+          ? `↻ Re-assessed after sending on ${shortDate(sentWhen)}`
+          : `○ Term ${latest.term} not sent`}
+      </span>
+      <button
+        onClick={() => markSent(yearKey, name, latest.term)}
+        title="Already shared another way? Tick it here"
+        className="text-zinc-400 underline decoration-dotted underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300"
+      >
+        mark sent
+      </button>
+    </span>
+  );
 
   if (editing) {
     return (
@@ -1389,47 +1460,51 @@ function ParentCell({
 
   if (!saved) {
     return (
-      <button
-        onClick={() => {
-          setDraft("");
-          setEditing(true);
-        }}
-        disabled={manage}
-        className="flex h-9 w-full max-w-[190px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 text-xs font-bold text-zinc-400 transition-colors hover:border-emerald-300 hover:text-emerald-600 disabled:opacity-40 dark:border-zinc-700"
-      >
-        ＋ Add parent email
-      </button>
+      <div className="flex flex-col gap-1">
+        <button
+          onClick={() => {
+            setDraft("");
+            setEditing(true);
+          }}
+          disabled={manage}
+          className="flex h-9 w-full max-w-[190px] items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 text-xs font-bold text-zinc-400 transition-colors hover:border-emerald-300 hover:text-emerald-600 disabled:opacity-40 dark:border-zinc-700"
+        >
+          ＋ Add parent email
+        </button>
+        {statusLine}
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <button
-        onClick={() => {
-          setDraft(saved);
-          setEditing(true);
-        }}
-        title={`${saved} — tap to edit`}
-        className="min-w-0 max-w-[230px] flex-1 truncate rounded-lg bg-zinc-50 px-2.5 py-1.5 text-left text-xs font-bold text-zinc-600 ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
-      >
-        {saved}
-      </button>
-      {manage ? (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => {
-            if (confirm(`Remove the parent email for ${name}?`))
-              setParentEmail(yearKey, name, "");
+            setDraft(saved);
+            setEditing(true);
           }}
-          aria-label="Remove this parent email"
-          className="shrink-0 rounded-lg bg-rose-100 px-2 py-2 text-rose-600 shadow-sm active:scale-90 dark:bg-rose-950/50 dark:text-rose-300"
+          title={`${saved} — tap to edit`}
+          className="min-w-0 max-w-[230px] flex-1 truncate rounded-lg bg-zinc-50 px-2.5 py-1.5 text-left text-xs font-bold text-zinc-600 ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
         >
-          🗑️
+          {saved}
         </button>
-      ) : (
-        <>
+        {manage ? (
           <button
             onClick={() => {
-              if (latest)
+              if (confirm(`Remove the parent email for ${name}?`))
+                setParentEmail(yearKey, name, "");
+            }}
+            aria-label="Remove this parent email"
+            className="shrink-0 rounded-lg bg-rose-100 px-2 py-2 text-rose-600 shadow-sm active:scale-90 dark:bg-rose-950/50 dark:text-rose-300"
+          >
+            🗑️
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => {
+                if (!latest) return;
                 void emailReport(
                   saved,
                   latest.rec.report,
@@ -1437,38 +1512,41 @@ function ParentCell({
                   teacherName,
                   teacherEmail,
                 );
-            }}
-            disabled={!latest}
-            title={
-              latest
-                ? `Email ${name}'s Term ${latest.term} report to ${saved}`
-                : "No report saved yet"
-            }
-            className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
-          >
-            ✉️
-          </button>
-          <button
-            onClick={() => {
-              if (!latest) return;
-              void copyReportLink(latest.rec.report).then((ok) => {
-                if (!ok) return;
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1600);
-              });
-            }}
-            disabled={!latest}
-            title={
-              latest
-                ? `Copy the link to ${name}'s Term ${latest.term} report`
-                : "No report saved yet"
-            }
-            className="shrink-0 rounded-lg bg-white px-2 py-2 text-xs font-bold text-zinc-500 shadow-sm ring-1 ring-black/5 active:scale-90 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300"
-          >
-            {copied ? "✓" : "🔗"}
-          </button>
-        </>
-      )}
+                markSent(yearKey, name, latest.term);
+              }}
+              disabled={!latest}
+              title={
+                latest
+                  ? `Email ${name}'s Term ${latest.term} report to ${saved}`
+                  : "No report saved yet"
+              }
+              className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+            >
+              ✉️
+            </button>
+            <button
+              onClick={() => {
+                if (!latest) return;
+                void copyReportLink(latest.rec.report).then((ok) => {
+                  if (!ok) return;
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1600);
+                });
+              }}
+              disabled={!latest}
+              title={
+                latest
+                  ? `Copy the link to ${name}'s Term ${latest.term} report`
+                  : "No report saved yet"
+              }
+              className="shrink-0 rounded-lg bg-white px-2 py-2 text-xs font-bold text-zinc-500 shadow-sm ring-1 ring-black/5 active:scale-90 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300"
+            >
+              {copied ? "✓" : "🔗"}
+            </button>
+          </>
+        )}
+      </div>
+      {statusLine}
     </div>
   );
 }
@@ -1561,6 +1639,13 @@ function Cell({
 }
 
 /* ---------- tiny helpers ---------- */
+/** "15 Sep" */
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+}
 function csv(s: string): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
