@@ -1236,6 +1236,38 @@ function MailMerge({
   } | null>(null);
   const [marked, setMarked] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Sending from the app itself, as the teacher's Zera mailbox.
+  const [mail, setMail] = useState<{
+    configured: boolean;
+    connected: boolean;
+    account?: string;
+  } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendNote, setSendNote] = useState("");
+
+  useEffect(() => {
+    fetch("/api/mail/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setMail(d);
+      })
+      .catch(() => {});
+    // Microsoft sends the teacher back here after they connect — show how it
+    // went, after a frame so the page paints first.
+    const q = new URLSearchParams(window.location.search);
+    const note =
+      q.get("mail") === "connected"
+        ? `Connected ${q.get("account") ?? "your mailbox"}.`
+        : q.get("mail") === "error"
+          ? (q.get("why") ?? "That didn’t connect.")
+          : "";
+    if (q.has("mail")) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    if (!note) return;
+    const frame = requestAnimationFrame(() => setSendNote(note));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   // Who goes in the file: attending children with a report and a parent
   // email — by default only those whose latest report hasn't gone out yet.
@@ -1296,6 +1328,80 @@ function MailMerge({
     ...(teacherName ? [teacherName] : []),
     "Phonics Pals & Guided Reading · Zera International School",
   ].join("\n");
+
+  /** The same message as the Word one, with this child's details filled in. */
+  function messageFor(r: MergeRow, link: string): string {
+    return [
+      "Dear Parent/Guardian,",
+      "",
+      `Here is ${r.name}'s reading assessment for Term ${r.term}.`,
+      "",
+      `Reader level: ${r.rec.report.categoryLabel}`,
+      `Lexile measure: ${displayLexile(r.rec.report.lexile)}`,
+      "",
+      `Open ${r.name}'s full report here:`,
+      link,
+      "",
+      "It opens in any web browser — no sign-in needed.",
+      "",
+      "Kind regards,",
+      ...(teacherName ? [teacherName] : []),
+      "Phonics Pals & Guided Reading · Zera International School",
+    ].join("\n");
+  }
+
+  /** Send every prepared email from the teacher's own mailbox, then tick them. */
+  async function sendFromApp() {
+    if (!ready.length) return;
+    setSending(true);
+    setSendNote("");
+    try {
+      const { links } = await reportLinks(ready.map((r) => r.rec.report));
+      const messages = ready.map((r, i) => ({
+        to: r.email.split(/\s*[;,]\s*/).filter(Boolean),
+        subject: `Reading report — ${r.name} · Term ${r.term}`,
+        body: messageFor(r, links[i]),
+      }));
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+      });
+      const data = await res.json();
+      if (data?.configured === false) {
+        setSendNote("Sending from the app isn’t set up yet.");
+        return;
+      }
+      if (data?.connected === false) {
+        setMail((m) => (m ? { ...m, connected: false } : m));
+        setSendNote("Connect your Zera email first.");
+        return;
+      }
+      if (!data?.ok) {
+        setSendNote(
+          typeof data?.error === "string" ? data.error : "Couldn’t send them.",
+        );
+        return;
+      }
+      const results = data.results as { ok: boolean; error?: string }[];
+      let sentCount = 0;
+      results.forEach((result, i) => {
+        if (!result.ok) return;
+        sentCount++;
+        markSent(ready[i].yearKey, ready[i].name, ready[i].term);
+      });
+      const failed = results.filter((r) => !r.ok);
+      setSendNote(
+        failed.length
+          ? `Sent ${sentCount}. ${failed.length} didn’t go: ${failed[0].error ?? "rejected"}`
+          : `✓ Sent ${sentCount} report${sentCount === 1 ? "" : "s"} from your mailbox.`,
+      );
+    } catch {
+      setSendNote("Couldn’t reach the mail service. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function makeFile() {
     if (!ready.length) return;
@@ -1407,7 +1513,58 @@ function MailMerge({
           ` · no parent email for ${noEmail.length}: ${noEmail.join(", ")}`}
       </p>
 
-      {/* 2 — the steps */}
+      {/* Send from the app itself, when the school has allowed it */}
+      <div className="mt-3 rounded-xl bg-sky-50/70 p-3 ring-1 ring-sky-100 dark:bg-sky-950/25 dark:ring-sky-900/50">
+        {mail?.configured && mail.connected ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => void sendFromApp()}
+              disabled={!ready.length || sending}
+              className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+            >
+              {sending
+                ? "⏳ Sending…"
+                : `✉️ Send ${ready.length} report${ready.length === 1 ? "" : "s"} now`}
+            </button>
+            <span className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
+              from {mail.account} — each parent gets their own child’s report,
+              and it lands in your Sent Items.
+            </span>
+          </div>
+        ) : mail?.configured ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/api/mail/connect"
+              className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
+            >
+              🔗 Connect my Zera email
+            </a>
+            <span className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
+              Sign in with Microsoft once, then you can send every report from
+              here in one tap.
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
+            <b className="text-sky-900 dark:text-sky-200">
+              Sending from the app isn’t switched on yet.
+            </b>{" "}
+            Your school’s IT admin allows it once, in Microsoft 365 — then this
+            becomes a single Send button and Word isn’t needed. Until then, use
+            the Word steps below.
+          </p>
+        )}
+        {sendNote && (
+          <p className="mt-2 text-xs font-bold text-sky-900 dark:text-sky-200">
+            {sendNote}
+          </p>
+        )}
+      </div>
+
+      {/* 2 — or do it with Word */}
+      <p className="mt-3 text-xs font-extrabold text-zinc-500 dark:text-zinc-400">
+        Or send it yourself with Word mail merge
+      </p>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
         <li>
           <button
