@@ -98,3 +98,31 @@ export async function copyReportLink(d: ReportData): Promise<boolean> {
     return false;
   }
 }
+
+/** The same message as an HTML email, with the report link as a real
+    clickable link. Plain text is fine in most mail apps, but a URL pasted
+    into an Outlook compose window stays plain words — a parent then can't
+    tap it. */
+export function emailHtml(text: string, link: string): string {
+  const esc = (t: string) =>
+    t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const body = text
+    .split("\n")
+    .map((line) =>
+      line.trim() === link
+        ? `<a href="${esc(link)}" style="color:#0a4f29;font-weight:700">${esc(link)}</a>`
+        : esc(line),
+    )
+    .join("<br>");
+  return `<div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.55;color:#18181b">${body}</div>`;
+}
+
+/** The parent email as HTML, link and all. */
+export function emailBodyHtml(
+  d: ReportData,
+  term: TermNo,
+  link: string,
+  teacherName?: string,
+): string {
+  return emailHtml(emailBody(d, term, link, teacherName), link);
+}

@@ -237,6 +237,9 @@ export type Outgoing = {
   subject: string;
   /** Plain text; newlines become line breaks in the email. */
   body: string;
+  /** The same message as HTML, so the report link is clickable. Preferred
+      when present; `body` is the fallback for mail apps that want text. */
+  html?: string;
 };
 
 export type SendResult = { ok: boolean; to: string; error?: string };
@@ -255,7 +258,9 @@ async function sendOne(
     body: JSON.stringify({
       message: {
         subject: msg.subject,
-        body: { contentType: "Text", content: msg.body },
+        body: msg.html
+          ? { contentType: "HTML", content: msg.html }
+          : { contentType: "Text", content: msg.body },
         toRecipients: msg.to.map((address) => ({ emailAddress: { address } })),
       },
       saveToSentItems: true,

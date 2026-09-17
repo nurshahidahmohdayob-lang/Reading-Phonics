@@ -49,7 +49,8 @@ export async function POST(req: Request) {
         m.to.length > 0 &&
         m.to.every((a) => typeof a === "string" && /.+@.+\..+/.test(a)) &&
         typeof m.subject === "string" &&
-        typeof m.body === "string",
+        typeof m.body === "string" &&
+        (m.html === undefined || typeof m.html === "string"),
     );
   if (!valid) {
     return NextResponse.json(

@@ -51,7 +51,7 @@ import {
   looksLikeEmail,
   type ParentBook,
 } from "@/lib/parentContacts";
-import { emailReport, copyReportLink } from "@/lib/emailReport";
+import { emailReport, copyReportLink, emailHtml } from "@/lib/emailReport";
 import { reportLinks } from "@/lib/reportLink";
 import {
   useSentLog,
@@ -1358,6 +1358,8 @@ function SendReports({
         to: r.email.split(/\s*[;,]\s*/).filter(Boolean),
         subject: `Reading report — ${r.name} · Term ${r.term}`,
         body: messageFor(r, links[i]),
+        // HTML as well, so the report link arrives clickable.
+        html: emailHtml(messageFor(r, links[i]), links[i]),
       }));
       const res = await fetch("/api/mail/send", {
         method: "POST",
@@ -1404,11 +1406,14 @@ function SendReports({
   function openOne(q: { rows: SendRow[]; links: string[] }, i: number) {
     const r = q.rows[i];
     const via = readMailVia();
+    // A compose window takes plain text only; some mail apps don't turn a
+    // pasted address into a link, so tell the parent what to do if it isn't.
+    const text = `${messageFor(r, q.links[i])}\n\n(If the link isn’t clickable, copy it into your browser.)`;
     const url = composeUrl(
       via,
       r.email.replace(/;/g, ","),
       `Reading report — ${r.name} · Term ${r.term}`,
-      messageFor(r, q.links[i]),
+      text,
     );
     // assign(), not location.href = … — a component may not write to it.
     if (via === "app") window.location.assign(url);
