@@ -555,14 +555,14 @@ export default function ClassTracker({
                   setSync({ kind: "idle" });
                 }}
                 aria-pressed={merge}
-                title="Send every parent their own child's report in one go, with Word mail merge"
+                title="Send every parent their own child's report in one go"
                 className={`rounded-full px-4 py-2 text-xs font-bold shadow-sm ring-1 active:scale-95 ${
                   merge
                     ? "bg-[#0A4F29] text-white ring-transparent"
                     : "bg-white text-zinc-600 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
                 }`}
               >
-                📨 Mail merge
+                📨 Send reports
               </button>
               <button
                 onClick={() => void runSync()}
@@ -593,7 +593,7 @@ export default function ClassTracker({
           </div>
 
           {merge && (
-            <MailMerge
+            <SendReports
               classes={groups.map((g) => ({
                 year: g.year,
                 key: g.key,
@@ -1193,7 +1193,7 @@ function BulkEmails({
   );
 }
 
-type MergeRow = {
+type SendRow = {
   yearKey: string;
   name: string;
   year: string;
@@ -1202,12 +1202,11 @@ type MergeRow = {
   rec: TrackerRecord;
 };
 
-/** Send every parent their own child's report in one go — through Word mail
-    merge and the teacher's own Outlook, so each email goes from their Zera
-    address and lands in Sent Items. The app makes the spreadsheet (one row
-    per parent, with a short link to that child's report), hands over the
-    message to paste into Word, and ticks the reports as sent afterwards. */
-function MailMerge({
+/** Send every parent their own child's report in one go. Tick who it goes
+    to, then send: straight from the app once the school allows it, or one
+    Outlook window at a time until then. Either way each email carries a link
+    to that child's report and is ticked off as sent. */
+function SendReports({
   classes,
   store,
   book,
@@ -1230,14 +1229,6 @@ function MailMerge({
 }) {
   const [scope, setScope] = useState(currentKey);
   const [everyone, setEveryone] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [made, setMade] = useState<{
-    items: MergeRow[];
-    short: boolean;
-    file: string;
-  } | null>(null);
-  const [marked, setMarked] = useState(false);
-  const [copied, setCopied] = useState(false);
   // Sending from the app itself, as the teacher's Zera mailbox.
   const [mail, setMail] = useState<{
     configured: boolean;
@@ -1252,7 +1243,7 @@ function MailMerge({
   // Without the school's Microsoft permission, reports still go out through
   // Outlook — this walks through them one compose window at a time.
   const [queue, setQueue] = useState<{
-    rows: MergeRow[];
+    rows: SendRow[];
     links: string[];
     i: number;
   } | null>(null);
@@ -1283,7 +1274,7 @@ function MailMerge({
 
   // Who goes in the file: attending children with a report and a parent
   // email — by default only those whose latest report hasn't gone out yet.
-  const ready: MergeRow[] = [];
+  const ready: SendRow[] = [];
   const noEmail: string[] = [];
   let alreadySent = 0;
   for (const c of classes) {
@@ -1323,39 +1314,20 @@ function MailMerge({
     }
   }
 
-  const rowKey = (r: MergeRow) => `${r.yearKey}:${r.name}`;
+  const rowKey = (r: SendRow) => `${r.yearKey}:${r.name}`;
   const chosen = ready.filter((r) => picked === null || picked.has(rowKey(r)));
   const allPicked = picked === null || chosen.length === ready.length;
 
-  function togglePick(r: MergeRow) {
+  function togglePick(r: SendRow) {
     const key = rowKey(r);
     const now = new Set(picked ?? ready.map(rowKey));
     if (now.has(key)) now.delete(key);
     else now.add(key);
     setPicked(now);
-    setMade(null);
   }
 
-  const message = [
-    "Dear Parent/Guardian,",
-    "",
-    "Here is [Child]'s reading assessment for [Term].",
-    "",
-    "Reader level: [ReaderLevel]",
-    "Lexile measure: [Lexile]",
-    "",
-    "Open [Child]'s full report here:",
-    "[ReportLink]",
-    "",
-    "It opens in any web browser — no sign-in needed.",
-    "",
-    "Kind regards,",
-    ...(teacherName ? [teacherName] : []),
-    "Phonics Pals & Guided Reading · Zera International School",
-  ].join("\n");
-
-  /** The same message as the Word one, with this child's details filled in. */
-  function messageFor(r: MergeRow, link: string): string {
+  /** The message one parent gets, with their child's details filled in. */
+  function messageFor(r: SendRow, link: string): string {
     return [
       "Dear Parent/Guardian,",
       "",
@@ -1429,7 +1401,7 @@ function MailMerge({
   }
 
   /** Open the next parent's email in Outlook, and tick that report as sent. */
-  function openOne(q: { rows: MergeRow[]; links: string[] }, i: number) {
+  function openOne(q: { rows: SendRow[]; links: string[] }, i: number) {
     const r = q.rows[i];
     const via = readMailVia();
     const url = composeUrl(
@@ -1460,60 +1432,6 @@ function MailMerge({
     }
   }
 
-  async function makeFile() {
-    if (!chosen.length) return;
-    setBusy(true);
-    try {
-      const { links, short } = await reportLinks(
-        chosen.map((r) => r.rec.report),
-      );
-      const head = [
-        "Email",
-        "Child",
-        "Class",
-        "Term",
-        "ReaderLevel",
-        "Lexile",
-        "ReportLink",
-      ];
-      const lines = [head.join(",")];
-      chosen.forEach((r, i) =>
-        lines.push(
-          [
-            r.email,
-            r.name,
-            r.year,
-            `Term ${r.term}`,
-            r.rec.report.categoryLabel,
-            displayLexile(r.rec.report.lexile),
-            links[i],
-          ]
-            .map(csv)
-            .join(","),
-        ),
-      );
-      const scopeName =
-        scope === "all"
-          ? "all-classes"
-          : (classes.find((c) => c.key === scope)?.year ?? scope)
-              .toLowerCase()
-              .replace(/\s+/g, "-");
-      const file = `mail-merge-${scopeName}.csv`;
-      // A byte-order mark so Word and Excel read the dashes and names as UTF-8.
-      download(file, "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
-      setMade({ items: chosen, short, file });
-      setMarked(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function markAllSent() {
-    if (!made) return;
-    for (const r of made.items) markSent(r.yearKey, r.name, r.term);
-    setMarked(true);
-  }
-
   return (
     <div className="mt-3 w-full rounded-2xl bg-white p-4 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-3">
@@ -1536,7 +1454,6 @@ function MailMerge({
           value={scope}
           onChange={(e) => {
             setScope(e.target.value);
-            setMade(null);
           }}
           className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-zinc-600 ring-1 ring-black/10 dark:bg-zinc-800 dark:text-zinc-200"
         >
@@ -1553,7 +1470,6 @@ function MailMerge({
             checked={everyone}
             onChange={(e) => {
               setEveryone(e.target.checked);
-              setMade(null);
             }}
             className="h-3.5 w-3.5 accent-[#0A4F29]"
           />
@@ -1580,7 +1496,6 @@ function MailMerge({
             <button
               onClick={() => {
                 setPicked(allPicked ? new Set<string>() : null);
-                setMade(null);
               }}
               className="text-[11px] font-bold text-zinc-500 underline decoration-dotted underline-offset-2 hover:text-zinc-700 dark:text-zinc-400"
             >
@@ -1694,80 +1609,6 @@ function MailMerge({
           </p>
         )}
       </div>
-
-      {/* 2 — or do it with Word */}
-      <p className="mt-3 text-xs font-extrabold text-zinc-500 dark:text-zinc-400">
-        Or send it yourself with Word mail merge
-      </p>
-      <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-        <li>
-          <button
-            onClick={() => void makeFile()}
-            disabled={!chosen.length || busy}
-            className="rounded-full bg-[#0A4F29] px-4 py-1.5 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
-          >
-            {busy
-              ? "⏳ Making the links…"
-              : `⬇️ Download the mail merge file (${chosen.length})`}
-          </button>
-          {made && (
-            <span className="ml-2 font-bold text-emerald-700 dark:text-emerald-300">
-              Saved {made.file}
-            </span>
-          )}
-          {made && !made.short && (
-            <span className="mt-1 block font-bold text-amber-600 dark:text-amber-400">
-              Heads up: these links are long because the app’s cloud storage
-              isn’t connected yet, and Word can cut long fields off — which
-              would break the links. Connect the storage before sending.
-            </span>
-          )}
-        </li>
-        <li>
-          Open <b>Word</b> → blank document → <b>Mailings</b> →{" "}
-          <b>Select Recipients</b> → <b>Use an Existing List…</b> → choose the
-          file you just downloaded.
-        </li>
-        <li>
-          Paste the message below. Replace each <b>[Field]</b> with{" "}
-          <b>Mailings → Insert Merge Field</b> → the matching field.
-          <div className="mt-1.5 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/60">
-            <pre className="whitespace-pre-wrap font-sans text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-              {message}
-            </pre>
-            <button
-              onClick={() => {
-                void navigator.clipboard.writeText(message).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1600);
-                });
-              }}
-              className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-zinc-600 ring-1 ring-black/10 active:scale-95 dark:bg-zinc-900 dark:text-zinc-200"
-            >
-              {copied ? "✓ Copied" : "📋 Copy message"}
-            </button>
-          </div>
-        </li>
-        <li>
-          <b>Finish &amp; Merge → Merge to E-mail</b>: To = <b>Email</b>,
-          Subject = <i>Your child’s reading report</i>, format <b>HTML</b> →{" "}
-          <b>OK</b>. Outlook must be open and signed in as your Zera account (if
-          Word can’t find Outlook, turn off <b>New Outlook</b> in the Outlook
-          menu).
-        </li>
-        <li>
-          Once Outlook has sent them:{" "}
-          <button
-            onClick={markAllSent}
-            disabled={!made || marked}
-            className="rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 active:scale-95 disabled:opacity-40 dark:bg-zinc-800 dark:text-emerald-300 dark:ring-emerald-900/50"
-          >
-            {marked
-              ? `✓ Marked ${made?.items.length ?? 0} as sent`
-              : `✓ Mark these ${made?.items.length ?? chosen.length} as sent`}
-          </button>
-        </li>
-      </ol>
     </div>
   );
 }
