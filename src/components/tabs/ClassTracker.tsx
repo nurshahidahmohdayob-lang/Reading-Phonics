@@ -64,6 +64,8 @@ import {
 import {
   useMailVia,
   setMailVia,
+  readMailVia,
+  composeUrl,
   MAIL_VIA_LABEL,
   type MailVia,
 } from "@/lib/mailPrefs";
@@ -1244,6 +1246,16 @@ function MailMerge({
   } | null>(null);
   const [sending, setSending] = useState(false);
   const [sendNote, setSendNote] = useState("");
+  // Which children to send to. null means "all of them" — so the list stays
+  // right when the class or the filter changes, with no effects to resync.
+  const [picked, setPicked] = useState<Set<string> | null>(null);
+  // Without the school's Microsoft permission, reports still go out through
+  // Outlook — this walks through them one compose window at a time.
+  const [queue, setQueue] = useState<{
+    rows: MergeRow[];
+    links: string[];
+    i: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/mail/status")
@@ -1311,6 +1323,19 @@ function MailMerge({
     }
   }
 
+  const rowKey = (r: MergeRow) => `${r.yearKey}:${r.name}`;
+  const chosen = ready.filter((r) => picked === null || picked.has(rowKey(r)));
+  const allPicked = picked === null || chosen.length === ready.length;
+
+  function togglePick(r: MergeRow) {
+    const key = rowKey(r);
+    const now = new Set(picked ?? ready.map(rowKey));
+    if (now.has(key)) now.delete(key);
+    else now.add(key);
+    setPicked(now);
+    setMade(null);
+  }
+
   const message = [
     "Dear Parent/Guardian,",
     "",
@@ -1352,12 +1377,12 @@ function MailMerge({
 
   /** Send every prepared email from the teacher's own mailbox, then tick them. */
   async function sendFromApp() {
-    if (!ready.length) return;
+    if (!chosen.length) return;
     setSending(true);
     setSendNote("");
     try {
-      const { links } = await reportLinks(ready.map((r) => r.rec.report));
-      const messages = ready.map((r, i) => ({
+      const { links } = await reportLinks(chosen.map((r) => r.rec.report));
+      const messages = chosen.map((r, i) => ({
         to: r.email.split(/\s*[;,]\s*/).filter(Boolean),
         subject: `Reading report — ${r.name} · Term ${r.term}`,
         body: messageFor(r, links[i]),
@@ -1388,7 +1413,7 @@ function MailMerge({
       results.forEach((result, i) => {
         if (!result.ok) return;
         sentCount++;
-        markSent(ready[i].yearKey, ready[i].name, ready[i].term);
+        markSent(chosen[i].yearKey, chosen[i].name, chosen[i].term);
       });
       const failed = results.filter((r) => !r.ok);
       setSendNote(
@@ -1403,12 +1428,44 @@ function MailMerge({
     }
   }
 
+  /** Open the next parent's email in Outlook, and tick that report as sent. */
+  function openOne(q: { rows: MergeRow[]; links: string[] }, i: number) {
+    const r = q.rows[i];
+    const via = readMailVia();
+    const url = composeUrl(
+      via,
+      r.email.replace(/;/g, ","),
+      `Reading report — ${r.name} · Term ${r.term}`,
+      messageFor(r, q.links[i]),
+    );
+    // assign(), not location.href = … — a component may not write to it.
+    if (via === "app") window.location.assign(url);
+    else window.open(url, "_blank", "noopener");
+    markSent(r.yearKey, r.name, r.term);
+    setQueue({ ...q, i: i + 1 });
+  }
+
+  /** Prepare every selected email, then open the first one. */
+  async function startQueue() {
+    if (!chosen.length) return;
+    setSending(true);
+    setSendNote("");
+    try {
+      const { links } = await reportLinks(chosen.map((r) => r.rec.report));
+      openOne({ rows: chosen, links }, 0);
+    } catch {
+      setSendNote("Couldn’t prepare the emails. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function makeFile() {
-    if (!ready.length) return;
+    if (!chosen.length) return;
     setBusy(true);
     try {
       const { links, short } = await reportLinks(
-        ready.map((r) => r.rec.report),
+        chosen.map((r) => r.rec.report),
       );
       const head = [
         "Email",
@@ -1420,7 +1477,7 @@ function MailMerge({
         "ReportLink",
       ];
       const lines = [head.join(",")];
-      ready.forEach((r, i) =>
+      chosen.forEach((r, i) =>
         lines.push(
           [
             r.email,
@@ -1444,7 +1501,7 @@ function MailMerge({
       const file = `mail-merge-${scopeName}.csv`;
       // A byte-order mark so Word and Excel read the dashes and names as UTF-8.
       download(file, "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
-      setMade({ items: ready, short, file });
+      setMade({ items: chosen, short, file });
       setMarked(false);
     } finally {
       setBusy(false);
@@ -1465,8 +1522,8 @@ function MailMerge({
             📨 Send every report in one go
           </h3>
           <p className="mt-0.5 text-xs font-semibold text-zinc-400">
-            Word mail merge sends each parent their own child’s report from your
-            Outlook — from your Zera address, into your Sent Items.
+            Tick who to send to, then send. Each parent gets their own child’s
+            report, from your Zera address and into your Sent Items.
           </p>
         </div>
         <CloseX onClose={onClose} />
@@ -1513,18 +1570,62 @@ function MailMerge({
           ` · no parent email for ${noEmail.length}: ${noEmail.join(", ")}`}
       </p>
 
+      {/* Who to send to */}
+      {ready.length > 0 && (
+        <div className="mt-2 rounded-xl bg-zinc-50 p-2 dark:bg-zinc-800/50">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wide text-zinc-400">
+              {chosen.length} of {ready.length} selected
+            </span>
+            <button
+              onClick={() => {
+                setPicked(allPicked ? new Set<string>() : null);
+                setMade(null);
+              }}
+              className="text-[11px] font-bold text-zinc-500 underline decoration-dotted underline-offset-2 hover:text-zinc-700 dark:text-zinc-400"
+            >
+              {allPicked ? "Clear all" : "Select all"}
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {ready.map((r) => (
+              <label
+                key={rowKey(r)}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-xs font-bold text-zinc-600 hover:bg-white dark:text-zinc-200 dark:hover:bg-zinc-900/60"
+              >
+                <input
+                  type="checkbox"
+                  checked={picked === null || picked.has(rowKey(r))}
+                  onChange={() => togglePick(r)}
+                  className="h-3.5 w-3.5 accent-[#0A4F29]"
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {r.name}
+                  <span className="ml-1.5 font-semibold text-zinc-400">
+                    {r.year} · Term {r.term}
+                  </span>
+                </span>
+                <span className="max-w-[190px] truncate text-[11px] font-semibold text-zinc-400">
+                  {r.email}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Send from the app itself, when the school has allowed it */}
       <div className="mt-3 rounded-xl bg-sky-50/70 p-3 ring-1 ring-sky-100 dark:bg-sky-950/25 dark:ring-sky-900/50">
         {mail?.configured && mail.connected ? (
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => void sendFromApp()}
-              disabled={!ready.length || sending}
+              disabled={!chosen.length || sending}
               className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
             >
               {sending
                 ? "⏳ Sending…"
-                : `✉️ Send ${ready.length} report${ready.length === 1 ? "" : "s"} now`}
+                : `✉️ Send ${chosen.length} report${chosen.length === 1 ? "" : "s"} now`}
             </button>
             <span className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
               from {mail.account} — each parent gets their own child’s report,
@@ -1545,14 +1646,47 @@ function MailMerge({
             </span>
           </div>
         ) : (
-          <p className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
-            <b className="text-sky-900 dark:text-sky-200">
-              Sending from the app isn’t switched on yet.
-            </b>{" "}
-            Your school’s IT admin allows it once, in Microsoft 365 — then this
-            becomes a single Send button and Word isn’t needed. Until then, use
-            the Word steps below.
-          </p>
+          <div>
+            <p className="text-xs font-semibold text-sky-900/70 dark:text-sky-100/60">
+              <b className="text-sky-900 dark:text-sky-200">
+                One-tap sending isn’t switched on yet.
+              </b>{" "}
+              Your school’s IT admin allows it once, in Microsoft 365 — then
+              this becomes a single Send button. Until then, Outlook can open
+              the selected emails one after another, each one written and
+              addressed, so you only press Send:
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {!queue || queue.i >= queue.rows.length ? (
+                <button
+                  onClick={() => void startQueue()}
+                  disabled={!chosen.length || sending}
+                  className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
+                >
+                  {sending
+                    ? "⏳ Preparing…"
+                    : queue
+                      ? `✓ Opened all ${queue.rows.length}`
+                      : `▶️ Start with Outlook (${chosen.length})`}
+                </button>
+              ) : (
+                <button
+                  onClick={() => openOne(queue, queue.i)}
+                  className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
+                >
+                  ✉️ Open next ({queue.i + 1} of {queue.rows.length})
+                </button>
+              )}
+              {queue && (
+                <button
+                  onClick={() => setQueue(null)}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-500 ring-1 ring-black/10 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+                >
+                  Stop
+                </button>
+              )}
+            </div>
+          </div>
         )}
         {sendNote && (
           <p className="mt-2 text-xs font-bold text-sky-900 dark:text-sky-200">
@@ -1569,12 +1703,12 @@ function MailMerge({
         <li>
           <button
             onClick={() => void makeFile()}
-            disabled={!ready.length || busy}
+            disabled={!chosen.length || busy}
             className="rounded-full bg-[#0A4F29] px-4 py-1.5 text-xs font-bold text-white active:scale-95 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
           >
             {busy
               ? "⏳ Making the links…"
-              : `⬇️ Download the mail merge file (${ready.length})`}
+              : `⬇️ Download the mail merge file (${chosen.length})`}
           </button>
           {made && (
             <span className="ml-2 font-bold text-emerald-700 dark:text-emerald-300">
@@ -1630,7 +1764,7 @@ function MailMerge({
           >
             {marked
               ? `✓ Marked ${made?.items.length ?? 0} as sent`
-              : `✓ Mark these ${made?.items.length ?? ready.length} as sent`}
+              : `✓ Mark these ${made?.items.length ?? chosen.length} as sent`}
           </button>
         </li>
       </ol>
