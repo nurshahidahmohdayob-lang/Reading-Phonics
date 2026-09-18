@@ -56,6 +56,7 @@ import {
   copyReportLink,
   emailHtml,
   emailBody,
+  copyRichMessage,
 } from "@/lib/emailReport";
 import { reportLinks } from "@/lib/reportLink";
 import {
@@ -1401,7 +1402,7 @@ function SendReports({
     );
   }
 
-  function openOne(q: { rows: SendRow[]; links: string[] }, i: number) {
+  async function openOne(q: { rows: SendRow[]; links: string[] }, i: number) {
     const r = q.rows[i];
     const via = readMailVia();
     const link = q.links[i];
@@ -1410,25 +1411,11 @@ function SendReports({
     // A compose window's body can only be plain text — Microsoft strips HTML
     // from it and doesn't run link detection on what we prefill, so the report
     // address arrives as words the parent can't tap. Copying the message as
-    // rich text instead keeps the link a link when it's pasted in. The
-    // clipboard must be written straight from this click, before anything
-    // else, or the browser refuses it.
-    let copied = false;
-    if (canCopyRich()) {
-      try {
-        void navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([emailHtml(text, link)], {
-              type: "text/html",
-            }),
-            "text/plain": new Blob([text], { type: "text/plain" }),
-          }),
-        ]);
-        copied = true;
-      } catch {
-        /* clipboard refused — fall back to filling the body in */
-      }
-    }
+    // rich text keeps the link a link once it's pasted in. Open the window
+    // first, straight from the click so it isn't blocked, then see whether the
+    // copy worked before deciding what goes in it.
+    const win = via === "app" ? null : window.open("about:blank", "_blank");
+    const copied = await copyRichMessage(text, link);
 
     const body = copied
       ? ""
@@ -1440,8 +1427,8 @@ function SendReports({
       body,
     );
     // assign(), not location.href = … — a component may not write to it.
-    if (via === "app") window.location.assign(url);
-    else window.open(url, "_blank", "noopener");
+    if (win) win.location.href = url;
+    else window.location.assign(url);
     markSent(r.yearKey, r.name, r.term);
     setQueue({ ...q, i: i + 1 });
   }
@@ -1620,7 +1607,7 @@ function SendReports({
                 </button>
               ) : (
                 <button
-                  onClick={() => openOne(queue, queue.i)}
+                  onClick={() => void openOne(queue, queue.i)}
                   className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
                 >
                   {canCopyRich() ? "📋 Copy & open" : "✉️ Open"} ({queue.i + 1}{" "}
@@ -1861,6 +1848,7 @@ function ParentCell({
   const [draft, setDraft] = useState(saved);
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState(false);
+  const [pasteHint, setPasteHint] = useState(false);
 
   function save() {
     const clean = draft.trim();
@@ -1972,6 +1960,11 @@ function ParentCell({
 
   return (
     <div className="flex flex-col gap-1">
+      {pasteHint && (
+        <span className="rounded-md bg-emerald-50 px-1.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+          Message copied — press ⌘V in the email, then Send.
+        </span>
+      )}
       <div className="flex items-center gap-1.5">
         <button
           onClick={() => {
@@ -2005,14 +1998,22 @@ function ParentCell({
                   latest.term,
                   teacherName,
                   teacherEmail,
-                );
+                ).then(({ copied: onClipboard }) => {
+                  // The window is left empty on purpose: pasting is what
+                  // keeps the report link clickable.
+                  if (!onClipboard) return;
+                  setPasteHint(true);
+                  setTimeout(() => setPasteHint(false), 8000);
+                });
                 markSent(yearKey, name, latest.term);
               }}
               disabled={!latest}
               title={
-                latest
-                  ? `Email ${name}'s Term ${latest.term} report to ${saved}`
-                  : "No report saved yet"
+                pasteHint
+                  ? "Message copied — press ⌘V in the email, then Send"
+                  : latest
+                    ? `Email ${name}'s Term ${latest.term} report to ${saved}`
+                    : "No report saved yet"
               }
               className="shrink-0 rounded-lg bg-[#0A4F29] px-2.5 py-2 text-xs font-bold text-white shadow-sm active:scale-90 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800"
             >

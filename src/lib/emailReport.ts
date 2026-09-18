@@ -62,27 +62,65 @@ export function emailSubject(d: ReportData, term: TermNo): string {
   return `Reading report — ${d.studentName} · Term ${term}`;
 }
 
-/** Open a compose window with the message and the parent's link ready. */
+/** Put the message on the clipboard as rich text, so pasting it into a
+    compose window keeps the report link a real link. A compose window's own
+    body can only carry plain text, which mail apps don't turn into links. */
+export async function copyRichMessage(
+  text: string,
+  link: string,
+): Promise<boolean> {
+  try {
+    if (
+      typeof ClipboardItem === "undefined" ||
+      typeof navigator === "undefined" ||
+      !navigator.clipboard?.write
+    ) {
+      return false;
+    }
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([emailHtml(text, link)], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" }),
+      }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Open a compose window with the message and the parent's link ready.
+    Says whether the message went to the clipboard: if it did, the window is
+    left empty to paste into (⌘V) — the only way the link arrives clickable —
+    and if it didn't, the body is filled in as plain text instead. */
 export async function emailReport(
   to: string,
   d: ReportData,
   term: TermNo,
   teacherName?: string,
   from?: string,
-): Promise<void> {
-  if (typeof window === "undefined") return;
-  const [link] = (await reportLinks([d])).links;
+): Promise<{ copied: boolean }> {
+  if (typeof window === "undefined") return { copied: false };
   const via = readMailVia();
+  // Open the window first, straight from the click, so it can't be blocked;
+  // what goes in it is decided once the copy has been tried.
+  const win = via === "app" ? null : window.open("about:blank", "_blank");
+  const [link] = (await reportLinks([d])).links;
+  const text = emailBody(d, term, link, teacherName);
+  const copied = await copyRichMessage(text, link);
   const url = composeUrl(
     via,
     to,
     emailSubject(d, term),
-    emailBody(d, term, link, teacherName),
+    copied
+      ? ""
+      : `${text}\n\n(If the link isn’t clickable, copy it into your browser.)`,
     from,
   );
   // The web mailboxes open in their own tab; the desktop app takes over here.
-  if (via === "app") window.location.href = url;
-  else window.open(url, "_blank", "noopener");
+  if (win) win.location.href = url;
+  else window.location.href = url;
+  return { copied };
 }
 
 /** Put just the parent link on the clipboard — for WhatsApp, webmail, etc. */
