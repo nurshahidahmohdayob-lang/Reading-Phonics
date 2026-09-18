@@ -51,7 +51,12 @@ import {
   looksLikeEmail,
   type ParentBook,
 } from "@/lib/parentContacts";
-import { emailReport, copyReportLink, emailHtml } from "@/lib/emailReport";
+import {
+  emailReport,
+  copyReportLink,
+  emailHtml,
+  emailBody,
+} from "@/lib/emailReport";
 import { reportLinks } from "@/lib/reportLink";
 import {
   useSentLog,
@@ -1326,26 +1331,10 @@ function SendReports({
     setPicked(now);
   }
 
-  /** The message one parent gets, with their child's details filled in. */
-  function messageFor(r: SendRow, link: string): string {
-    return [
-      "Dear Parent/Guardian,",
-      "",
-      `Here is ${r.name}'s reading assessment for Term ${r.term}.`,
-      "",
-      `Reader level: ${r.rec.report.categoryLabel}`,
-      `Lexile measure: ${displayLexile(r.rec.report.lexile)}`,
-      "",
-      `Open ${r.name}'s full report here:`,
-      link,
-      "",
-      "It opens in any web browser — no sign-in needed.",
-      "",
-      "Kind regards,",
-      ...(teacherName ? [teacherName] : []),
-      "Phonics Pals & Guided Reading · Zera International School",
-    ].join("\n");
-  }
+  /** The message one parent gets. Same wording as the single ✉️ button, so
+      there's only one place to change what parents read. */
+  const messageFor = (r: SendRow, link: string) =>
+    emailBody(r.rec.report, r.term, link, teacherName);
 
   /** Send every prepared email from the teacher's own mailbox, then tick them. */
   async function sendFromApp() {

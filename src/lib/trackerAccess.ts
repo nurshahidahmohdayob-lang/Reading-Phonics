@@ -11,3 +11,15 @@ export function isTrackerOwner(email?: string | null): boolean {
   const e = email.trim().toLowerCase();
   return TRACKER_OWNERS.some((owner) => owner.toLowerCase() === e);
 }
+
+/** How a teacher signs off the emails parents receive. The staff directory
+    holds working names like "SHA"; parents should see a name they'd use.
+    Add a line here for another teacher. */
+const SIGN_OFF: Record<string, string> = {
+  "shahidah.a@zera.edu.my": "Ms. Sha",
+};
+
+export function signOffName(email?: string | null, fallback = ""): string {
+  const e = (email ?? "").trim().toLowerCase();
+  return SIGN_OFF[e] ?? fallback;
+}

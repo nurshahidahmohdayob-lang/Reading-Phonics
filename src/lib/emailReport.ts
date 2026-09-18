@@ -39,7 +39,7 @@ export function emailBody(
   );
   lines.push("");
   lines.push(
-    `Reader level: ${d.categoryLabel} — overall score ${d.composite}%`,
+    `Reader level: ${d.categoryLabel} (overall score ${d.composite}%)`,
   );
   lines.push(
     `Lexile measure: ${displayLexile(d.lexile)}${d.lexileBand ? ` (${d.lexileBand})` : ""}`,
@@ -49,7 +49,7 @@ export function emailBody(
   lines.push(`Open ${d.studentName}'s full report here:`);
   lines.push(link);
   lines.push(
-    "It opens in any web browser — no sign-in needed — and the Print button there will save it as a PDF if you'd like to keep a copy.",
+    "It opens in any web browser, no sign-in needed. The Print button there saves it as a PDF if you would like to keep a copy.",
   );
   lines.push("");
   lines.push("Kind regards,");

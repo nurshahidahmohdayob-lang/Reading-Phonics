@@ -419,7 +419,14 @@ export default function Home() {
       .then((r) => r.json())
       .then((d) => {
         setTrackerOwner(!!d?.trackerOwner);
-        setTeacherName(typeof d?.name === "string" ? d.name : "");
+        // The name parents see at the end of their email.
+        setTeacherName(
+          typeof d?.signOff === "string" && d.signOff
+            ? d.signOff
+            : typeof d?.name === "string"
+              ? d.name
+              : "",
+        );
         setTeacherEmail(typeof d?.email === "string" ? d.email : "");
       })
       .catch(() => {});
