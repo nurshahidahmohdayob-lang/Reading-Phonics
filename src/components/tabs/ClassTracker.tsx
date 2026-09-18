@@ -1392,17 +1392,52 @@ function SendReports({
   }
 
   /** Open the next parent's email in Outlook, and tick that report as sent. */
+  /** Can we hand the mail app a rich-text message? */
+  function canCopyRich(): boolean {
+    return (
+      typeof ClipboardItem !== "undefined" &&
+      typeof navigator !== "undefined" &&
+      !!navigator.clipboard?.write
+    );
+  }
+
   function openOne(q: { rows: SendRow[]; links: string[] }, i: number) {
     const r = q.rows[i];
     const via = readMailVia();
-    // A compose window takes plain text only; some mail apps don't turn a
-    // pasted address into a link, so tell the parent what to do if it isn't.
-    const text = `${messageFor(r, q.links[i])}\n\n(If the link isn’t clickable, copy it into your browser.)`;
+    const link = q.links[i];
+    const text = messageFor(r, link);
+
+    // A compose window's body can only be plain text — Microsoft strips HTML
+    // from it and doesn't run link detection on what we prefill, so the report
+    // address arrives as words the parent can't tap. Copying the message as
+    // rich text instead keeps the link a link when it's pasted in. The
+    // clipboard must be written straight from this click, before anything
+    // else, or the browser refuses it.
+    let copied = false;
+    if (canCopyRich()) {
+      try {
+        void navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([emailHtml(text, link)], {
+              type: "text/html",
+            }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+        copied = true;
+      } catch {
+        /* clipboard refused — fall back to filling the body in */
+      }
+    }
+
+    const body = copied
+      ? ""
+      : `${text}\n\n(If the link isn’t clickable, copy it into your browser.)`;
     const url = composeUrl(
       via,
       r.email.replace(/;/g, ","),
       `Reading report — ${r.name} · Term ${r.term}`,
-      text,
+      body,
     );
     // assign(), not location.href = … — a component may not write to it.
     if (via === "app") window.location.assign(url);
@@ -1411,14 +1446,19 @@ function SendReports({
     setQueue({ ...q, i: i + 1 });
   }
 
-  /** Prepare every selected email, then open the first one. */
+  /** Prepare the links for everyone selected, ready to open one at a time. */
   async function startQueue() {
     if (!chosen.length) return;
     setSending(true);
     setSendNote("");
     try {
       const { links } = await reportLinks(chosen.map((r) => r.rec.report));
-      openOne({ rows: chosen, links }, 0);
+      setQueue({ rows: chosen, links, i: 0 });
+      setSendNote(
+        canCopyRich()
+          ? "Ready. Each one copies the message and opens the email — paste with ⌘V, then press Send."
+          : "Ready. Each one opens the email written and addressed — just press Send.",
+      );
     } catch {
       setSendNote("Couldn’t prepare the emails. Try again.");
     } finally {
@@ -1583,7 +1623,8 @@ function SendReports({
                   onClick={() => openOne(queue, queue.i)}
                   className="rounded-full bg-[#0A4F29] px-5 py-2 text-xs font-bold text-white active:scale-95"
                 >
-                  ✉️ Open next ({queue.i + 1} of {queue.rows.length})
+                  {canCopyRich() ? "📋 Copy & open" : "✉️ Open"} ({queue.i + 1}{" "}
+                  of {queue.rows.length})
                 </button>
               )}
               {queue && (
