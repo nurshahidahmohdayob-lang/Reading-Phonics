@@ -84,6 +84,7 @@ import {
 } from "@/lib/rosterSync";
 import type { SchoolStudent, ParentContact } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
+import GuidedTracker from "./GuidedTracker";
 import type { Scoped } from "@/lib/lexileStats";
 
 const TERMS: TermNo[] = [1, 2, 3];
@@ -214,7 +215,7 @@ export default function ClassTracker({
   const mailVia = useMailVia();
   const groups = buildGroups(edits, store);
 
-  const [view, setView] = useState<"tracker" | "stats">("tracker");
+  const [view, setView] = useState<"tracker" | "stats" | "guided">("tracker");
   const [yearKey, setYearKey] = useState("y1");
   const [manage, setManage] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -283,8 +284,8 @@ export default function ClassTracker({
     return isSentCurrent(sent, group.key, s.name, l.term, l.rec.savedAt);
   }).length;
 
-  // Statistics can also look across every class at once ("All classes").
-  const allYears = view === "stats" && yearKey === "all";
+  // Statistics and guided reading can look across every class at once.
+  const allYears = view !== "tracker" && yearKey === "all";
   const scopeLabel = allYears ? "All classes" : group.year;
   const scopeStudents: Scoped[] = allYears
     ? groups.flatMap((g) =>
@@ -426,6 +427,7 @@ export default function ClassTracker({
           [
             ["tracker", "📋 Tracker"],
             ["stats", "📊 Statistics"],
+            ["guided", "📖 Guided reading"],
           ] as const
         ).map(([v, label]) => (
           <button
@@ -450,7 +452,7 @@ export default function ClassTracker({
 
       {/* Year selector — count is assessed / attending */}
       <div className="mt-4 flex w-full flex-wrap justify-center gap-2">
-        {view === "stats" && (
+        {view !== "tracker" && (
           <button
             onClick={() => setYearKey("all")}
             className={`rounded-full px-4 py-2 text-sm font-extrabold transition-all active:scale-95 ${
@@ -497,6 +499,12 @@ export default function ClassTracker({
           scopeLabel={scopeLabel}
           students={scopeStudents}
           store={store}
+        />
+      ) : view === "guided" ? (
+        <GuidedTracker
+          students={scopeStudents}
+          scopeLabel={scopeLabel}
+          manage={manage}
         />
       ) : (
         <>

@@ -13,6 +13,13 @@ import {
   type Rating,
   type ReadingReport,
 } from "@/lib/reading";
+import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
+import {
+  addGuidedRead,
+  useGuidedLog,
+  storiesRead,
+  readsFor,
+} from "@/lib/guidedLog";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { speak, praise, playSoundClip, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
@@ -21,18 +28,36 @@ type Step = "choose" | "read" | "report" | "coach";
 
 /* Candy palette cycled across cards. */
 const CARD_STYLES = [
-  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
-  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
-  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
-  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
+  {
+    bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]",
+    text: "text-pink-700",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]",
+    text: "text-orange-700",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]",
+    text: "text-emerald-700",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]",
+    text: "text-amber-700",
+  },
   { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
-  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+  {
+    bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]",
+    text: "text-violet-700",
+  },
 ];
 
 const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
 
 export default function GuidedReading() {
   const [step, setStep] = useState<Step>("choose");
+  // Who's reading. Typing a name means every read-aloud is logged against
+  // that child, and shows up in the Class Tracker.
+  const [studentName, setStudentName] = useState("");
   const [level, setLevel] = useState<PassageLevel | null>(null);
   const [passage, setPassage] = useState<Passage | null>(null);
   const [report, setReport] = useState<ReadingReport | null>(null);
@@ -72,6 +97,7 @@ export default function GuidedReading() {
         report={report}
         passage={passage}
         level={level}
+        studentName={studentName}
         onRetry={() => setStep("read")}
         onCoach={() => setStep("coach")}
         onHome={() => setStep("choose")}
@@ -81,15 +107,19 @@ export default function GuidedReading() {
 
   if (step === "coach" && report) {
     return (
-      <Coach
-        words={report.practiceWords}
-        onDone={() => setStep("report")}
-      />
+      <Coach words={report.practiceWords} onDone={() => setStep("report")} />
     );
   }
 
   // Coming back from a read keeps the chosen level open on the story list.
-  return <Choose onPick={pickPassage} initialLevel={level} />;
+  return (
+    <Choose
+      onPick={pickPassage}
+      initialLevel={level}
+      studentName={studentName}
+      onName={setStudentName}
+    />
+  );
 }
 
 /* ---------- Custom stories (teacher/parent-added, saved on device) ---------- */
@@ -113,6 +143,45 @@ function saveCustom(levelId: string, list: Passage[]) {
   localStorage.setItem(customKey(levelId), JSON.stringify(list));
 }
 
+/** Who's reading. Names come from the class lists, so a read-aloud files
+    itself under the right child in the Class Tracker. */
+function NameBox({
+  value,
+  onChange,
+  edits,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  edits: ReturnType<typeof useRosterEdits>;
+}) {
+  const pickable = allStudents(edits).filter((s) => !s.locked);
+  return (
+    <div className="mt-3 flex w-full max-w-sm flex-col items-center gap-1">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Who is reading? (optional)"
+        list="guided-roster-names"
+        autoComplete="off"
+        className="w-full rounded-2xl border-4 border-white/70 bg-white px-4 py-2.5 text-center text-base font-bold text-zinc-700 shadow-sm outline-none focus:border-brand-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+      />
+      <datalist id="guided-roster-names">
+        {pickable.map((s) => (
+          <option key={`${s.yearKey}:${s.name}`} value={s.name}>
+            {s.year}
+          </option>
+        ))}
+      </datalist>
+      <span className="text-xs font-semibold text-zinc-400">
+        {value.trim()
+          ? `Reads are saved to ${value.trim()}’s tracker`
+          : "Add a name to keep track of what they've read"}
+      </span>
+    </div>
+  );
+}
+
 /* ---------- Choose a passage by level ---------- */
 
 const PER_PAGE = 10;
@@ -120,10 +189,22 @@ const PER_PAGE = 10;
 function Choose({
   onPick,
   initialLevel = null,
+  studentName,
+  onName,
 }: {
   onPick: (l: PassageLevel, p: Passage) => void;
   initialLevel?: PassageLevel | null;
+  studentName: string;
+  onName: (v: string) => void;
 }) {
+  const edits = useRosterEdits();
+  const guided = useGuidedLog();
+  const who = findStudent(edits, studentName);
+  // Stories this child has already read, so they can be ticked off.
+  const alreadyRead = studentName.trim()
+    ? storiesRead(guided, who?.yearKey ?? "other", studentName.trim())
+    : new Map();
+
   const [level, setLevel] = useState<PassageLevel | null>(initialLevel);
   const [page, setPage] = useState(0);
 
@@ -176,6 +257,7 @@ function Choose({
         <p className="text-center text-zinc-500 dark:text-zinc-400">
           Read aloud and I&apos;ll be your reading coach. Pick your level first.
         </p>
+        <NameBox value={studentName} onChange={onName} edits={edits} />
         <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           {passageLevels.map((l, i) => {
             const style = CARD_STYLES[i % CARD_STYLES.length];
@@ -226,6 +308,7 @@ function Choose({
         </span>
       </div>
       <h2 className="mt-6 text-xl font-extrabold">Pick something to read 🎤</h2>
+      <NameBox value={studentName} onChange={onName} edits={edits} />
 
       {/* Add your own story for this level */}
       {!adding ? (
@@ -252,13 +335,17 @@ function Choose({
             className="rounded-2xl border-2 border-white/80 bg-white/90 px-4 py-2.5 font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-amber-400"
           />
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-sm font-bold text-amber-800">Picture:</span>
+            <span className="mr-1 text-sm font-bold text-amber-800">
+              Picture:
+            </span>
             {STORY_EMOJI.map((e) => (
               <button
                 key={e}
                 onClick={() => setNewEmoji(e)}
                 className={`grid h-10 w-10 place-items-center rounded-xl text-xl transition-all active:scale-90 ${
-                  newEmoji === e ? "bg-white shadow ring-2 ring-amber-400" : "bg-white/50"
+                  newEmoji === e
+                    ? "bg-white shadow ring-2 ring-amber-400"
+                    : "bg-white/50"
                 }`}
               >
                 {e}
@@ -268,7 +355,9 @@ function Choose({
           <div className="flex gap-2">
             <button
               onClick={addStory}
-              disabled={!newTitle.trim() || newText.trim().split(/\s+/).length < 3}
+              disabled={
+                !newTitle.trim() || newText.trim().split(/\s+/).length < 3
+              }
               className="flex-1 rounded-full bg-brand-600 px-6 py-2.5 font-extrabold text-white shadow active:scale-95 disabled:opacity-40"
             >
               💾 Save story
@@ -307,11 +396,18 @@ function Choose({
                         {p.emoji}
                       </span>
                       <div className="flex flex-col gap-1">
-                        <span className="text-lg font-extrabold">{p.title}</span>
+                        <span className="text-lg font-extrabold">
+                          {p.title}
+                        </span>
                         <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
                           {isCustom ? "📝 My story" : `${p.lexile}L`} ·{" "}
                           {p.text.split(/\s+/).length} words
                         </span>
+                        {alreadyRead.get(p.id) && (
+                          <span className="w-fit rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-extrabold">
+                            ✓ read · {alreadyRead.get(p.id)!.accuracy}%
+                          </span>
+                        )}
                       </div>
                     </button>
                     {isCustom && (
@@ -394,10 +490,7 @@ function ReadAloud({
     [transcript],
   );
   // Alignment runs quietly in the background — no markings while reading.
-  const status = useMemo(
-    () => alignReading(words, spoken),
-    [words, spoken],
-  );
+  const status = useMemo(() => alignReading(words, spoken), [words, spoken]);
 
   // Track the latest alignment so delayed grading sees the final words.
   const statusRef = useRef(status);
@@ -512,11 +605,18 @@ function ReadAloud({
             <>
               <div
                 className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
-                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+                style={{
+                  background:
+                    "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)",
+                }}
               >
                 <span className="absolute right-2 top-1 text-xl">🌤️</span>
-                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
-                <span className="relative text-6xl drop-shadow-md">{pickedEntry.emoji}</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">
+                  ☁️
+                </span>
+                <span className="relative text-6xl drop-shadow-md">
+                  {pickedEntry.emoji}
+                </span>
               </div>
               <span className="text-xl font-extrabold lowercase text-amber-800">
                 {picked}
@@ -604,6 +704,7 @@ function Report({
   report,
   passage,
   level,
+  studentName,
   onRetry,
   onCoach,
   onHome,
@@ -611,10 +712,41 @@ function Report({
   report: ReadingReport;
   passage: Passage;
   level: PassageLevel;
+  studentName: string;
   onRetry: () => void;
   onCoach: () => void;
   onHome: () => void;
 }) {
+  const edits = useRosterEdits();
+  const guided = useGuidedLog();
+  const who = findStudent(edits, studentName);
+  const yearKey = who?.yearKey ?? "other";
+  const saved = useRef(false);
+
+  // Log the read once, as soon as the marks are in.
+  useEffect(() => {
+    const name = studentName.trim();
+    if (saved.current || !name) return;
+    saved.current = true;
+    addGuidedRead(yearKey, name, {
+      passageId: passage.id,
+      title: passage.title,
+      lexile: passage.lexile,
+      levelId: level.id,
+      grade: level.grade,
+      accuracy: report.accuracy,
+      wcpm: report.wcpm,
+      correct: report.correct,
+      total: report.total,
+      at: new Date().toISOString(),
+    });
+  }, [studentName, yearKey, passage, level, report]);
+
+  const logged =
+    !!studentName.trim() &&
+    readsFor(guided, yearKey, studentName.trim()).some(
+      (r) => r.passageId === passage.id,
+    );
   const stars = report.accuracy >= 95 ? 3 : report.accuracy >= 80 ? 2 : 1;
   const verdict = classifyAccuracy(level.source, report.accuracy);
   const accuracyMet = report.accuracy >= level.accuracyGoal;
@@ -699,6 +831,18 @@ function Report({
       )}
 
       <StoryQuestions passage={passage} />
+
+      {studentName.trim() ? (
+        logged && (
+          <p className="mt-4 rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+            ✓ Saved to {studentName.trim()}’s reading tracker
+          </p>
+        )
+      ) : (
+        <p className="mt-4 text-sm font-semibold text-zinc-400">
+          Add a name on the story list to keep this in the tracker.
+        </p>
+      )}
 
       <div className="mt-6 flex w-full gap-3">
         <button
@@ -1031,7 +1175,8 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
             onClick={() => {
               stop(); // don't let the mic hear the app's own voice
               // Single letters say their phonics sound ("a" -> "ah"), not a word.
-              if (word.length === 1) playSoundClip(word, word === "a" ? "ah" : word);
+              if (word.length === 1)
+                playSoundClip(word, word === "a" ? "ah" : word);
               else sayWord(word, 0.85);
             }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
@@ -1041,7 +1186,8 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
           <button
             onClick={() => {
               stop();
-              if (word.length === 1) playSoundClip(word, word === "a" ? "ah" : word);
+              if (word.length === 1)
+                playSoundClip(word, word === "a" ? "ah" : word);
               else speak(word, 0.4);
             }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
@@ -1080,11 +1226,18 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
             <>
               <div
                 className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
-                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+                style={{
+                  background:
+                    "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)",
+                }}
               >
                 <span className="absolute right-2 top-1 text-xl">🌤️</span>
-                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
-                <span className="relative text-6xl drop-shadow-md">{entry.emoji}</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">
+                  ☁️
+                </span>
+                <span className="relative text-6xl drop-shadow-md">
+                  {entry.emoji}
+                </span>
               </div>
               <span className="text-xl font-extrabold lowercase text-brand-600 dark:text-brand-400">
                 {word}
