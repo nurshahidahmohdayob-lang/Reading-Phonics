@@ -14,6 +14,9 @@ import {
   type ReadingReport,
 } from "@/lib/reading";
 import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
+import { studentKey } from "@/app/roster";
+import { useTracker, type TrackerRecord } from "@/lib/tracker";
+import { lexileValue, lexileLabel } from "@/lib/lexileStats";
 import {
   addGuidedRead,
   useGuidedLog,
@@ -157,10 +160,38 @@ function NameBox({
   /** The level open on screen — the list then shows only that class. */
   level?: PassageLevel | null;
 }) {
-  // Year 2 stories are read by the Year 2 class, so that's who to offer.
-  const pickable = allStudents(edits)
+  // Who to offer: whoever reads at this level, whatever class they're in —
+  // a Year 1 child assessed at 900L belongs on the Year 5 stories. A child's
+  // reading level is the Lexile from their most recent assessment.
+  const { store } = useTracker();
+
+  function lexileOf(s: { yearKey: string; name: string }): number | null {
+    const rows = store[studentKey(s.yearKey, s.name)] ?? {};
+    let newest: TrackerRecord | null = null;
+    for (const rec of Object.values(rows)) {
+      if (rec && (!newest || rec.savedAt > newest.savedAt)) newest = rec;
+    }
+    return newest ? lexileValue(newest.report.lexile) : null;
+  }
+
+  const everyone = allStudents(edits)
     .filter((s) => !s.locked)
-    .filter((s) => !level || s.year === level.grade);
+    .map((s) => ({ ...s, lexile: lexileOf(s) }));
+
+  // Children who read at this level, strongest first; then anyone not
+  // assessed yet, who would otherwise never be pickable.
+  const atThisLevel = level
+    ? everyone
+        .filter(
+          (s) =>
+            s.lexile !== null &&
+            s.lexile >= level.source.lexileLow &&
+            s.lexile <= level.source.lexileHigh,
+        )
+        .sort((a, b) => (b.lexile ?? 0) - (a.lexile ?? 0))
+    : everyone;
+  const notAssessed = level ? everyone.filter((s) => s.lexile === null) : [];
+  const pickable = [...atThisLevel, ...notAssessed];
   return (
     <div className="mt-3 flex w-full max-w-sm flex-col items-center gap-1">
       <input
@@ -168,7 +199,7 @@ function NameBox({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={
-          level ? `Who is reading? (${level.grade})` : "Who is reading?"
+          level ? `Who is reading? (${level.lexileRange})` : "Who is reading?"
         }
         list="guided-roster-names"
         autoComplete="off"
@@ -177,7 +208,9 @@ function NameBox({
       <datalist id="guided-roster-names">
         {pickable.map((s) => (
           <option key={`${s.yearKey}:${s.name}`} value={s.name}>
-            {s.year}
+            {s.lexile === null
+              ? `not assessed · ${s.year}`
+              : `${lexileLabel(s.lexile)} · ${s.year}`}
           </option>
         ))}
       </datalist>
@@ -185,7 +218,7 @@ function NameBox({
         {value.trim()
           ? `Reads are saved to ${value.trim()}’s tracker`
           : level
-            ? `${level.grade} children — add a name to keep track of what they've read`
+            ? `${atThisLevel.length} ${atThisLevel.length === 1 ? "child reads" : "children read"} at ${level.lexileRange}, any class`
             : "Add a name to keep track of what they've read"}
       </span>
     </div>
