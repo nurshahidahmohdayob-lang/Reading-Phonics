@@ -149,19 +149,27 @@ function NameBox({
   value,
   onChange,
   edits,
+  level = null,
 }: {
   value: string;
   onChange: (v: string) => void;
   edits: ReturnType<typeof useRosterEdits>;
+  /** The level open on screen — the list then shows only that class. */
+  level?: PassageLevel | null;
 }) {
-  const pickable = allStudents(edits).filter((s) => !s.locked);
+  // Year 2 stories are read by the Year 2 class, so that's who to offer.
+  const pickable = allStudents(edits)
+    .filter((s) => !s.locked)
+    .filter((s) => !level || s.year === level.grade);
   return (
     <div className="mt-3 flex w-full max-w-sm flex-col items-center gap-1">
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Who is reading? (optional)"
+        placeholder={
+          level ? `Who is reading? (${level.grade})` : "Who is reading?"
+        }
         list="guided-roster-names"
         autoComplete="off"
         className="w-full rounded-2xl border-4 border-white/70 bg-white px-4 py-2.5 text-center text-base font-bold text-zinc-700 shadow-sm outline-none focus:border-brand-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
@@ -176,7 +184,9 @@ function NameBox({
       <span className="text-xs font-semibold text-zinc-400">
         {value.trim()
           ? `Reads are saved to ${value.trim()}’s tracker`
-          : "Add a name to keep track of what they've read"}
+          : level
+            ? `${level.grade} children — add a name to keep track of what they've read`
+            : "Add a name to keep track of what they've read"}
       </span>
     </div>
   );
@@ -308,7 +318,12 @@ function Choose({
         </span>
       </div>
       <h2 className="mt-6 text-xl font-extrabold">Pick something to read 🎤</h2>
-      <NameBox value={studentName} onChange={onName} edits={edits} />
+      <NameBox
+        value={studentName}
+        onChange={onName}
+        edits={edits}
+        level={level}
+      />
 
       {/* Add your own story for this level */}
       {!adding ? (
