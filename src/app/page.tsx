@@ -12,6 +12,7 @@ import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import ClassTracker from "@/components/tabs/ClassTracker";
+import ThreeD from "@/components/tabs/ThreeD";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
@@ -29,6 +30,7 @@ type SectionId =
   | "guided"
   | "assessment"
   | "storyplay"
+  | "threed"
   | "tracker"
   | "guide";
 
@@ -119,6 +121,14 @@ const SECTIONS: {
     emoji: "📋",
     color: "from-[#FFE3E0] to-[#FFC9C2]", // coral
     text: "text-rose-700",
+  },
+  {
+    id: "threed",
+    label: "3D Drawings",
+    blurb: "Scan a drawing, watch it move",
+    emoji: "🪄",
+    color: "from-[#E9DFFF] to-[#D2C0FF]", // soft violet
+    text: "text-violet-700",
   },
   {
     id: "tracker",
@@ -397,6 +407,35 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           <rect x="21" y="30" width="8" height="2.4" rx="1.2" fill="#B7C2BB" />
         </svg>
       );
+    case "threed": // a drawing lifting off the page
+      return (
+        <svg {...p}>
+          <rect x="6" y="9" width="30" height="26" rx="3" fill="#fff" />
+          <rect
+            x="6"
+            y="9"
+            width="30"
+            height="26"
+            rx="3"
+            fill="none"
+            stroke="#C4B5FD"
+            strokeWidth="2.5"
+          />
+          <path d="M10 30l6-7 4 4 5-6 6 9z" fill="#DDD6FE" />
+          <circle cx="15" cy="16" r="2.5" fill="#FBBF24" />
+          <path
+            d="M28 22l4-8 8 3-4 8z"
+            fill="#A78BFA"
+            stroke="#7C3AED"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M39 33l1.2 2.6 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"
+            fill="#FBBF24"
+          />
+        </svg>
+      );
     default:
       return null;
   }
@@ -561,6 +600,7 @@ export default function Home() {
               <ReadingAssessment key={assessKey} initial={assessInit} />
             )}
             {section === "storyplay" && <StoryPlay />}
+            {section === "threed" && <ThreeD />}
             {section === "tracker" && trackerOwner && (
               <ClassTracker
                 onAssess={(init) => openAssessment(init)}

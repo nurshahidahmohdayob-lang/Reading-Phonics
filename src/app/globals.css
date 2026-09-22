@@ -34,7 +34,6 @@
   --color-candy-lilac: #e6dcff;
 }
 
-
 /* Reading-level (Lexile) ordinal ramp — one green hue, light → dark, easiest
    band to hardest. Checked with the data-viz palette validator against both
    the light and the dark chart surface (monotone lightness, visible steps,
@@ -74,6 +73,51 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   touch-action: manipulation; /* fast taps, no double-tap zoom in games */
   overflow-x: hidden;
+}
+
+/* 3D Drawings: how a scanned drawing moves about the stage. The position and
+   size live on a wrapper, so these only touch the drawing itself. */
+@keyframes draw-walk {
+  from {
+    transform: translateX(-42px) rotate(-3deg);
+  }
+  to {
+    transform: translateX(42px) rotate(3deg);
+  }
+}
+
+@keyframes draw-float {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+  to {
+    transform: translateY(-16px) rotate(2deg);
+  }
+}
+
+@keyframes draw-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes draw-jump {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  15% {
+    transform: translateY(0) scaleY(0.88);
+  }
+  45% {
+    transform: translateY(-30px) scaleY(1.06);
+  }
+  75% {
+    transform: translateY(0) scaleY(0.94);
+  }
 }
 
 /* Balloon Pop: balloons drop in from above the play area and fall through. */
