@@ -120,6 +120,63 @@ body {
   }
 }
 
+/* A drawing that has just arrived: it turns a little each way, which reads
+   as depth on a flat cut-out, and breathes up and down. */
+@keyframes draw-alive {
+  from {
+    transform: rotateY(-18deg) translateY(0) rotate(-1.5deg);
+  }
+  to {
+    transform: rotateY(18deg) translateY(-9px) rotate(1.5deg);
+  }
+}
+
+/* The jungle around them. */
+@keyframes jungle-sway {
+  from {
+    transform: rotate(-5deg);
+  }
+  to {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes jungle-swing {
+  from {
+    transform: rotate(-16deg) translateY(0);
+  }
+  to {
+    transform: rotate(16deg) translateY(6px);
+  }
+}
+
+@keyframes jungle-fly {
+  from {
+    transform: translateX(-12%) translateY(0) scaleX(1);
+  }
+  45% {
+    transform: translateX(105%) translateY(-14px) scaleX(1);
+  }
+  50% {
+    transform: translateX(105%) translateY(-14px) scaleX(-1);
+  }
+  95% {
+    transform: translateX(-12%) translateY(8px) scaleX(-1);
+  }
+  to {
+    transform: translateX(-12%) translateY(0) scaleX(1);
+  }
+}
+
+@keyframes jungle-flutter {
+  from {
+    transform: translate(0, 0) rotate(-8deg);
+  }
+  to {
+    transform: translate(26px, -18px) rotate(8deg);
+  }
+}
+
 /* Balloon Pop: balloons drop in from above the play area and fall through. */
 @keyframes balloon-fall {
   from {

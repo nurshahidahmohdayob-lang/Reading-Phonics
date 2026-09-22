@@ -12,18 +12,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import qrcode from "qrcode-generator";
-import { cutOutDrawing, type Cutout } from "@/lib/cutout";
+import { cutOutDrawing } from "@/lib/cutout";
 import { publicSiteBase } from "@/lib/reportLink";
 import {
   useDrawings,
   saveDrawing,
   removeDrawing,
+  renameDrawing,
   type Drawing,
 } from "@/lib/drawingStore";
 
-type Move = "still" | "walk" | "float" | "spin" | "jump";
+type Move = "alive" | "still" | "walk" | "float" | "spin" | "jump";
 
 const MOVES: { id: Move; label: string }[] = [
+  { id: "alive", label: "✨ Alive" },
   { id: "still", label: "🧍 Still" },
   { id: "walk", label: "🚶 Walk" },
   { id: "float", label: "🎈 Float" },
@@ -32,6 +34,8 @@ const MOVES: { id: Move; label: string }[] = [
 ];
 
 const ANIMATION: Record<Move, string> = {
+  // Turning a little each way reads as depth — a flat drawing standing up.
+  alive: "draw-alive 4.2s ease-in-out infinite alternate",
   still: "none",
   walk: "draw-walk 3.6s ease-in-out infinite alternate",
   float: "draw-float 2.6s ease-in-out infinite alternate",
@@ -57,7 +61,8 @@ export default function ThreeD() {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [pending, setPending] = useState<Cutout | null>(null);
+  /** The drawing that just arrived, still nameless. */
+  const [justAdded, setJustAdded] = useState<string | null>(null);
   const [name, setName] = useState("");
 
   // Pairing a phone: the screen shows a code, the phone sends drawings to it.
@@ -78,7 +83,16 @@ export default function ThreeD() {
     setError("");
     try {
       const cut = await cutOutDrawing(file);
-      setPending(cut);
+      // Straight into the jungle — no "keep it?" to press first. The name
+      // can be typed afterwards, or left alone.
+      const saved = await saveDrawing({
+        name: "My drawing",
+        dataUrl: cut.dataUrl,
+        width: cut.width,
+        height: cut.height,
+      });
+      addToStage(saved);
+      setJustAdded(saved.id);
       setName("");
     } catch (e) {
       setError(
@@ -92,17 +106,11 @@ export default function ThreeD() {
     }
   }
 
-  async function keepIt() {
-    if (!pending) return;
-    const saved = await saveDrawing({
-      name: name.trim() || "My drawing",
-      dataUrl: pending.dataUrl,
-      width: pending.width,
-      height: pending.height,
-    });
-    setPending(null);
+  async function nameIt() {
+    if (!justAdded || !name.trim()) return;
+    await renameDrawing(justAdded, name.trim());
+    setJustAdded(null);
     setName("");
-    addToStage(saved);
   }
 
   function addToStage(d: Drawing) {
@@ -119,7 +127,8 @@ export default function ThreeD() {
         y: 62,
         scale: 1,
         flip: false,
-        move: "still",
+        // Moving from the moment it lands, rather than waiting to be told.
+        move: "alive",
       },
     ]);
   }
@@ -270,46 +279,36 @@ export default function ThreeD() {
         </p>
       )}
 
-      {/* Just scanned — name it and keep it */}
-      {pending && (
-        <div className="mt-4 flex w-full flex-col items-center gap-3 rounded-[2rem] bg-white p-5 shadow-lg ring-4 ring-white/60 dark:bg-zinc-900">
-          <p className="text-sm font-extrabold text-zinc-600 dark:text-zinc-200">
-            Here it is, off the paper ✂️
-          </p>
-          <div className="grid h-52 w-full place-items-center rounded-2xl bg-gradient-to-b from-[#A6D9FF] to-[#E9F6FF]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={pending.dataUrl}
-              alt="Your scanned drawing"
-              className="max-h-48 max-w-[80%] object-contain drop-shadow-lg"
-            />
-          </div>
+      {justAdded && (
+        <div className="mt-3 flex w-full max-w-md flex-wrap items-center justify-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
+          <span className="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">
+            ✓ It&apos;s in the jungle
+          </span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Give it a name (My dragon)"
-            className="w-full max-w-xs rounded-2xl border-4 border-violet-200 bg-white px-4 py-2.5 text-center font-bold text-zinc-700 outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void nameIt();
+            }}
+            placeholder="Name it (My dragon)"
+            className="min-w-[150px] flex-1 rounded-xl border-2 border-emerald-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           />
-          <div className="flex gap-2">
-            <button
-              onClick={() => void keepIt()}
-              className="rounded-full bg-brand-600 px-6 py-2.5 font-extrabold text-white shadow active:scale-95"
-            >
-              ✅ Keep it
-            </button>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="rounded-full bg-white px-5 py-2.5 font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
-            >
-              🔁 Take another
-            </button>
-            <button
-              onClick={() => setPending(null)}
-              className="rounded-full bg-zinc-100 px-5 py-2.5 font-bold text-zinc-500 active:scale-95 dark:bg-zinc-800"
-            >
-              Cancel
-            </button>
-          </div>
+          <button
+            onClick={() => void nameIt()}
+            disabled={!name.trim()}
+            className="rounded-full bg-[#0A4F29] px-4 py-1.5 text-xs font-bold text-white active:scale-95 disabled:opacity-40"
+          >
+            Save name
+          </button>
+          <button
+            onClick={() => {
+              setJustAdded(null);
+              setName("");
+            }}
+            className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-zinc-500 ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800"
+          >
+            Skip
+          </button>
         </div>
       )}
 
@@ -318,8 +317,7 @@ export default function ThreeD() {
         className="relative mt-5 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
         style={{ aspectRatio: "16 / 9", perspective: "900px" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#CDEAD9]" />
-        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-[#BDE3C7] to-[#8FCDA4]" />
+        <Jungle />
 
         {actors.map((a) => {
           const d = byId.get(a.drawingId);
@@ -464,6 +462,94 @@ export default function ThreeD() {
   );
 }
 
+/** The scene the drawings stand in: canopy, vines, undergrowth and a few
+    animals going about their business. Nothing here takes a tap — the
+    drawings on top do. */
+function Jungle() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      {/* light through the canopy */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#BFE6A8] via-[#8FD08A] to-[#2F7D4F]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_0%,rgba(255,244,189,.75),transparent_55%)]" />
+
+      {/* far trees */}
+      <div className="absolute inset-x-0 top-0 flex justify-between px-2 text-5xl opacity-70 blur-[1px] sm:text-6xl">
+        <span>🌳</span>
+        <span>🌴</span>
+        <span>🌳</span>
+        <span>🌴</span>
+        <span>🌳</span>
+      </div>
+
+      {/* hanging leaves, swaying */}
+      <div className="absolute inset-x-0 top-0 flex justify-around text-4xl sm:text-5xl">
+        {["🌿", "🍃", "🌿", "🍃", "🌿", "🍃"].map((leaf, i) => (
+          <span
+            key={i}
+            className="origin-top"
+            style={{
+              animation: `jungle-sway ${3 + (i % 3) * 0.7}s ease-in-out ${i * 0.3}s infinite alternate`,
+            }}
+          >
+            {leaf}
+          </span>
+        ))}
+      </div>
+
+      {/* the jungle floor */}
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-[#3F8F5B] to-[#27653E]" />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-1 text-3xl sm:text-4xl">
+        <span>🌿</span>
+        <span>🌱</span>
+        <span>🍄</span>
+        <span>🌿</span>
+        <span>🪨</span>
+        <span>🌱</span>
+        <span>🌿</span>
+      </div>
+
+      {/* who lives here */}
+      <span
+        className="absolute left-[8%] top-[6%] text-3xl sm:text-4xl"
+        style={{
+          animation: "jungle-swing 3.4s ease-in-out infinite alternate",
+          transformOrigin: "top center",
+        }}
+      >
+        🐒
+      </span>
+      <span
+        className="absolute top-[18%] text-3xl sm:text-4xl"
+        style={{ animation: "jungle-fly 14s linear infinite" }}
+      >
+        🦜
+      </span>
+      <span
+        className="absolute left-[26%] top-[46%] text-xl sm:text-2xl"
+        style={{
+          animation: "jungle-flutter 5s ease-in-out infinite alternate",
+        }}
+      >
+        🦋
+      </span>
+      <span className="absolute bottom-[4%] right-[7%] text-4xl sm:text-5xl">
+        🐘
+      </span>
+      <span
+        className="absolute bottom-[6%] left-[16%] text-2xl sm:text-3xl"
+        style={{
+          animation: "jungle-flutter 3.2s ease-in-out 1s infinite alternate",
+        }}
+      >
+        🐸
+      </span>
+      <span className="absolute bottom-[10%] right-[30%] text-2xl sm:text-3xl">
+        🦁
+      </span>
+    </div>
+  );
+}
+
 /** The code the phone scans. Whoever holds it can send a drawing to this
     screen for the next quarter of an hour, and nothing else. */
 function PairingCard({
@@ -577,12 +663,10 @@ function StageActor({
           className="h-28 w-auto select-none object-contain sm:h-36"
           style={{
             transform: `rotateY(${actor.flip ? 180 : 0}deg)`,
+            // Chosen drawings lift a little instead of wearing a box.
             filter: selected
-              ? "drop-shadow(0 8px 10px rgba(0,0,0,.35))"
+              ? "drop-shadow(0 12px 14px rgba(0,0,0,.45)) brightness(1.05)"
               : "drop-shadow(0 6px 8px rgba(0,0,0,.28))",
-            outline: selected ? "3px dashed rgba(124,58,237,.8)" : "none",
-            outlineOffset: "6px",
-            borderRadius: "8px",
           }}
         />
       </div>
