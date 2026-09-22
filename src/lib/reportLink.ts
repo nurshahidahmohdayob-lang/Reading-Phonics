@@ -19,6 +19,13 @@ import type { ReportData } from "./reportPrint";
 const PUBLIC_SITE =
   process.env.NEXT_PUBLIC_SITE_URL || "https://reading-phonics.vercel.app";
 
+/** The address to hand to someone else's device — a parent's phone, or the
+    teacher's own phone scanning a QR. Local dev hands out the live site, or
+    the link would be unreachable from that phone. */
+export function publicSiteBase(): string {
+  return siteBase();
+}
+
 function siteBase(): string {
   if (typeof window === "undefined") return PUBLIC_SITE;
   const here = window.location.origin;

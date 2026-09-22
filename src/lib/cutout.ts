@@ -194,3 +194,35 @@ export async function cutOutDrawing(
 
   return { dataUrl: out.toDataURL("image/png"), width: cw, height: chh };
 }
+
+/** Shrink a cut-out for sending over the network: a photo from a phone can
+    come back as a megabyte and a half of PNG, which is more than the pairing
+    channel should carry. WebP keeps the transparency and a fraction of the
+    weight; the quality steps down until it fits. */
+export async function shrinkCutout(
+  dataUrl: string,
+  maxSide = 1000,
+  maxBytes = 550_000,
+): Promise<Cutout> {
+  const res = await fetch(dataUrl);
+  const bitmap = await createImageBitmap(await res.blob());
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { dataUrl, width: bitmap.width, height: bitmap.height };
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+
+  for (const quality of [0.88, 0.75, 0.6, 0.45]) {
+    const webp = canvas.toDataURL("image/webp", quality);
+    // A browser without WebP hands back a PNG — take it and stop trying.
+    if (!webp.startsWith("data:image/webp")) break;
+    if (webp.length <= maxBytes) return { dataUrl: webp, width: w, height: h };
+  }
+  return { dataUrl: canvas.toDataURL("image/png"), width: w, height: h };
+}

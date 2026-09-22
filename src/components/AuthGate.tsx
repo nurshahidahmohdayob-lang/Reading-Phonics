@@ -11,9 +11,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [name, setName] = useState("");
   const pathname = usePathname();
-  // A parent's report link is public by design — it carries one child's
-  // report inside the link and shows nothing else, so it never asks to sign in.
-  const isPublic = !!pathname && pathname.startsWith("/report");
+  // Public by design: a parent's report link (it carries one child's report
+  // inside the link), and the phone page that sends a drawing to the class
+  // screen (the code in its link is the permission, and it expires). Neither
+  // can read anything about the school, so neither asks to sign in.
+  const isPublic =
+    !!pathname &&
+    (pathname.startsWith("/report") || pathname.startsWith("/scan"));
 
   useEffect(() => {
     let alive = true;

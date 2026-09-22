@@ -10,7 +10,8 @@
 
 function creds(): { url: string; token: string } | null {
   const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  const token =
+    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   return url && token ? { url, token } : null;
 }
 
@@ -47,7 +48,14 @@ export async function kvGetJson<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function kvSetJson(key: string, value: unknown): Promise<void> {
+export async function kvSetJson(
+  key: string,
+  value: unknown,
+  /** Seconds to keep it. Left out, it stays until deleted. */
+  ttlSeconds?: number,
+): Promise<void> {
   if (!kvConfigured()) return;
-  await cmd(["SET", key, JSON.stringify(value)]);
+  const set: (string | number)[] = ["SET", key, JSON.stringify(value)];
+  if (ttlSeconds && ttlSeconds > 0) set.push("EX", Math.floor(ttlSeconds));
+  await cmd(set);
 }

@@ -10,8 +10,10 @@
    with a little perspective and a shadow so they stand in the scene rather
    than sit on top of it. */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import qrcode from "qrcode-generator";
 import { cutOutDrawing, type Cutout } from "@/lib/cutout";
+import { publicSiteBase } from "@/lib/reportLink";
 import {
   useDrawings,
   saveDrawing,
@@ -57,6 +59,14 @@ export default function ThreeD() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState<Cutout | null>(null);
   const [name, setName] = useState("");
+
+  // Pairing a phone: the screen shows a code, the phone sends drawings to it.
+  const [pairing, setPairing] = useState<{
+    code: string;
+    got: number;
+    note: string;
+  } | null>(null);
+  const [pairingBusy, setPairingBusy] = useState(false);
 
   const [actors, setActors] = useState<Actor[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -114,6 +124,87 @@ export default function ThreeD() {
     ]);
   }
 
+  async function startPairing() {
+    setPairingBusy(true);
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "new" }),
+      });
+      const data = await res.json();
+      if (data?.configured === false) {
+        setError(
+          "Sending from a phone needs the app's cloud storage, which isn't connected here.",
+        );
+        return;
+      }
+      if (!data?.ok || typeof data.code !== "string") {
+        setError("Couldn't start the phone link. Try again.");
+        return;
+      }
+      setError("");
+      setPairing({ code: data.code, got: 0, note: "" });
+    } catch {
+      setError("Couldn't start the phone link. Try again.");
+    } finally {
+      setPairingBusy(false);
+    }
+  }
+
+  // While the code is on screen, watch for drawings the phone sends.
+  const code = pairing?.code;
+  useEffect(() => {
+    if (!code) return;
+    let stop = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/scan?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (stop) return;
+        if (data?.expired) {
+          setPairing((p) =>
+            p ? { ...p, note: "That code has run out — start a new one." } : p,
+          );
+          return;
+        }
+        const items = (data?.items ?? []) as {
+          dataUrl: string;
+          width: number;
+          height: number;
+        }[];
+        for (const item of items) {
+          const saved = await saveDrawing({
+            name: "Scanned drawing",
+            dataUrl: item.dataUrl,
+            width: item.width,
+            height: item.height,
+          });
+          if (stop) return;
+          addToStage(saved);
+        }
+        if (items.length) {
+          setPairing((p) =>
+            p
+              ? {
+                  ...p,
+                  got: p.got + items.length,
+                  note: `✓ ${items.length === 1 ? "A drawing" : `${items.length} drawings`} arrived`,
+                }
+              : p,
+          );
+        }
+      } catch {
+        /* a dropped poll is nothing to worry about */
+      }
+    };
+    const timer = setInterval(() => void tick(), 2500);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, [code]);
+
   function update(key: string, patch: Partial<Actor>) {
     setActors((list) =>
       list.map((a) => (a.key === key ? { ...a, ...patch } : a)),
@@ -149,11 +240,30 @@ export default function ThreeD() {
       >
         {busy ? "✨ Cutting it out…" : "📷 Scan a drawing"}
       </button>
+      <button
+        onClick={() => (pairing ? setPairing(null) : void startPairing())}
+        disabled={pairingBusy}
+        className="mt-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
+      >
+        {pairingBusy
+          ? "⏳ Getting a code…"
+          : pairing
+            ? "✕ Stop using my phone"
+            : "📱 Scan with my phone"}
+      </button>
       <p className="mt-1 max-w-sm text-center text-xs font-semibold text-zinc-400">
         On a phone or tablet this opens the camera — or a photo you&apos;ve
         already taken. Lay the drawing flat in good light, with all of it in the
         picture.
       </p>
+
+      {pairing && (
+        <PairingCard
+          code={pairing.code}
+          got={pairing.got}
+          note={pairing.note}
+        />
+      )}
       {error && (
         <p className="mt-2 max-w-md text-center text-sm font-bold text-rose-500">
           {error}
@@ -350,6 +460,50 @@ export default function ThreeD() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The code the phone scans. Whoever holds it can send a drawing to this
+    screen for the next quarter of an hour, and nothing else. */
+function PairingCard({
+  code,
+  got,
+  note,
+}: {
+  code: string;
+  got: number;
+  note: string;
+}) {
+  const url = `${publicSiteBase()}/scan#${code}`;
+  // Type 0 lets the library choose a size that fits; M survives a phone
+  // camera pointed at a screen from across a table.
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+
+  return (
+    <div className="mt-4 flex w-full max-w-md flex-col items-center gap-2 rounded-[2rem] bg-white p-5 text-center shadow-lg ring-4 ring-white/60 dark:bg-zinc-900">
+      <p className="text-sm font-extrabold text-zinc-700 dark:text-zinc-100">
+        📱 Point your phone&apos;s camera at this
+      </p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={qr.createDataURL(6, 2)}
+        alt="QR code linking your phone to this screen"
+        className="h-44 w-44 rounded-xl"
+      />
+      <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+        Then photograph a child&apos;s drawing, and it appears here.
+      </p>
+      <p className="text-[11px] font-semibold text-zinc-400">
+        The code lasts 15 minutes · {got} sent so far
+      </p>
+      {note && (
+        <p className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+          {note}
+        </p>
+      )}
     </div>
   );
 }
