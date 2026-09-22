@@ -5,12 +5,12 @@
 
    The photo's paper is removed in the browser (lib/cutout.ts), leaving the
    drawing on a transparent background. Saved drawings (lib/drawingStore.ts,
-   on this device) can then be dropped onto the stage, dragged, resized,
-   flipped and given a movement — walking, floating, spinning or jumping —
-   with a little perspective and a shadow so they stand in the scene rather
-   than sit on top of it. */
+   on this device) are then cut out of card and stood up in a real 3D scene
+   (Stage3D): they roam the jungle floor, turn to face where they're going,
+   show their own edge as they turn, and cast a shadow on the ground. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import qrcode from "qrcode-generator";
 import { cutOutDrawing } from "@/lib/cutout";
 import { publicSiteBase } from "@/lib/reportLink";
@@ -21,6 +21,14 @@ import {
   renameDrawing,
   type Drawing,
 } from "@/lib/drawingStore";
+import type { Actor3D } from "./Stage3D";
+
+/* three.js is a big library, and only this section needs it — so it's
+   fetched when the section opens, not with the rest of the app. */
+const Stage3D = dynamic(() => import("./Stage3D"), {
+  ssr: false,
+  loading: () => null,
+});
 
 type Move = "alive" | "still" | "walk" | "float" | "spin" | "jump";
 
@@ -33,25 +41,11 @@ const MOVES: { id: Move; label: string }[] = [
   { id: "jump", label: "⭐ Jump" },
 ];
 
-const ANIMATION: Record<Move, string> = {
-  // Turning a little each way reads as depth — a flat drawing standing up.
-  alive: "draw-alive 4.2s ease-in-out infinite alternate",
-  still: "none",
-  walk: "draw-walk 3.6s ease-in-out infinite alternate",
-  float: "draw-float 2.6s ease-in-out infinite alternate",
-  spin: "draw-spin 5s linear infinite",
-  jump: "draw-jump 1.5s ease-in-out infinite",
-};
-
 type Actor = {
   /** One drawing can be on the stage more than once. */
   key: string;
   drawingId: string;
-  /** Where it stands, in % of the stage. */
-  x: number;
-  y: number;
   scale: number;
-  flip: boolean;
   move: Move;
 };
 
@@ -123,10 +117,7 @@ export default function ThreeD() {
       {
         key,
         drawingId: d.id,
-        x: 20 + ((list.length * 23) % 60),
-        y: 62,
         scale: 1,
-        flip: false,
         // Moving from the moment it lands, rather than waiting to be told.
         move: "alive",
       },
@@ -221,7 +212,23 @@ export default function ThreeD() {
   }
 
   const chosen = actors.find((a) => a.key === selected) ?? null;
-  const byId = new Map(drawings.map((d) => [d.id, d]));
+
+  // What the 3D stage needs: the picture itself, not our bookkeeping. Held
+  // steady between renders so the scene isn't rebuilt for nothing.
+  const pictures = useMemo(
+    () => new Map(drawings.map((d) => [d.id, d.dataUrl])),
+    [drawings],
+  );
+  const stageActors: Actor3D[] = useMemo(
+    () =>
+      actors.flatMap((a) => {
+        const dataUrl = pictures.get(a.drawingId);
+        return dataUrl
+          ? [{ key: a.key, dataUrl, move: a.move, scale: a.scale }]
+          : [];
+      }),
+    [actors, pictures],
+  );
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -315,25 +322,16 @@ export default function ThreeD() {
       {/* The stage */}
       <div
         className="relative mt-5 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
-        style={{ aspectRatio: "16 / 9", perspective: "900px" }}
+        style={{ aspectRatio: "16 / 9" }}
       >
         <Jungle />
 
-        {actors.map((a) => {
-          const d = byId.get(a.drawingId);
-          if (!d) return null;
-          return (
-            <StageActor
-              key={a.key}
-              actor={a}
-              drawing={d}
-              playing={playing}
-              selected={selected === a.key}
-              onSelect={() => setSelected(a.key)}
-              onMove={(x, y) => update(a.key, { x, y })}
-            />
-          );
-        })}
+        <Stage3D
+          actors={stageActors}
+          selectedKey={selected}
+          playing={playing}
+          onSelect={setSelected}
+        />
 
         {!actors.length && (
           <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm font-bold text-white drop-shadow">
@@ -394,12 +392,6 @@ export default function ThreeD() {
             className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
           >
             ➕ Bigger
-          </button>
-          <button
-            onClick={() => update(chosen.key, { flip: !chosen.flip })}
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-          >
-            ↔️ Turn around
           </button>
           <button
             onClick={() => {
@@ -590,92 +582,6 @@ function PairingCard({
           {note}
         </p>
       )}
-    </div>
-  );
-}
-
-/** One drawing standing on the stage: draggable, with a shadow under it. */
-function StageActor({
-  actor,
-  drawing,
-  playing,
-  selected,
-  onSelect,
-  onMove,
-}: {
-  actor: Actor;
-  drawing: Drawing;
-  playing: boolean;
-  selected: boolean;
-  onSelect: () => void;
-  onMove: (x: number, y: number) => void;
-}) {
-  const dragging = useRef(false);
-
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    onSelect();
-    dragging.current = true;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragging.current) return;
-    const stage = e.currentTarget.parentElement;
-    if (!stage) return;
-    const box = stage.getBoundingClientRect();
-    const x = ((e.clientX - box.left) / box.width) * 100;
-    const y = ((e.clientY - box.top) / box.height) * 100;
-    onMove(Math.min(97, Math.max(3, x)), Math.min(96, Math.max(12, y)));
-  }
-
-  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
-    dragging.current = false;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  }
-
-  return (
-    <div
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      className="absolute cursor-grab touch-none active:cursor-grabbing"
-      style={{
-        left: `${actor.x}%`,
-        top: `${actor.y}%`,
-        transform: `translate(-50%, -100%) scale(${actor.scale})`,
-        transformOrigin: "bottom center",
-      }}
-    >
-      <div
-        style={{
-          animation: playing ? ANIMATION[actor.move] : "none",
-          transformStyle: "preserve-3d",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={drawing.dataUrl}
-          alt={drawing.name}
-          draggable={false}
-          className="h-28 w-auto select-none object-contain sm:h-36"
-          style={{
-            transform: `rotateY(${actor.flip ? 180 : 0}deg)`,
-            // Chosen drawings lift a little instead of wearing a box.
-            filter: selected
-              ? "drop-shadow(0 12px 14px rgba(0,0,0,.45)) brightness(1.05)"
-              : "drop-shadow(0 6px 8px rgba(0,0,0,.28))",
-          }}
-        />
-      </div>
-      {/* the shadow it stands in */}
-      <div
-        aria-hidden
-        className="mx-auto h-3 w-20 rounded-[50%] bg-black/25 blur-[3px] sm:w-24"
-        style={{ transform: "translateY(-4px)" }}
-      />
     </div>
   );
 }

@@ -75,63 +75,10 @@ body {
   overflow-x: hidden;
 }
 
-/* 3D Drawings: how a scanned drawing moves about the stage. The position and
-   size live on a wrapper, so these only touch the drawing itself. */
-@keyframes draw-walk {
-  from {
-    transform: translateX(-42px) rotate(-3deg);
-  }
-  to {
-    transform: translateX(42px) rotate(3deg);
-  }
-}
+/* 3D Drawings: the drawings themselves are now real objects in a three.js
+   scene (components/tabs/Stage3D.tsx), so their movement is animated there,
+   not here. What's left is the jungle they stand in. */
 
-@keyframes draw-float {
-  from {
-    transform: translateY(0) rotate(-2deg);
-  }
-  to {
-    transform: translateY(-16px) rotate(2deg);
-  }
-}
-
-@keyframes draw-spin {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(360deg);
-  }
-}
-
-@keyframes draw-jump {
-  0%,
-  100% {
-    transform: translateY(0) scaleY(1);
-  }
-  15% {
-    transform: translateY(0) scaleY(0.88);
-  }
-  45% {
-    transform: translateY(-30px) scaleY(1.06);
-  }
-  75% {
-    transform: translateY(0) scaleY(0.94);
-  }
-}
-
-/* A drawing that has just arrived: it turns a little each way, which reads
-   as depth on a flat cut-out, and breathes up and down. */
-@keyframes draw-alive {
-  from {
-    transform: rotateY(-18deg) translateY(0) rotate(-1.5deg);
-  }
-  to {
-    transform: rotateY(18deg) translateY(-9px) rotate(1.5deg);
-  }
-}
-
-/* The jungle around them. */
 @keyframes jungle-sway {
   from {
     transform: rotate(-5deg);
