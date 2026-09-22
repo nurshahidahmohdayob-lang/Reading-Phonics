@@ -324,7 +324,7 @@ export default function ThreeD() {
         className="relative mt-5 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
         style={{ aspectRatio: "16 / 9" }}
       >
-        <Jungle />
+        <Backdrop />
 
         <Stage3D
           actors={stageActors}
@@ -454,91 +454,25 @@ export default function ThreeD() {
   );
 }
 
-/** The scene the drawings stand in: canopy, vines, undergrowth and a few
-    animals going about their business. Nothing here takes a tap — the
-    drawings on top do. */
-function Jungle() {
+/** What the drawings stand in front of: a film of a jungle clearing, with
+    an elephant, monkeys, parrots, a leopard and a crocodile at the edges and
+    butterflies drifting through the open middle. It loops quietly behind the
+    stage and takes no taps — the drawings on top do. Muted and inline, so it
+    plays on its own on a phone as well as the class screen. */
+function Backdrop() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      {/* light through the canopy */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#BFE6A8] via-[#8FD08A] to-[#2F7D4F]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_0%,rgba(255,244,189,.75),transparent_55%)]" />
-
-      {/* far trees */}
-      <div className="absolute inset-x-0 top-0 flex justify-between px-2 text-5xl opacity-70 blur-[1px] sm:text-6xl">
-        <span>🌳</span>
-        <span>🌴</span>
-        <span>🌳</span>
-        <span>🌴</span>
-        <span>🌳</span>
-      </div>
-
-      {/* hanging leaves, swaying */}
-      <div className="absolute inset-x-0 top-0 flex justify-around text-4xl sm:text-5xl">
-        {["🌿", "🍃", "🌿", "🍃", "🌿", "🍃"].map((leaf, i) => (
-          <span
-            key={i}
-            className="origin-top"
-            style={{
-              animation: `jungle-sway ${3 + (i % 3) * 0.7}s ease-in-out ${i * 0.3}s infinite alternate`,
-            }}
-          >
-            {leaf}
-          </span>
-        ))}
-      </div>
-
-      {/* the jungle floor */}
-      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-[#3F8F5B] to-[#27653E]" />
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-1 text-3xl sm:text-4xl">
-        <span>🌿</span>
-        <span>🌱</span>
-        <span>🍄</span>
-        <span>🌿</span>
-        <span>🪨</span>
-        <span>🌱</span>
-        <span>🌿</span>
-      </div>
-
-      {/* who lives here */}
-      <span
-        className="absolute left-[8%] top-[6%] text-3xl sm:text-4xl"
-        style={{
-          animation: "jungle-swing 3.4s ease-in-out infinite alternate",
-          transformOrigin: "top center",
-        }}
-      >
-        🐒
-      </span>
-      <span
-        className="absolute top-[18%] text-3xl sm:text-4xl"
-        style={{ animation: "jungle-fly 14s linear infinite" }}
-      >
-        🦜
-      </span>
-      <span
-        className="absolute left-[26%] top-[46%] text-xl sm:text-2xl"
-        style={{
-          animation: "jungle-flutter 5s ease-in-out infinite alternate",
-        }}
-      >
-        🦋
-      </span>
-      <span className="absolute bottom-[4%] right-[7%] text-4xl sm:text-5xl">
-        🐘
-      </span>
-      <span
-        className="absolute bottom-[6%] left-[16%] text-2xl sm:text-3xl"
-        style={{
-          animation: "jungle-flutter 3.2s ease-in-out 1s infinite alternate",
-        }}
-      >
-        🐸
-      </span>
-      <span className="absolute bottom-[10%] right-[30%] text-2xl sm:text-3xl">
-        🦁
-      </span>
-    </div>
+    <video
+      aria-hidden
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="auto"
+      poster="/video/jungle-poster.jpg"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+    >
+      <source src="/video/jungle.mp4" type="video/mp4" />
+    </video>
   );
 }
 
