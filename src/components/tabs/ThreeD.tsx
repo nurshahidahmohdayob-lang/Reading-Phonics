@@ -139,7 +139,6 @@ export default function ThreeD() {
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => void onFile(e.target.files?.[0])}
       />
@@ -150,8 +149,10 @@ export default function ThreeD() {
       >
         {busy ? "✨ Cutting it out…" : "📷 Scan a drawing"}
       </button>
-      <p className="mt-1 text-xs font-semibold text-zinc-400">
-        Lay the drawing flat in good light, with all of it in the picture.
+      <p className="mt-1 max-w-sm text-center text-xs font-semibold text-zinc-400">
+        On a phone or tablet this opens the camera — or a photo you&apos;ve
+        already taken. Lay the drawing flat in good light, with all of it in the
+        picture.
       </p>
       {error && (
         <p className="mt-2 max-w-md text-center text-sm font-bold text-rose-500">
