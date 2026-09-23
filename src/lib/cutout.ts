@@ -6,11 +6,17 @@
    move around a scene, the paper has to go — but only the paper *around* the
    drawing: the white of an eye, or a gap inside a house, must stay.
 
-   So this floods inwards from the edges of the photo, clearing anything close
-   in colour to the paper and stopping at the drawn lines. White areas fenced
-   in by ink are never reached, and so survive. The edge is then softened a
-   little (a photographed line is never a clean boundary) and the picture is
-   cropped to what's left.
+   Paper is never one colour in a photograph. A hand casts a shadow across the
+   page, a window lights one corner, the desk shows past the edge of the sheet.
+   So the page's brightness is judged locally — what the paper looks like just
+   there — and a pixel counts as drawn if it is darker than its own
+   surroundings or clearly coloured. Everything else is flooded away inwards
+   from the edges of the photo, which is what saves white fenced in by ink:
+   the flood cannot reach it.
+
+   What survives is still not always the drawing: a table edge, the line of
+   the page, a smudge in the corner. Those go too, by keeping only the
+   substantial pieces and dropping any that run off the side of the photo.
 
    All in the browser, on a canvas — nothing is uploaded anywhere. */
 
@@ -29,41 +35,124 @@ function clamp(n: number, lo: number, hi: number) {
   return n < lo ? lo : n > hi ? hi : n;
 }
 
-/** The paper's colour, taken as the median of the photo's border pixels —
-    robust to a shadow or a thumb in one corner. */
-function paperColour(data: Uint8ClampedArray, w: number, h: number) {
-  const reds: number[] = [];
-  const greens: number[] = [];
-  const blues: number[] = [];
-  const step = Math.max(1, Math.floor(Math.min(w, h) / 120));
-  const sample = (x: number, y: number) => {
-    const i = (y * w + x) * 4;
-    reds.push(data[i]);
-    greens.push(data[i + 1]);
-    blues.push(data[i + 2]);
-  };
-  for (let x = 0; x < w; x += step) {
-    sample(x, 0);
-    sample(x, h - 1);
-  }
-  for (let y = 0; y < h; y += step) {
-    sample(0, y);
-    sample(w - 1, y);
-  }
-  const mid = (xs: number[]) => xs.sort((a, b) => a - b)[xs.length >> 1] ?? 255;
-  return { r: mid(reds), g: mid(greens), b: mid(blues) };
+/* The paper's brightness across the photo, so a shadow doesn't read as ink.
+   The page is divided into blocks; each block's brightness is taken high
+   enough up its own range (the 80th percentile) that the drawing in it
+   doesn't drag the number down, and the values are then blended between
+   block centres so the estimate slides smoothly across the page. */
+const PAPER_BLOCK = 48;
+
+function brightness(data: Uint8ClampedArray, i: number) {
+  return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
 }
 
-/** Squared colour distance — no square root needed to compare. */
-function far(
-  data: Uint8ClampedArray,
-  i: number,
-  p: { r: number; g: number; b: number },
-) {
-  const dr = data[i] - p.r;
-  const dg = data[i + 1] - p.g;
-  const db = data[i + 2] - p.b;
-  return dr * dr + dg * dg + db * db;
+function paperMap(data: Uint8ClampedArray, w: number, h: number) {
+  const bx = Math.max(1, Math.ceil(w / PAPER_BLOCK));
+  const by = Math.max(1, Math.ceil(h / PAPER_BLOCK));
+  const coarse = new Float32Array(bx * by);
+  const hist = new Uint32Array(256);
+
+  for (let j = 0; j < by; j++) {
+    for (let i = 0; i < bx; i++) {
+      hist.fill(0);
+      let n = 0;
+      const y1 = Math.min(h, (j + 1) * PAPER_BLOCK);
+      const x1 = Math.min(w, (i + 1) * PAPER_BLOCK);
+      for (let y = j * PAPER_BLOCK; y < y1; y++) {
+        for (let x = i * PAPER_BLOCK; x < x1; x++) {
+          hist[brightness(data, (y * w + x) * 4) | 0]++;
+          n++;
+        }
+      }
+      // Walk the histogram up to the 80th percentile.
+      let seen = 0;
+      let value = 255;
+      const want = n * 0.8;
+      for (let v = 0; v < 256; v++) {
+        seen += hist[v];
+        if (seen >= want) {
+          value = v;
+          break;
+        }
+      }
+      coarse[j * bx + i] = value;
+    }
+  }
+
+  /** The paper's brightness at one pixel, blended between block centres. */
+  return (x: number, y: number) => {
+    const fx = clamp(x / PAPER_BLOCK - 0.5, 0, bx - 1);
+    const fy = clamp(y / PAPER_BLOCK - 0.5, 0, by - 1);
+    const i0 = Math.floor(fx);
+    const j0 = Math.floor(fy);
+    const i1 = Math.min(bx - 1, i0 + 1);
+    const j1 = Math.min(by - 1, j0 + 1);
+    const tx = fx - i0;
+    const ty = fy - j0;
+    const top =
+      coarse[j0 * bx + i0] * (1 - tx) + coarse[j0 * bx + i1] * tx;
+    const bottom =
+      coarse[j1 * bx + i0] * (1 - tx) + coarse[j1 * bx + i1] * tx;
+    return top * (1 - ty) + bottom * ty;
+  };
+}
+
+/** Everything the flood left behind, piece by piece: what is one connected
+    lump of drawing, how big it is, and whether it runs off the photo. */
+function keepMainPieces(kept: Uint8Array, w: number, h: number) {
+  const label = new Int32Array(w * h);
+  const stack = new Int32Array(w * h);
+  const sizes: number[] = [0];
+  const offEdge: boolean[] = [false];
+  let current = 0;
+
+  for (let start = 0; start < w * h; start++) {
+    if (!kept[start] || label[start]) continue;
+    current++;
+    let top = 0;
+    let size = 0;
+    let touches = false;
+    stack[top++] = start;
+    label[start] = current;
+    while (top > 0) {
+      const px = stack[--top];
+      const x = px % w;
+      const y = (px / w) | 0;
+      size++;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) touches = true;
+      if (x > 0 && kept[px - 1] && !label[px - 1]) {
+        label[px - 1] = current;
+        stack[top++] = px - 1;
+      }
+      if (x < w - 1 && kept[px + 1] && !label[px + 1]) {
+        label[px + 1] = current;
+        stack[top++] = px + 1;
+      }
+      if (y > 0 && kept[px - w] && !label[px - w]) {
+        label[px - w] = current;
+        stack[top++] = px - w;
+      }
+      if (y < h - 1 && kept[px + w] && !label[px + w]) {
+        label[px + w] = current;
+        stack[top++] = px + w;
+      }
+    }
+    sizes.push(size);
+    offEdge.push(touches);
+  }
+  if (current === 0) return;
+
+  const biggest = Math.max(...sizes);
+  const good = new Uint8Array(current + 1);
+  for (let i = 1; i <= current; i++) {
+    // A scrap of the room, or a line running off the picture: not the drawing.
+    const substantial = sizes[i] >= biggest * 0.06;
+    const runsOff = offEdge[i] && sizes[i] < biggest * 0.4;
+    good[i] = substantial && !runsOff ? 1 : 0;
+  }
+  for (let px = 0; px < w * h; px++) {
+    if (kept[px] && !good[label[px]]) kept[px] = 0;
+  }
 }
 
 async function loadBitmap(file: Blob): Promise<ImageBitmap> {
@@ -76,39 +165,34 @@ async function loadBitmap(file: Blob): Promise<ImageBitmap> {
 }
 
 export type CutoutOptions = {
-  /** How close to the paper colour still counts as paper (0–100). Higher
-      clears more, at the risk of eating pale crayon. */
+  /** How far below its own patch of paper a pixel must fall before it counts
+      as drawn, as a percentage. Higher keeps more of a pale pencil line, at
+      the risk of keeping shadow with it. */
   tolerance?: number;
 };
 
-/**
- * Turn a photo of a drawing into a cut-out with a transparent background.
- * Throws if the picture can't be read, or if it's all paper.
- */
-export async function cutOutDrawing(
-  file: Blob,
-  opts: CutoutOptions = {},
-): Promise<Cutout> {
-  const tolerance = clamp(opts.tolerance ?? 34, 5, 100);
-  const bitmap = await loadBitmap(file);
+/** Which pixels are paper, for a photo already in memory: 1 means clear it.
+    Pure arithmetic over the pixels — no canvas, so it can be tested on its
+    own. */
+export function paperMask(
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+  tolerance = 14,
+): Uint8Array {
+  const paperAt = paperMap(data, w, h);
+  // How much darker than its own patch of paper a pixel must be before it
+  // counts as drawn, and how much colour makes it drawn whatever its darkness.
+  const darkness = 1 - tolerance / 100;
+  const COLOURED = 38;
 
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * scale));
-  const h = Math.max(1, Math.round(bitmap.height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) throw new Error("This browser can't read the picture.");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close?.();
-
-  const img = ctx.getImageData(0, 0, w, h);
-  const data = img.data;
-  const paper = paperColour(data, w, h);
-  // Distances are squared, so square the tolerance too.
-  const limit = tolerance * tolerance * 3;
+  const drawn = (px: number) => {
+    const i = px * 4;
+    const max = Math.max(data[i], data[i + 1], data[i + 2]);
+    const min = Math.min(data[i], data[i + 1], data[i + 2]);
+    if (max - min > COLOURED) return true; // crayon, felt tip, paint
+    return brightness(data, i) < darkness * paperAt(px % w, (px / w) | 0);
+  };
 
   // Flood inwards from every edge pixel, clearing paper as it goes.
   const cleared = new Uint8Array(w * h);
@@ -119,7 +203,7 @@ export async function cutOutDrawing(
     if (x < 0 || y < 0 || x >= w || y >= h) return;
     const px = y * w + x;
     if (cleared[px]) return;
-    if (far(data, px * 4, paper) > limit) return; // a drawn line — stop here
+    if (drawn(px)) return; // a drawn line — stop here
     cleared[px] = 1;
     queue[tail++] = px;
   };
@@ -140,6 +224,42 @@ export async function cutOutDrawing(
     push(x, y + 1);
     push(x, y - 1);
   }
+
+  // What's left is the drawing — and anything else that wasn't paper. Drop
+  // the pieces that are too small, or that run off the side of the photo.
+  const kept = new Uint8Array(w * h);
+  for (let px = 0; px < w * h; px++) kept[px] = cleared[px] ? 0 : 1;
+  keepMainPieces(kept, w, h);
+  for (let px = 0; px < w * h; px++) if (!kept[px]) cleared[px] = 1;
+  return cleared;
+}
+
+/**
+ * Turn a photo of a drawing into a cut-out with a transparent background.
+ * Throws if the picture can't be read, or if it's all paper.
+ */
+export async function cutOutDrawing(
+  file: Blob,
+  opts: CutoutOptions = {},
+): Promise<Cutout> {
+  const tolerance = clamp(opts.tolerance ?? 14, 2, 60);
+  const bitmap = await loadBitmap(file);
+
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("This browser can't read the picture.");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+
+  const img = ctx.getImageData(0, 0, w, h);
+  const data = img.data;
+  const cleared = paperMask(data, w, h, tolerance);
 
   // Clear the paper, and soften the boundary: a pixel touching cleared paper
   // keeps only part of its opacity, so the edge doesn't look cut with scissors.
