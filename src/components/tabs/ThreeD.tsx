@@ -454,11 +454,11 @@ export default function ThreeD() {
   );
 }
 
-/** What the drawings stand in front of: a film of a jungle clearing, with
-    an elephant, monkeys, parrots, a leopard and a crocodile at the edges and
-    butterflies drifting through the open middle. It loops quietly behind the
-    stage and takes no taps — the drawings on top do. Muted and inline, so it
-    plays on its own on a phone as well as the class screen. */
+/** What the drawings stand in front of: a film of a jungle path, trees and
+    leaves stirring at the sides and the path itself left clear for the
+    drawings to stand on. It loops quietly behind the stage and takes no taps
+    — the drawings on top do. Muted and inline, so it plays on its own on a
+    phone as well as the class screen. */
 function Backdrop() {
   return (
     <video
