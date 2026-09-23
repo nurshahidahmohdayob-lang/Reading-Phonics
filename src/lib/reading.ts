@@ -211,8 +211,10 @@ export type ReadingReport = {
   total: number;
   correct: number;
   missed: number;
+  /** How far into the passage the child got. Everything past this was never
+      read, and counts against accuracy just as a misread word does. */
   attempted: number;
-  accuracy: number; // 0..100
+  accuracy: number; // 0..100, over the whole passage
   wcpm: number; // words correct per minute
   practiceWords: string[]; // unique words to work on
 };
@@ -239,7 +241,12 @@ export function scoreReading(
     correct,
     missed,
     attempted,
-    accuracy: attempted ? Math.round((correct / attempted) * 100) : 0,
+    // Out of the whole passage, not just the part the child reached: a child
+    // who reads six words of forty and stops has not read it with 100%
+    // accuracy, and the teacher's screen should not say so.
+    accuracy: targetWords.length
+      ? Math.round((correct / targetWords.length) * 100)
+      : 0,
     wcpm: Math.round(correct / minutes),
     practiceWords,
   };
