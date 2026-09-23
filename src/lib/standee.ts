@@ -1,18 +1,24 @@
 "use client";
 
-/* Turning a cut-out drawing into a solid object.
+/* Standing a cut-out drawing up in the scene.
 
-   A flat picture on a plane still looks like a sticker when it turns. What
-   reads as real is a standee: the drawing's own outline, cut out of card and
-   given thickness, so the edge is visible as it rotates and it casts a proper
-   shadow.
+   buildFlat is what the stage uses: the drawing on a plane, kept facing the
+   class, with its own transparency deciding its shape and its shadow. A
+   drawing that never turns edge-on never has to look like a board, and it
+   reads as a character moving rather than an object being rotated.
 
-   So: read the transparency of the cut-out, find the outline of the drawing
-   inside it, simplify that outline to a manageable number of points, and
-   extrude it. The drawing is painted on the front and back faces; the sides
-   are the pale edge of the card. */
+   buildStandee is the older, thicker treatment: the drawing's outline cut out
+   of card and extruded, so the edge shows as it turns. Nothing uses it now —
+   it is kept for the day a real standee is wanted again. */
 
 import * as THREE from "three";
+
+export type Flat = {
+  geometry: THREE.PlaneGeometry;
+  texture: THREE.Texture;
+  /** width ÷ height, so the caller can place it sensibly. */
+  aspect: number;
+};
 
 export type Standee = {
   geometry: THREE.ExtrudeGeometry;
@@ -245,4 +251,21 @@ export async function buildStandee(
   texture.anisotropy = 4;
 
   return { geometry, texture, aspect: mask.aspect };
+}
+
+/** The drawing as a flat picture standing on the floor: one unit tall, as
+    wide as the drawing is, and with its feet at the origin so it can be
+    squashed downwards without sinking into the ground. */
+export async function buildFlat(dataUrl: string): Promise<Flat> {
+  const texture = await new THREE.TextureLoader().loadAsync(dataUrl);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  const aspect =
+    texture.image && texture.image.height
+      ? texture.image.width / texture.image.height
+      : 1;
+
+  const geometry = new THREE.PlaneGeometry(aspect, 1);
+  geometry.translate(0, 0.5, 0);
+  return { geometry, texture, aspect };
 }

@@ -2,24 +2,23 @@
 
 /* The jungle floor, in three dimensions.
 
-   Each drawing is a standee (lib/standee.ts): its own outline cut out of
-   card, with thickness. They stand on a floor the camera looks across, so
-   one walking towards you grows and one walking away shrinks, and a light
-   above casts their shadow onto the ground. Turning shows the edge of the
-   card — which is what makes a flat drawing read as an object rather than a
-   sticker.
+   Each drawing is the picture itself, standing on the floor and always facing
+   the class: no card, no thickness, nothing drawn round it — its own
+   transparency is its shape, and its shadow's. It never turns edge-on, and
+   never spins on the spot; walking the other way simply flips the picture.
 
-   They are not slid about rigidly: each one squashes as its weight lands,
-   stretches off the ground in a hop, breathes on the spot and leans into
-   its stride (shapeFor below), which is what makes a drawing read as an
-   animated character rather than a board on wheels.
+   What makes it read as animated rather than as a picture being slid about is
+   the shaping (shapeFor below): it squashes as its weight lands, leans into
+   its stride, stretches off the ground in a hop and breathes while standing.
+   The floor is in perspective, so one walking towards the class grows and one
+   walking away shrinks, and a light above throws its shadow on the ground.
 
    Positions live here rather than in React state: they change sixty times a
    second, and re-rendering the page for each frame would be wasteful. */
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { buildStandee } from "@/lib/standee";
+import { buildFlat } from "@/lib/standee";
 
 export type Move3D = "alive" | "still" | "walk" | "float" | "spin" | "jump";
 
@@ -98,6 +97,9 @@ type Live = {
   phase: number;
   move: Move3D;
   scale: number;
+  /** Which way round the picture is drawn, so walking left looks like
+      walking left without the drawing ever turning edge-on. */
+  facingLeft: boolean;
 };
 
 export default function Stage3D({
@@ -271,28 +273,24 @@ export default function Stage3D({
           }
           // Wander a little, so it doesn't march in straight lines.
           l.heading += Math.sin(now * 0.7 + l.phase) * 0.35 * dt;
-          // Face the way it's going, with a bit of a waddle.
-          const facing = -l.heading + Math.PI / 2;
-          m.rotation.y +=
-            (facing - m.rotation.y) * Math.min(1, dt * 4) +
-            Math.sin(now * 6 + l.phase) * 0.004;
+          // It never turns: the drawing stays face-on to the class, and the
+          // way it's walking shows in which way round the picture is.
+          l.facingLeft = Math.cos(l.heading) < 0;
           m.position.y =
             l.move === "float"
               ? 0.35 + Math.sin(now * 1.6 + l.phase) * 0.14
               : Math.abs(Math.sin(now * 5 + l.phase)) * 0.045;
         } else if (l.move === "spin") {
-          m.rotation.y += dt * 1.5;
+          // Not offered on the stage any more: a wobble on the spot, since a
+          // flat picture spinning would only vanish edge-on.
           m.position.y = 0;
         } else if (l.move === "jump") {
-          m.rotation.y += (0 - m.rotation.y) * Math.min(1, dt * 3);
           const hop = Math.abs(Math.sin(now * 2.6 + l.phase));
           m.position.y = hop * hop * 0.5;
         } else if (l.move === "alive") {
-          // On the spot, but turning far enough to show it's an object.
-          m.rotation.y = Math.sin(now * 0.8 + l.phase) * 0.7;
+          // On the spot, shifting its weight.
           m.position.y = Math.abs(Math.sin(now * 1.2 + l.phase)) * 0.05;
         } else {
-          m.rotation.y += (0 - m.rotation.y) * Math.min(1, dt * 3);
           m.position.y = 0;
         }
 
@@ -301,7 +299,8 @@ export default function Stage3D({
         // what it's doing doesn't snap it into a new shape.
         const want = moving ? shapeFor(l.move, now, l.phase) : REST;
         const ease = Math.min(1, dt * 12);
-        m.scale.x += (l.scale * want.sx - m.scale.x) * ease;
+        const facing = l.facingLeft ? -1 : 1;
+        m.scale.x += (facing * l.scale * want.sx - m.scale.x) * ease;
         m.scale.y += (l.scale * want.sy - m.scale.y) * ease;
         m.scale.z += (l.scale - m.scale.z) * ease;
         m.rotation.z += (want.lean - m.rotation.z) * ease;
@@ -367,7 +366,7 @@ export default function Stage3D({
       }
       // Hold the place, so a slow build isn't started twice.
       live.current.set(actor.key, null);
-      void buildStandee(actor.dataUrl)
+      void buildFlat(actor.dataUrl)
         .then(({ geometry, texture }) => {
           const stage = scene.current;
           // It may have been taken off, or the section closed, meanwhile.
@@ -379,18 +378,17 @@ export default function Stage3D({
           const face = new THREE.MeshStandardMaterial({
             map: texture,
             transparent: true,
+            // The drawing's own transparency cuts its shape, and its shadow
+            // with it — no card, no edge, nothing round the picture.
             alphaTest: 0.5,
+            side: THREE.DoubleSide,
             roughness: 0.9,
             metalness: 0,
             emissive: new THREE.Color(0xffffff),
             emissiveMap: texture,
             emissiveIntensity: 0,
           });
-          const edge = new THREE.MeshStandardMaterial({
-            color: 0xf4efe4,
-            roughness: 1,
-          });
-          const mesh = new THREE.Mesh(geometry, [face, edge]);
+          const mesh = new THREE.Mesh(geometry, face);
           mesh.castShadow = true;
           mesh.scale.setScalar(actor.scale);
           mesh.position.set(
@@ -407,6 +405,7 @@ export default function Stage3D({
             phase: Math.random() * Math.PI * 2,
             move: actor.move,
             scale: actor.scale,
+            facingLeft: false,
           });
         })
         .catch(() => {
