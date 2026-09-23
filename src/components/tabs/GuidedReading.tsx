@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
 import { storyQuestions, type CompItem } from "@/app/comprehension";
@@ -1062,29 +1062,34 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
   const greens = Object.values(results).filter((r) => r === "green").length;
   const justRated = useRef(false);
 
-  // Entering a word starts a fresh attempt — with the mic already hot, so
-  // the student just says the word without pressing anything.
+  // Entering a word starts a fresh attempt. The mic stays off: the teacher
+  // hears the child and marks it, and only opens the mic if they want the
+  // app to listen instead.
   useEffect(() => {
     justRated.current = false;
-    if (index !== null) {
-      const t = setTimeout(start, 150);
-      return () => clearTimeout(t);
-    }
-  }, [index, start]);
+  }, [index]);
+
+  /** The teacher's verdict, or the microphone's. Both land the same way:
+      the star, a sound, then back to the word list. */
+  const rate = useCallback(
+    (r: Rating) => {
+      if (index === null) return;
+      stop();
+      justRated.current = true;
+      setResults((prev) => ({ ...prev, [index]: r }));
+      chime(r === "green");
+      if (r === "green") praise();
+      else speak(STAR[r].say, 1);
+    },
+    [index, stop],
+  );
 
   // Score on the very first scrap of recognised speech — no waiting for the
   // engine to "finalise". The verdict speaks immediately.
   useEffect(() => {
     if (!listening || !word || index === null || !transcript.trim()) return;
-    const said = transcript.split(/\s+/);
-    const r = rateAttempt(word, said);
-    stop();
-    justRated.current = true;
-    setResults((prev) => ({ ...prev, [index]: r }));
-    chime(r === "green"); // instant feedback, before any speech loads
-    if (r === "green") praise();
-    else speak(STAR[r].say, 1);
-  }, [transcript, listening, word, index, stop]);
+    rate(rateAttempt(word, transcript.split(/\s+/)));
+  }, [transcript, listening, word, index, rate]);
 
   // Watchdog: if the mic has been "listening" for 7s without hearing a thing,
   // restart it — never leave the student talking to a dead microphone.
@@ -1253,17 +1258,48 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
           </button>
           {supported &&
             (listening ? (
-              <span className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold text-white">
+              <button
+                onClick={stop}
+                className="animate-pulse rounded-full bg-rose-500 px-5 py-3 font-bold text-white shadow-md active:scale-95"
+              >
                 👂 Say the word now!
-              </span>
+              </button>
             ) : (
               <button
                 onClick={start}
-                className="rounded-full bg-sky-600 px-5 py-3 font-bold text-white shadow-md active:scale-95"
+                className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
               >
-                🎤 Try again
+                🎤 Let the app listen
               </button>
             ))}
+        </div>
+
+        {/* The teacher hears the child and marks it. Nothing scores itself
+            unless the mic above is opened on purpose. */}
+        <div className="flex w-full flex-col items-center gap-2 border-t-2 border-white/60 pt-5">
+          <span className="text-sm font-bold text-sky-800/70">
+            Did they say it right?
+          </span>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              onClick={() => rate("green")}
+              className="rounded-full bg-green-500 px-6 py-3 font-extrabold text-white shadow-md active:scale-95"
+            >
+              💚 Perfect
+            </button>
+            <button
+              onClick={() => rate("yellow")}
+              className="rounded-full bg-yellow-400 px-6 py-3 font-extrabold text-yellow-950 shadow-md active:scale-95"
+            >
+              💛 Almost
+            </button>
+            <button
+              onClick={() => rate("red")}
+              className="rounded-full bg-rose-500 px-6 py-3 font-extrabold text-white shadow-md active:scale-95"
+            >
+              ❤️ Not yet
+            </button>
+          </div>
         </div>
       </div>
 
