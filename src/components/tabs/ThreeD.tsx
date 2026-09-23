@@ -32,14 +32,10 @@ const Stage3D = dynamic(() => import("./Stage3D"), {
 
 type Move = "alive" | "still" | "walk" | "float" | "spin" | "jump";
 
-const MOVES: { id: Move; label: string }[] = [
-  { id: "alive", label: "✨ Alive" },
-  { id: "still", label: "🧍 Still" },
-  { id: "walk", label: "🚶 Walk" },
-  { id: "float", label: "🎈 Float" },
-  { id: "spin", label: "🌀 Spin" },
-  { id: "jump", label: "⭐ Jump" },
-];
+/* Walking is the only thing a drawing is asked to do: it lands walking and
+   stays walking, so nobody has to choose. The scene (Stage3D) still knows
+   how to stand, float, spin and hop, should they be offered again. */
+const MOVES: { id: Move; label: string }[] = [{ id: "walk", label: "🚶 Walk" }];
 
 type Actor = {
   /** One drawing can be on the stage more than once. */
@@ -118,8 +114,8 @@ export default function ThreeD() {
         key,
         drawingId: d.id,
         scale: 1,
-        // Moving from the moment it lands, rather than waiting to be told.
-        move: "alive",
+        // Walking from the moment it lands, rather than waiting to be told.
+        move: "walk",
       },
     ]);
   }
