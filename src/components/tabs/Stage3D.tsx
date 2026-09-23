@@ -9,6 +9,11 @@
    card — which is what makes a flat drawing read as an object rather than a
    sticker.
 
+   They are not slid about rigidly: each one squashes as its weight lands,
+   stretches off the ground in a hop, breathes on the spot and leans into
+   its stride (shapeFor below), which is what makes a drawing read as an
+   animated character rather than a board on wheels.
+
    Positions live here rather than in React state: they change sixty times a
    second, and re-rendering the page for each frame would be wasteful. */
 
@@ -30,6 +35,59 @@ export type Actor3D = {
    see even at the front edge, where the view is narrowest. */
 const FLOOR_W = 5.2;
 const FLOOR_D = 2.8;
+
+/* How a drawing is squashed and leaned this frame, as multiples of its own
+   size. Feet stay on the floor (the geometry's origin is at its feet), so
+   pressing down on y and out on x reads as weight landing, and the reverse
+   reads as a stretch. Drawn from the same clock as the movement, so a step
+   and its squash happen together. */
+type Shape = { sx: number; sy: number; lean: number };
+
+const REST: Shape = { sx: 1, sy: 1, lean: 0 };
+
+function shapeFor(move: Move3D, now: number, phase: number): Shape {
+  if (move === "walk" || move === "float") {
+    if (move === "float") {
+      // Drifting: a slow roll and a breath, nothing sharp.
+      return {
+        sx: 1 - 0.02 * Math.sin(now * 1.6 + phase),
+        sy: 1 + 0.03 * Math.sin(now * 1.6 + phase),
+        lean: Math.sin(now * 1.1 + phase) * 0.08,
+      };
+    }
+    // Walking: weight lands twice a stride, and the body rocks with it.
+    const stride = Math.sin(now * 5 + phase);
+    const contact = (1 - Math.abs(stride)) ** 2;
+    return {
+      sx: 1 + 0.06 * contact,
+      sy: 1 - 0.07 * contact,
+      lean: stride * 0.06,
+    };
+  }
+  if (move === "jump") {
+    const hop = Math.abs(Math.sin(now * 2.6 + phase));
+    // Stretched thin in the air, flattened on landing.
+    const land = Math.max(0, 1 - hop / 0.12);
+    return {
+      sx: 1 - 0.1 * hop + 0.16 * land,
+      sy: 1 + 0.16 * hop - 0.2 * land,
+      lean: 0,
+    };
+  }
+  if (move === "alive") {
+    const breath = Math.sin(now * 2 + phase);
+    return {
+      sx: 1 - 0.025 * breath,
+      sy: 1 + 0.035 * breath,
+      lean: Math.sin(now * 0.9 + phase) * 0.06,
+    };
+  }
+  if (move === "spin") {
+    const wind = Math.sin(now * 3 + phase);
+    return { sx: 1 - 0.03 * wind, sy: 1 + 0.04 * wind, lean: 0 };
+  }
+  return REST;
+}
 
 type Live = {
   key: string;
@@ -237,6 +295,16 @@ export default function Stage3D({
           m.rotation.y += (0 - m.rotation.y) * Math.min(1, dt * 3);
           m.position.y = 0;
         }
+
+        // Squash, stretch and lean — what makes a drawing read as animated
+        // rather than as a board being slid about. Eased in, so changing
+        // what it's doing doesn't snap it into a new shape.
+        const want = moving ? shapeFor(l.move, now, l.phase) : REST;
+        const ease = Math.min(1, dt * 12);
+        m.scale.x += (l.scale * want.sx - m.scale.x) * ease;
+        m.scale.y += (l.scale * want.sy - m.scale.y) * ease;
+        m.scale.z += (l.scale - m.scale.z) * ease;
+        m.rotation.z += (want.lean - m.rotation.z) * ease;
 
         // The chosen one sits a touch brighter.
         const mats = Array.isArray(m.material) ? m.material : [m.material];
