@@ -142,14 +142,24 @@ function keepMainPieces(kept: Uint8Array, w: number, h: number) {
   }
   if (current === 0) return;
 
-  const biggest = Math.max(...sizes);
+  // A grainy photo can leave tens of thousands of specks, so the biggest is
+  // found by walking the list: spreading it into Math.max would overflow.
+  let biggest = 0;
+  for (let i = 1; i <= current; i++) if (sizes[i] > biggest) biggest = sizes[i];
+
   const good = new Uint8Array(current + 1);
+  let keeping = 0;
   for (let i = 1; i <= current; i++) {
     // A scrap of the room, or a line running off the picture: not the drawing.
     const substantial = sizes[i] >= biggest * 0.06;
     const runsOff = offEdge[i] && sizes[i] < biggest * 0.4;
     good[i] = substantial && !runsOff ? 1 : 0;
+    if (good[i]) keeping += sizes[i];
   }
+  // Never tidy away the whole drawing: if this would leave nothing worth
+  // showing, hand back what the flood left and let it be a rough cut-out.
+  if (keeping === 0) return;
+
   for (let px = 0; px < w * h; px++) {
     if (kept[px] && !good[label[px]]) kept[px] = 0;
   }
@@ -259,7 +269,16 @@ export async function cutOutDrawing(
 
   const img = ctx.getImageData(0, 0, w, h);
   const data = img.data;
-  const cleared = paperMask(data, w, h, tolerance);
+
+  // A faint pencil drawing can sit so close to the paper that the first pass
+  // clears the lot. Rather than telling the teacher to photograph it again,
+  // look harder before giving up.
+  let cleared = paperMask(data, w, h, tolerance);
+  let survivors = 0;
+  for (let px = 0; px < w * h; px++) if (!cleared[px]) survivors++;
+  if (survivors < w * h * 0.001) {
+    cleared = paperMask(data, w, h, Math.max(4, tolerance / 2));
+  }
 
   // Clear the paper, and soften the boundary: a pixel touching cleared paper
   // keeps only part of its opacity, so the edge doesn't look cut with scissors.
