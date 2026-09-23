@@ -197,8 +197,10 @@ export async function cutOutDrawing(
 
 /** Shrink a cut-out for sending over the network: a photo from a phone can
     come back as a megabyte and a half of PNG, which is more than the pairing
-    channel should carry. WebP keeps the transparency and a fraction of the
-    weight; the quality steps down until it fits. */
+    channel should carry. WebP keeps the transparency at a fraction of the
+    weight. A busy drawing can still be too heavy at full size, so if quality
+    alone won't do it the picture is made smaller and tried again — it always
+    goes, rather than failing on the phone with nothing the child can do. */
 export async function shrinkCutout(
   dataUrl: string,
   maxSide = 1000,
@@ -206,23 +208,42 @@ export async function shrinkCutout(
 ): Promise<Cutout> {
   const res = await fetch(dataUrl);
   const bitmap = await createImageBitmap(await res.blob());
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * scale));
-  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const original = { width: bitmap.width, height: bitmap.height };
 
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return { dataUrl, width: bitmap.width, height: bitmap.height };
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close?.();
+  let best: Cutout | null = null;
 
-  for (const quality of [0.88, 0.75, 0.6, 0.45]) {
-    const webp = canvas.toDataURL("image/webp", quality);
-    // A browser without WebP hands back a PNG — take it and stop trying.
-    if (!webp.startsWith("data:image/webp")) break;
-    if (webp.length <= maxBytes) return { dataUrl: webp, width: w, height: h };
+  // Full size first, then smaller, so a drawing only loses detail if it has to.
+  for (const side of [maxSide, 820, 660, 520, 400]) {
+    const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) break;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+
+    for (const quality of [0.88, 0.75, 0.6, 0.45, 0.35]) {
+      const webp = canvas.toDataURL("image/webp", quality);
+      // A browser too old for WebP hands back a PNG. Keep the smallest one
+      // it has given us and carry on shrinking — that PNG is what will go.
+      const png = !webp.startsWith("data:image/webp");
+      const candidate = { dataUrl: webp, width: w, height: h };
+      if (!best || candidate.dataUrl.length < best.dataUrl.length) {
+        best = candidate;
+      }
+      if (candidate.dataUrl.length <= maxBytes) {
+        bitmap.close?.();
+        return candidate;
+      }
+      if (png) break; // quality does nothing for PNG — only a smaller size will
+    }
   }
-  return { dataUrl: canvas.toDataURL("image/png"), width: w, height: h };
+
+  bitmap.close?.();
+  // Every size tried and still heavy: send the smallest we made rather than
+  // the original, which was heavier still.
+  return best ?? { dataUrl, width: original.width, height: original.height };
 }
