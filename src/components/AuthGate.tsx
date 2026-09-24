@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { forgetOwner } from "@/lib/owner";
 
 type Status = "loading" | "out" | "in";
 
@@ -42,6 +43,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     try {
       await fetch("/api/logout", { method: "POST" });
     } finally {
+      // The next teacher to sign in at this screen gets their own drawings,
+      // not whatever this one scanned.
+      forgetOwner();
       setName("");
       setStatus("out");
     }

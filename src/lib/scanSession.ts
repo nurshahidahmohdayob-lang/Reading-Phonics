@@ -7,8 +7,10 @@
 
    The code IS the permission: whoever holds it can post a drawing to that
    screen, and nothing else — it can't read anything, and it dies after
-   fifteen minutes. Only a signed-in teacher can create one or collect what
-   was sent. Server-side only. */
+   fifteen minutes. Only a signed-in teacher can create one, and only the
+   teacher who created it can collect what was sent: with several classes
+   playing at once, one room's drawings must not land on another room's
+   screen. Server-side only. */
 
 import { randomBytes } from "crypto";
 import { kvConfigured, kvGetJson, kvSetJson } from "./kv";
@@ -32,7 +34,12 @@ export type ScanItem = {
   at: string;
 };
 
-type Session = { createdAt: string; items: ScanItem[] };
+type Session = {
+  createdAt: string;
+  items: ScanItem[];
+  /** The address of the teacher whose screen this pairing belongs to. */
+  owner: string;
+};
 
 export function scanReady(): boolean {
   return kvConfigured();
@@ -46,11 +53,15 @@ function key(code: string) {
   return PREFIX + code;
 }
 
-/** Start a pairing and return its code. */
-export async function newScanSession(): Promise<string> {
+/** Start a pairing, owned by the teacher who asked for it. */
+export async function newScanSession(owner: string): Promise<string> {
   let code = "";
   for (const b of randomBytes(12)) code += ALPHABET[b % ALPHABET.length];
-  const session: Session = { createdAt: new Date().toISOString(), items: [] };
+  const session: Session = {
+    createdAt: new Date().toISOString(),
+    items: [],
+    owner,
+  };
   await kvSetJson(key(code), session, TTL_SECONDS);
   return code;
 }
@@ -70,11 +81,17 @@ export async function addScan(
   return "ok";
 }
 
-/** Collect what the phone has sent, and clear it. null if the code has died. */
-export async function drainScans(code: string): Promise<ScanItem[] | null> {
+/** Collect what the phone has sent, and clear it. null if the code has died,
+    or if it belongs to another teacher's screen. */
+export async function drainScans(
+  code: string,
+  owner: string,
+): Promise<ScanItem[] | null> {
   if (!isScanCode(code)) return null;
   const session = await kvGetJson<Session>(key(code));
   if (!session) return null;
+  // Pairings made before this had an owner: nobody can claim those.
+  if (session.owner !== owner) return null;
   if (session.items.length) {
     await kvSetJson(key(code), { ...session, items: [] }, TTL_SECONDS);
   }

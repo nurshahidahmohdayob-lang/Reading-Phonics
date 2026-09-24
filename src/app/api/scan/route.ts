@@ -20,9 +20,12 @@ import {
   type ScanItem,
 } from "@/lib/scanSession";
 
-async function signedIn(): Promise<boolean> {
+/** The signed-in teacher's address, or null. A pairing belongs to one
+    teacher: they made it, and only they can collect from it. */
+async function signedInAs(): Promise<string | null> {
   const jar = await cookies();
-  return !!verifyToken(jar.get(SESSION_COOKIE)?.value);
+  const session = verifyToken(jar.get(SESSION_COOKIE)?.value);
+  return session?.email ?? null;
 }
 
 export async function POST(req: Request) {
@@ -48,13 +51,14 @@ export async function POST(req: Request) {
 
   // Starting a pairing is the teacher's own doing.
   if (body.action === "new") {
-    if (!(await signedIn())) {
+    const teacher = await signedInAs();
+    if (!teacher) {
       return NextResponse.json(
         { ok: false, error: "forbidden" },
         { status: 403 },
       );
     }
-    return NextResponse.json({ ok: true, code: await newScanSession() });
+    return NextResponse.json({ ok: true, code: await newScanSession(teacher) });
   }
 
   // Sending a drawing: the code is the permission.
@@ -108,7 +112,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  if (!(await signedIn())) {
+  const teacher = await signedInAs();
+  if (!teacher) {
     return NextResponse.json(
       { ok: false, error: "forbidden" },
       { status: 403 },
@@ -118,7 +123,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, configured: false });
   }
   const code = new URL(req.url).searchParams.get("code") ?? "";
-  const items = await drainScans(code);
+  const items = await drainScans(code, teacher);
   if (items === null) {
     return NextResponse.json({ ok: false, expired: true });
   }

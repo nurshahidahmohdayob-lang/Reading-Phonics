@@ -5,9 +5,16 @@
    A cut-out drawing is a PNG of a few hundred kilobytes — far too big for
    localStorage, where the rest of the app's notes live — so these go in
    IndexedDB, which is sized for it. They stay on the device: a child's
-   artwork is never uploaded anywhere. */
+   artwork is never uploaded anywhere.
+
+   Each teacher's drawings live in their own store, named after the owner key
+   for the address they signed in with (lib/owner.ts). Two classes can play at
+   once on two screens, a shared staffroom computer keeps one teacher's
+   drawings out of the next one's lesson, and nobody can delete work that
+   isn't theirs. */
 
 import { useCallback, useEffect, useState } from "react";
+import { currentOwner } from "@/lib/owner";
 
 export type Drawing = {
   id: string;
@@ -20,13 +27,16 @@ export type Drawing = {
   createdAt: string;
 };
 
-const DB = "phonics-drawings";
 const STORE = "drawings";
 const EVT = "phonics-drawings-change";
 
-function openDb(): Promise<IDBDatabase> {
+/** One database per teacher. The old shared database is left where it is:
+    its drawings belong to whoever scanned them, and handing them to the next
+    person to sign in is exactly what this is here to prevent. */
+async function openDb(): Promise<IDBDatabase> {
+  const owner = await currentOwner();
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
+    const req = indexedDB.open(`phonics-drawings-${owner}`, 1);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
