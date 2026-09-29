@@ -228,10 +228,13 @@ export function scoreReading(
   const missed = status.filter((s) => s === "missed").length;
   const attempted = correct + missed;
   const minutes = Math.max(elapsedSeconds, 1) / 60;
+  // Only the words they actually tried and got wrong. Words they never
+  // reached aren't words they struggled with, and a child who stopped early
+  // shouldn't be handed fifty words to practise that they have never seen.
   const practiceWords = Array.from(
     new Set(
       targetWords
-        .filter((_, i) => status[i] !== "correct")
+        .filter((_, i) => status[i] === "missed")
         .map((w) => w.replace(/[.,!?;:"]/g, ""))
         .filter(Boolean),
     ),

@@ -7,11 +7,11 @@ import { storyQuestions, type CompItem } from "@/app/comprehension";
 import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
 import GrammarLegend from "@/components/GrammarLegend";
 import {
-  alignReading,
   rateAttempt,
   scoreReading,
   type Rating,
   type ReadingReport,
+  type WordStatus,
 } from "@/lib/reading";
 import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
 import { studentKey } from "@/app/roster";
@@ -512,10 +512,14 @@ function ReadAloud({
   onLevels: () => void;
   onDone: (r: ReadingReport) => void;
 }) {
-  const { supported, listening, transcript, start, stop, reset } =
-    useSpeechRecognition();
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [grading, setGrading] = useState(false);
+  /* Which words the teacher tapped because the child couldn't read them, and
+     what the screen is doing: reading, asking how far they got, or waiting
+     for the word they stopped at. */
+  const [reading, setReading] = useState(false);
+  const [missed, setMissed] = useState<Set<number>>(new Set());
+  const [asking, setAsking] = useState(false);
+  const [pickingStop, setPickingStop] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const pickedEntry = picked ? describe(picked) : null;
   const [colors, setColors] = useState(true);
@@ -533,39 +537,44 @@ function ReadAloud({
     () => words.map((w) => describe(w.replace(/[.,!?;:"]/g, "")).pos),
     [words],
   );
-  const spoken = useMemo(
-    () => (transcript ? transcript.split(/\s+/) : []),
-    [transcript],
-  );
-  // Alignment runs quietly in the background — no markings while reading.
-  const status = useMemo(() => alignReading(words, spoken), [words, spoken]);
-
-  // Track the latest alignment so delayed grading sees the final words.
-  const statusRef = useRef(status);
-  statusRef.current = status;
-
   function begin() {
-    reset();
+    setMissed(new Set());
+    setAsking(false);
+    setPickingStop(false);
+    setPicked(null);
     setStartedAt(Date.now());
-    start();
+    setReading(true);
   }
 
   function finish() {
-    stop();
-    setGrading(true);
+    setReading(false);
+    setAsking(true);
   }
 
-  // Grade a beat after stopping: the recogniser often delivers the last
-  // stretch of speech only after the mic is closed.
-  useEffect(() => {
-    if (!grading) return;
-    const t = setTimeout(() => {
+  /** Mark a word the child couldn't read, or take the mark off again. */
+  function toggleMissed(i: number) {
+    setMissed((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
+  /** Everything up to `reached` was read: the words tapped along the way were
+      wrong, the rest were right. Anything past it was never read at all, and
+      counts against the score exactly as a misread word does. */
+  const grade = useCallback(
+    (reached: number) => {
+      const status: WordStatus[] = words.map((_, i) => {
+        if (i >= reached) return "pending";
+        return missed.has(i) ? "missed" : "correct";
+      });
       const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : 1;
-      onDone(scoreReading(words, statusRef.current, elapsed));
-    }, 1200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grading]);
+      onDone(scoreReading(words, status, elapsed));
+    },
+    [words, missed, startedAt, onDone],
+  );
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -602,7 +611,11 @@ function ReadAloud({
         {passage.title}
       </h2>
       <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        Read at your own pace — if a word is hard, just keep going! 💪
+        {reading
+          ? "Listening to them read — tap a word they can't manage. 👂"
+          : pickingStop
+            ? "Tap the first word they didn't read. ✋"
+            : "Read at your own pace — if a word is hard, just keep going! 💪"}
       </p>
 
       {/* Plain passage on storybook paper: no live markings while reading */}
@@ -617,16 +630,32 @@ function ReadAloud({
         <p className="flex flex-wrap gap-x-2 gap-y-1">
           {words.map((w, i) => {
             const clean = w.replace(/[.,!?;:"]/g, "");
+            const marked = missed.has(i);
             return (
               <button
                 key={i}
                 onClick={() => {
+                  // While they're reading, a tap is the teacher saying "that
+                  // one was too hard" — saying the word aloud then would only
+                  // read it for them.
+                  if (reading) {
+                    toggleMissed(i);
+                    return;
+                  }
+                  if (pickingStop) {
+                    grade(i);
+                    return;
+                  }
                   sayWord(clean);
                   setPicked(clean.toLowerCase());
                 }}
                 className={`rounded-lg px-1 transition-colors hover:bg-amber-200/70 active:bg-amber-300/70 ${
-                  colors ? POS_COLOR[wordPos[i]] : "text-zinc-800"
-                } ${picked === clean.toLowerCase() ? "bg-amber-200/80" : ""}`}
+                  marked
+                    ? "bg-rose-500/90 text-white line-through decoration-2"
+                    : colors
+                      ? POS_COLOR[wordPos[i]]
+                      : "text-zinc-800"
+                } ${picked === clean.toLowerCase() && !marked ? "bg-amber-200/80" : ""}`}
               >
                 {w}
               </button>
@@ -705,43 +734,89 @@ function ReadAloud({
       )}
 
       {/* Controls */}
-      {!supported ? (
-        <div className="mt-6 rounded-2xl bg-amber-50 px-5 py-4 text-center text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          🎙️ Reading-aloud detection needs Chrome or Edge. You can still tap any
-          word to hear it, or{" "}
-          <button
-            onClick={() => speak(passage.text, 0.8)}
-            className="font-bold underline"
-          >
-            listen to the whole passage
-          </button>
-          .
-        </div>
-      ) : (
-        <div className="mt-6 flex w-full items-center justify-center gap-4">
-          {!listening ? (
+      <div className="mt-6 flex w-full flex-col items-center gap-3">
+        {!reading && !asking && !pickingStop && (
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={begin}
               className="flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
             >
-              🎤 Start reading
+              ▶️ Start reading
             </button>
-          ) : (
+            <button
+              onClick={() => speak(passage.text, 0.8)}
+              className="rounded-full bg-white px-5 py-3 font-bold text-brand-700 shadow-sm ring-2 ring-brand-100 active:scale-95 dark:bg-zinc-900 dark:text-brand-300 dark:ring-zinc-700"
+            >
+              🔊 Listen to the story
+            </button>
+          </div>
+        )}
+
+        {reading && (
+          <>
             <button
               onClick={finish}
-              disabled={grading}
-              className="flex animate-pulse items-center gap-2 rounded-full bg-rose-500 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-full bg-rose-500 px-8 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
             >
-              {grading ? "✨ Checking…" : "⏹ I'm done"}
+              ⏹ They&apos;re done
             </button>
-          )}
-        </div>
-      )}
-      {listening && (
-        <p className="mt-3 text-sm text-zinc-400">
-          Listening… read the words out loud 👂
-        </p>
-      )}
+            <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+              Tap any word they can&apos;t read — tap it again to undo.{" "}
+              {missed.size > 0 && (
+                <span className="font-extrabold text-rose-600">
+                  {missed.size} marked
+                </span>
+              )}
+            </p>
+          </>
+        )}
+
+        {asking && (
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 text-center shadow-md ring-2 ring-amber-200 dark:bg-zinc-900">
+            <p className="text-lg font-extrabold">Did they read to the end?</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Words they never reached can&apos;t count as read.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => grade(words.length)}
+                className="rounded-full bg-green-500 px-6 py-3 font-extrabold text-white shadow active:scale-95"
+              >
+                ✅ Yes, all of it
+              </button>
+              <button
+                onClick={() => {
+                  setAsking(false);
+                  setPickingStop(true);
+                }}
+                className="rounded-full bg-amber-400 px-6 py-3 font-extrabold text-amber-950 shadow active:scale-95"
+              >
+                ✋ No — they stopped
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pickingStop && (
+          <div className="w-full max-w-md rounded-2xl bg-amber-50 p-5 text-center shadow-md ring-2 ring-amber-300 dark:bg-amber-950/40">
+            <p className="text-lg font-extrabold text-amber-900 dark:text-amber-100">
+              Tap the first word they didn&apos;t read
+            </p>
+            <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">
+              That word and everything after it counts as not read.
+            </p>
+            <button
+              onClick={() => {
+                setPickingStop(false);
+                setAsking(true);
+              }}
+              className="mt-3 rounded-full bg-white px-5 py-2 font-bold text-amber-800 shadow-sm active:scale-95"
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
