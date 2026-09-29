@@ -612,7 +612,7 @@ function ReadAloud({
       </h2>
       <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
         {reading
-          ? "Listening to them read — tap a word they can't manage. 👂"
+          ? "Tap a word they can't manage — they'll hear how it sounds. 👂"
           : pickingStop
             ? "Tap the first word they didn't read. ✋"
             : "Read at your own pace — if a word is hard, just keep going! 💪"}
@@ -636,9 +636,11 @@ function ReadAloud({
                 key={i}
                 onClick={() => {
                   // While they're reading, a tap is the teacher saying "that
-                  // one was too hard" — saying the word aloud then would only
-                  // read it for them.
+                  // one was too hard". The word is said aloud as it's marked,
+                  // so the child hears how it should sound — that is the
+                  // teaching moment, and it's why the word was tapped.
                   if (reading) {
+                    if (!missed.has(i)) sayWord(clean);
                     toggleMissed(i);
                     return;
                   }
@@ -761,7 +763,8 @@ function ReadAloud({
               ⏹ They&apos;re done
             </button>
             <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-              Tap any word they can&apos;t read — tap it again to undo.{" "}
+              Tap any word they can&apos;t read — they&apos;ll hear it said.
+              Tap again to undo.{" "}
               {missed.size > 0 && (
                 <span className="font-extrabold text-rose-600">
                   {missed.size} marked
