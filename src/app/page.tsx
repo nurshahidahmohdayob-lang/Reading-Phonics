@@ -11,7 +11,7 @@ import SoundItOut from "@/components/tabs/SoundItOut";
 import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
-import ClassTracker from "@/components/tabs/ClassTracker";
+import ClassTracker, { type TrackerStart } from "@/components/tabs/ClassTracker";
 import ThreeD from "@/components/tabs/ThreeD";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
@@ -452,6 +452,10 @@ export default function Home() {
   // on their level with their name in.
   const [guidedInit, setGuidedInit] = useState<GuidedStart | undefined>();
   const [guidedKey, setGuidedKey] = useState(0);
+  // And back the other way: a finished read returns to that child's class in
+  // the tracker, so the teacher can pick the next child.
+  const [trackerInit, setTrackerInit] = useState<TrackerStart | undefined>();
+  const [trackerKey, setTrackerKey] = useState(0);
   // Whether the signed-in staff member may see the Class Tracker.
   const [trackerOwner, setTrackerOwner] = useState(false);
   // Signed-in staff name — signs the emails the tracker writes to parents.
@@ -500,6 +504,12 @@ export default function Home() {
     setGuidedInit(init);
     setGuidedKey((k) => k + 1);
     go("guided");
+  }
+
+  function openTracker(init?: TrackerStart) {
+    setTrackerInit(init);
+    setTrackerKey((k) => k + 1);
+    go("tracker");
   }
 
   return (
@@ -568,7 +578,9 @@ export default function Home() {
                     ? openAssessment()
                     : s.id === "guided"
                       ? openGuided()
-                      : go(s.id)
+                      : s.id === "tracker"
+                        ? openTracker()
+                        : go(s.id)
                 }
                 className={`group flex h-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br ${s.color} p-3 text-left shadow-md ring-2 ring-white/60 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98] sm:gap-4 sm:p-4 dark:ring-white/10`}
               >
@@ -610,7 +622,19 @@ export default function Home() {
             {section === "tricky" && <TrickyWords />}
             {section === "stories" && <Stories />}
             {section === "guided" && (
-              <GuidedReading key={guidedKey} initial={guidedInit} />
+              <GuidedReading
+                key={guidedKey}
+                initial={guidedInit}
+                onTracker={
+                  trackerOwner
+                    ? (yearKey) =>
+                        openTracker({
+                          view: "guided",
+                          yearKey: yearKey ?? trackerInit?.yearKey ?? "y1",
+                        })
+                    : undefined
+                }
+              />
             )}
             {section === "assessment" && (
               <ReadingAssessment key={assessKey} initial={assessInit} />
@@ -619,6 +643,8 @@ export default function Home() {
             {section === "threed" && <ThreeD />}
             {section === "tracker" && trackerOwner && (
               <ClassTracker
+                key={trackerKey}
+                initial={trackerInit}
                 onAssess={(init) => openAssessment(init)}
                 onGuided={(init) => openGuided(init)}
                 teacherName={teacherName}
@@ -632,7 +658,9 @@ export default function Home() {
                     ? openAssessment()
                     : id === "guided"
                       ? openGuided()
-                      : go(id as SectionId)
+                      : id === "tracker"
+                        ? openTracker()
+                        : go(id as SectionId)
                 }
               />
             )}

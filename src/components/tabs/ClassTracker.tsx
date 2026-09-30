@@ -190,12 +190,21 @@ function buildGroups(edits: RosterEdits, store: TrackerStore) {
   return groups;
 }
 
+/** Where the tracker opens: which view, on which class. */
+export type TrackerStart = {
+  view: "tracker" | "stats" | "guided";
+  yearKey: string;
+};
+
 export default function ClassTracker({
+  initial,
   onAssess,
   onGuided,
   teacherName,
   teacherEmail,
 }: {
+  /** Coming back from a child's guided reading: their class's reading list. */
+  initial?: TrackerStart;
   onAssess: (init: { name: string; term: TermNo }) => void;
   /** Open Guided Reading for one child, on their level. */
   onGuided: (init: GuidedStart) => void;
@@ -219,8 +228,10 @@ export default function ClassTracker({
   const mailVia = useMailVia();
   const groups = buildGroups(edits, store);
 
-  const [view, setView] = useState<"tracker" | "stats" | "guided">("tracker");
-  const [yearKey, setYearKey] = useState("y1");
+  const [view, setView] = useState<"tracker" | "stats" | "guided">(
+    initial?.view ?? "tracker",
+  );
+  const [yearKey, setYearKey] = useState(initial?.yearKey ?? "y1");
   const [manage, setManage] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");

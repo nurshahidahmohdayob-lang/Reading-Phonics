@@ -61,8 +61,12 @@ export type GuidedStart = { name: string; levelId: string };
 
 export default function GuidedReading({
   initial,
+  onTracker,
 }: {
   initial?: GuidedStart;
+  /** Back to the Class Tracker's guided reading, on this child's class —
+      only offered to staff who can see the tracker. */
+  onTracker?: (yearKey: string | null) => void;
 } = {}) {
   const [step, setStep] = useState<Step>("choose");
   // Who's reading. Typing a name means every read-aloud is logged against
@@ -113,6 +117,7 @@ export default function GuidedReading({
         onRetry={() => setStep("read")}
         onCoach={() => setStep("coach")}
         onHome={() => setStep("choose")}
+        onTracker={onTracker}
       />
     );
   }
@@ -838,6 +843,7 @@ function Report({
   onRetry,
   onCoach,
   onHome,
+  onTracker,
 }: {
   report: ReadingReport;
   passage: Passage;
@@ -846,6 +852,7 @@ function Report({
   onRetry: () => void;
   onCoach: () => void;
   onHome: () => void;
+  onTracker?: (yearKey: string | null) => void;
 }) {
   const edits = useRosterEdits();
   const guided = useGuidedLog();
@@ -988,6 +995,17 @@ function Report({
           New passage
         </button>
       </div>
+
+      {/* Straight back to the class list, to pick the next child. */}
+      {onTracker && (
+        <button
+          onClick={() => onTracker(who?.yearKey ?? null)}
+          className="mt-3 w-full rounded-full bg-emerald-600 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+        >
+          👥 Next child — back to {who ? who.year : "the class"}
+          &apos;s tracker
+        </button>
+      )}
     </div>
   );
 }
