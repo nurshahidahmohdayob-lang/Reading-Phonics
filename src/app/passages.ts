@@ -71,3 +71,37 @@ export function levelForReader(
   );
   return byYear ?? passageLevels[0];
 }
+
+/* Stories a teacher has added for a level live in this browser, one list per
+   level. */
+export function customKey(levelId: string) {
+  return `custom-passages-${levelId}`;
+}
+
+export function loadCustom(levelId: string): Passage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(customKey(levelId)) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+/** The story a logged read was for — one of the built-in stories, or one a
+    teacher added on this device. Older reads saved "y2" for "year2". */
+export function findPassage(
+  passageId: string,
+  levelId: string,
+): { passage: Passage; level: PassageLevel } | null {
+  const id = levelId.replace(/^y(\d)$/, "year$1");
+  const level = passageLevels.find((l) => l.id === id);
+  for (const l of level ? [level, ...passageLevels] : passageLevels) {
+    const hit = l.passages.find((p) => p.id === passageId);
+    if (hit) return { passage: hit, level: l };
+  }
+  if (level) {
+    const custom = loadCustom(level.id).find((p) => p.id === passageId);
+    if (custom) return { passage: custom, level };
+  }
+  return null;
+}

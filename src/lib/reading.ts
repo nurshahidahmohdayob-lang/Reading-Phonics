@@ -217,6 +217,11 @@ export type ReadingReport = {
   accuracy: number; // 0..100, over the whole passage
   wcpm: number; // words correct per minute
   practiceWords: string[]; // unique words to work on
+  /** Positions of the words marked wrong, so a report can show them in the
+      story. */
+  missedAt: number[];
+  /** How many words in they got: everything from here on was never read. */
+  reached: number;
 };
 
 export function scoreReading(
@@ -239,7 +244,15 @@ export function scoreReading(
         .filter(Boolean),
     ),
   );
+  const missedAt: number[] = [];
+  let reached = 0;
+  status.forEach((st, i) => {
+    if (st === "missed") missedAt.push(i);
+    if (st !== "pending") reached = i + 1;
+  });
   return {
+    missedAt,
+    reached,
     total: targetWords.length,
     correct,
     missed,

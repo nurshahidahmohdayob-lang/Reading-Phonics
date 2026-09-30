@@ -25,6 +25,11 @@ export type GuidedRead = {
   total: number;
   /** When it was read (ISO). */
   at: string;
+  /** Which words were marked wrong, by position in the story, and how far in
+      the child got. Kept from late September 2026 on; older reads have
+      neither, and their report shows the marks without the story. */
+  missedAt?: number[];
+  reached?: number;
 };
 
 /** studentKey -> every read, oldest first. */

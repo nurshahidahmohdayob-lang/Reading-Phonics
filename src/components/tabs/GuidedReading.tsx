@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { passageLevels, type Passage, type PassageLevel } from "@/app/passages";
+import {
+  customKey,
+  loadCustom,
+  passageLevels,
+  type Passage,
+  type PassageLevel,
+} from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
 import { storyQuestions, type CompItem } from "@/app/comprehension";
 import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
@@ -142,19 +148,6 @@ export default function GuidedReading({
 /* ---------- Custom stories (teacher/parent-added, saved on device) ---------- */
 
 const STORY_EMOJI = ["📖", "🦄", "🐉", "🚀", "🐶", "🧚", "⚽", "🌈"];
-
-function customKey(levelId: string) {
-  return `custom-passages-${levelId}`;
-}
-
-function loadCustom(levelId: string): Passage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(customKey(levelId)) ?? "[]");
-  } catch {
-    return [];
-  }
-}
 
 function saveCustom(levelId: string, list: Passage[]) {
   localStorage.setItem(customKey(levelId), JSON.stringify(list));
@@ -876,6 +869,8 @@ function Report({
       correct: report.correct,
       total: report.total,
       at: new Date().toISOString(),
+      missedAt: report.missedAt,
+      reached: report.reached,
     });
   }, [studentName, yearKey, passage, level, report]);
 

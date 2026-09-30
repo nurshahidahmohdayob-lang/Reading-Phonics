@@ -13,6 +13,7 @@ import { useTracker } from "@/lib/tracker";
 import { levelForReader, passageLevels } from "@/app/passages";
 import { classifyAccuracy, type AccuracyVerdict } from "@/app/stories";
 import type { GuidedStart } from "./GuidedReading";
+import GuidedReadReport from "@/components/GuidedReadReport";
 import {
   useGuidedLog,
   readsFor,
@@ -78,6 +79,12 @@ export default function GuidedTracker({
   const log = useGuidedLog();
   const { store } = useTracker();
   const [open, setOpen] = useState<string | null>(null);
+  // The read whose report is open, and whose it is.
+  const [viewing, setViewing] = useState<{
+    name: string;
+    year: string;
+    read: GuidedRead;
+  } | null>(null);
 
   const rows = students.map((s) => {
     const reads = readsFor(log, s.yearKey, s.name);
@@ -189,6 +196,9 @@ export default function GuidedTracker({
                             key={read.passageId + read.at}
                             read={read}
                             manage={manage}
+                            onOpen={() =>
+                              setViewing({ name: r.name, year: r.year, read })
+                            }
                             onDelete={() =>
                               removeGuidedRead(r.yearKey, r.name, read.at)
                             }
@@ -220,12 +230,18 @@ export default function GuidedTracker({
                   </td>
                   <td className="px-3 py-2.5 align-middle">
                     {last ? (
-                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-300">
-                        <span className="font-bold text-zinc-700 dark:text-zinc-100">
+                      <button
+                        onClick={() =>
+                          setViewing({ name: r.name, year: r.year, read: last })
+                        }
+                        title="Open the report for this read"
+                        className="text-left text-xs font-semibold text-zinc-500 hover:text-brand-700 dark:text-zinc-300"
+                      >
+                        <span className="font-bold text-zinc-700 underline decoration-zinc-300 decoration-dotted underline-offset-4 dark:text-zinc-100">
                           {last.title}
                         </span>{" "}
-                        · {shortDate(last.at)}
-                      </span>
+                        · {shortDate(last.at)} 📄
+                      </button>
                     ) : (
                       <span className="text-xs font-semibold text-zinc-300 dark:text-zinc-600">
                         nothing yet
@@ -242,7 +258,9 @@ export default function GuidedTracker({
       {/* What the colours mean */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
         <span>
-          <b className="text-emerald-700 dark:text-emerald-300">● Independent</b>{" "}
+          <b className="text-emerald-700 dark:text-emerald-300">
+            ● Independent
+          </b>{" "}
           — can read this level alone
         </span>
         <span>
@@ -260,11 +278,20 @@ export default function GuidedTracker({
         average is judged at the level of their latest story.
       </p>
 
+      {viewing && (
+        <GuidedReadReport
+          name={viewing.name}
+          year={viewing.year}
+          read={viewing.read}
+          onClose={() => setViewing(null)}
+        />
+      )}
+
       <p className="mt-3 text-center text-xs font-semibold text-zinc-400">
         Tap a name to start them reading on their level — by their latest
         assessment, or their year if they haven’t been assessed. ▶ shows every
-        story they’ve read. Accuracy is from their most recent read of each
-        story.
+        story they’ve read — tap one to open its report. Accuracy is from their
+        most recent read of each story.
       </p>
     </div>
   );
@@ -291,28 +318,37 @@ function Row({
 function ReadLine({
   read,
   manage,
+  onOpen,
   onDelete,
 }: {
   read: GuidedRead;
   manage: boolean;
+  onOpen: () => void;
   onDelete: () => void;
 }) {
   return (
     <span className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-      <span
-        className={`font-extrabold ${tone(read.accuracy, read.levelId)}`}
-        title={toneTitle(read.accuracy, read.levelId)}
+      <button
+        onClick={onOpen}
+        title="Open the report for this read"
+        className="flex flex-wrap items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
       >
-        {read.accuracy}%
-      </span>
-      <span className="font-bold text-zinc-600 dark:text-zinc-300">
-        {read.title}
-      </span>
-      <span className="text-zinc-400">
-        {read.lexile ? `${read.lexile}L · ` : ""}
-        {read.wcpm} wpm · {read.correct}/{read.total} words ·{" "}
-        {shortDate(read.at)}
-      </span>
+        <span
+          className={`font-extrabold ${tone(read.accuracy, read.levelId)}`}
+          title={toneTitle(read.accuracy, read.levelId)}
+        >
+          {read.accuracy}%
+        </span>
+        <span className="font-bold text-zinc-600 dark:text-zinc-300">
+          {read.title}
+        </span>
+        <span className="text-zinc-400">
+          {read.lexile ? `${read.lexile}L · ` : ""}
+          {read.wcpm} wpm · {read.correct}/{read.total} words ·{" "}
+          {shortDate(read.at)}
+        </span>
+        <span className="text-brand-600 dark:text-brand-300">📄 Report</span>
+      </button>
       {manage && (
         <button
           onClick={() => {
