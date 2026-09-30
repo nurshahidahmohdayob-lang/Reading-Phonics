@@ -177,11 +177,29 @@ export default function GuidedReadReport({
               )}
             </p>
           </div>
+        ) : found ? (
+          /* An older read: the story is here, but which words were wrong was
+             never saved, so none are marked — guessing would put words in a
+             child's record that they may have read perfectly well. */
+          <div className="mt-5">
+            <h3 className="text-sm font-extrabold text-zinc-600 dark:text-zinc-300">
+              The story they read
+            </h3>
+            <p className="mt-2 rounded-2xl bg-amber-50/70 p-4 text-base font-semibold leading-relaxed text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+              {found.passage.text}
+            </p>
+            <p className="mt-1.5 text-xs font-semibold text-zinc-400">
+              {read.total - read.correct > 0
+                ? `${read.total - read.correct} ${
+                    read.total - read.correct === 1 ? "word was" : "words were"
+                  } marked wrong in this read, but which ones wasn't saved at the time — so none are marked here. Every read from now on keeps them.`
+                : "Every word was read correctly."}
+            </p>
+          </div>
         ) : (
           <p className="mt-5 rounded-2xl bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-            {found
-              ? "This read was saved before the app kept which words were missed, so the story can't be marked up. Reads from now on show every word they couldn't read."
-              : "This story isn't on this device any more, so the words can't be shown — the marks above are as they were saved."}
+            This story isn&apos;t on this device any more, so its words
+            can&apos;t be shown — the marks above are as they were saved.
           </p>
         )}
 
