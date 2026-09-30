@@ -14,9 +14,8 @@ import {
   type WordStatus,
 } from "@/lib/reading";
 import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
-import { studentKey } from "@/app/roster";
-import { useTracker, type TrackerRecord } from "@/lib/tracker";
-import { lexileValue, lexileLabel } from "@/lib/lexileStats";
+import { useTracker } from "@/lib/tracker";
+import { latestLexile, lexileLabel } from "@/lib/lexileStats";
 import {
   addGuidedRead,
   useGuidedLog,
@@ -56,12 +55,22 @@ const CARD_STYLES = [
 
 const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
 
-export default function GuidedReading() {
+/** Opening Guided Reading for one child, from the Class Tracker: their name
+    already in, and the stories for their level already on screen. */
+export type GuidedStart = { name: string; levelId: string };
+
+export default function GuidedReading({
+  initial,
+}: {
+  initial?: GuidedStart;
+} = {}) {
   const [step, setStep] = useState<Step>("choose");
   // Who's reading. Typing a name means every read-aloud is logged against
   // that child, and shows up in the Class Tracker.
-  const [studentName, setStudentName] = useState("");
-  const [level, setLevel] = useState<PassageLevel | null>(null);
+  const [studentName, setStudentName] = useState(initial?.name ?? "");
+  const [level, setLevel] = useState<PassageLevel | null>(
+    () => passageLevels.find((l) => l.id === initial?.levelId) ?? null,
+  );
   const [passage, setPassage] = useState<Passage | null>(null);
   const [report, setReport] = useState<ReadingReport | null>(null);
 
@@ -166,12 +175,7 @@ function NameBox({
   const { store } = useTracker();
 
   function lexileOf(s: { yearKey: string; name: string }): number | null {
-    const rows = store[studentKey(s.yearKey, s.name)] ?? {};
-    let newest: TrackerRecord | null = null;
-    for (const rec of Object.values(rows)) {
-      if (rec && (!newest || rec.savedAt > newest.savedAt)) newest = rec;
-    }
-    return newest ? lexileValue(newest.report.lexile) : null;
+    return latestLexile(store, s.yearKey, s.name);
   }
 
   const everyone = allStudents(edits)

@@ -110,6 +110,21 @@ export type TermStats = {
 
 export type Scoped = { name: string; year: string; yearKey: string };
 
+/** A child's reading level: the Lexile from their most recent assessment,
+    whichever term it was in. null if they haven't been assessed. */
+export function latestLexile(
+  store: TrackerStore,
+  yearKey: string,
+  name: string,
+): number | null {
+  const rows = store[studentKey(yearKey, name)] ?? {};
+  let newest: TrackerRecord | null = null;
+  for (const rec of Object.values(rows)) {
+    if (rec && (!newest || rec.savedAt > newest.savedAt)) newest = rec;
+  }
+  return newest ? lexileValue(newest.report.lexile) : null;
+}
+
 /** Roll up one term for a set of students (a class, or every class). */
 export function termStats(
   students: Scoped[],

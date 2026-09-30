@@ -8,7 +8,10 @@
    read, how they're averaging, and the list of titles with their marks. */
 
 import { useState } from "react";
-import type { Scoped } from "@/lib/lexileStats";
+import { latestLexile, type Scoped } from "@/lib/lexileStats";
+import { useTracker } from "@/lib/tracker";
+import { levelForReader } from "@/app/passages";
+import type { GuidedStart } from "./GuidedReading";
 import {
   useGuidedLog,
   readsFor,
@@ -36,19 +39,28 @@ export default function GuidedTracker({
   students,
   scopeLabel,
   manage,
+  onRead,
 }: {
   students: Scoped[];
   scopeLabel: string;
   /** Manage mode: show a 🗑️ on each read. */
   manage: boolean;
+  /** Open Guided Reading for this child, on the stories for their level. */
+  onRead: (start: GuidedStart) => void;
 }) {
   const log = useGuidedLog();
+  const { store } = useTracker();
   const [open, setOpen] = useState<string | null>(null);
 
   const rows = students.map((s) => {
     const reads = readsFor(log, s.yearKey, s.name);
     const latest = latestPerStory(reads);
-    return { ...s, reads, latest, avg: averageAccuracy(reads) };
+    // Their level: by their latest assessment, or their year if not assessed.
+    const level = levelForReader(
+      latestLexile(store, s.yearKey, s.name),
+      s.yearKey,
+    );
+    return { ...s, reads, latest, avg: averageAccuracy(reads), level };
   });
   const active = rows.filter((r) => r.reads.length);
   const storiesRead = active.reduce((n, r) => n + r.latest.length, 0);
@@ -56,45 +68,41 @@ export default function GuidedTracker({
     ? Math.round(active.reduce((n, r) => n + (r.avg ?? 0), 0) / active.length)
     : null;
 
-  if (!active.length) {
-    return (
-      <div className="mt-4 w-full rounded-2xl bg-white px-6 py-10 text-center shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-        <div className="text-4xl">📖</div>
-        <p className="mt-2 text-sm font-extrabold text-zinc-600 dark:text-zinc-200">
-          No guided reading saved for {scopeLabel} yet.
-        </p>
-        <p className="mx-auto mt-1 max-w-sm text-xs font-semibold text-zinc-400">
-          Open <b>Guided Reading</b>, type the child’s name at the top, and
-          every story they read aloud lands here with its marks.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full">
-      {/* How the class is going */}
-      <div className="mt-4 grid w-full grid-cols-3 gap-3">
-        <Tile
-          k="Children reading"
-          v={`${active.length}`}
-          s={`of ${students.length}`}
-        />
-        <Tile
-          k="Stories read"
-          v={`${storiesRead}`}
-          s={
-            active.length
-              ? `${Math.round(storiesRead / active.length)} each on average`
-              : ""
-          }
-        />
-        <Tile
-          k="Average accuracy"
-          v={classAvg === null ? "—" : `${classAvg}%`}
-          s="across their latest reads"
-        />
-      </div>
+      {active.length ? (
+        /* How the class is going */
+        <div className="mt-4 grid w-full grid-cols-3 gap-3">
+          <Tile
+            k="Children reading"
+            v={`${active.length}`}
+            s={`of ${students.length}`}
+          />
+          <Tile
+            k="Stories read"
+            v={`${storiesRead}`}
+            s={`${Math.round(storiesRead / active.length)} each on average`}
+          />
+          <Tile
+            k="Average accuracy"
+            v={classAvg === null ? "—" : `${classAvg}%`}
+            s="across their latest reads"
+          />
+        </div>
+      ) : (
+        // Nobody has read yet — but the names are still listed below, since
+        // tapping one is how a child's first story gets started.
+        <div className="mt-4 w-full rounded-2xl bg-white px-6 py-6 text-center shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
+          <div className="text-3xl">📖</div>
+          <p className="mt-1 text-sm font-extrabold text-zinc-600 dark:text-zinc-200">
+            No guided reading saved for {scopeLabel} yet.
+          </p>
+          <p className="mx-auto mt-1 max-w-sm text-xs font-semibold text-zinc-400">
+            Tap a child’s name below to start them on a story at their level —
+            every story they read aloud lands here with its marks.
+          </p>
+        </div>
+      )}
 
       <div className="mt-3 w-full overflow-x-auto rounded-2xl bg-white shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
         <table className="w-full min-w-[620px] border-collapse text-left">
@@ -114,18 +122,39 @@ export default function GuidedTracker({
               return (
                 <Row key={key} striped={i % 2 === 1}>
                   <td className="px-4 py-2.5 align-middle">
-                    <button
-                      onClick={() => setOpen(isOpen ? null : key)}
-                      disabled={!r.reads.length}
-                      className="flex items-center gap-2 text-left text-sm font-bold text-zinc-700 disabled:cursor-default dark:text-zinc-100"
-                    >
-                      {r.reads.length > 0 && (
-                        <span className="text-[10px] text-zinc-400">
+                    <div className="flex items-center gap-2">
+                      {/* The arrow lists what they've read; the name starts
+                          them reading. */}
+                      {r.reads.length > 0 ? (
+                        <button
+                          onClick={() => setOpen(isOpen ? null : key)}
+                          aria-label={
+                            isOpen
+                              ? `Hide ${r.name}'s stories`
+                              : `Show ${r.name}'s stories`
+                          }
+                          className="grid h-6 w-6 place-items-center rounded-md text-[10px] text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        >
                           {isOpen ? "▼" : "▶"}
-                        </span>
+                        </button>
+                      ) : (
+                        <span className="w-6" />
                       )}
-                      {r.name}
-                    </button>
+                      <button
+                        onClick={() =>
+                          onRead({ name: r.name, levelId: r.level.id })
+                        }
+                        title={`Guided reading at ${r.level.grade} · ${r.level.lexileRange}`}
+                        className="group flex flex-wrap items-baseline gap-x-2 text-left text-sm font-bold text-zinc-700 hover:text-brand-700 dark:text-zinc-100 dark:hover:text-brand-300"
+                      >
+                        <span className="underline decoration-zinc-300 decoration-dotted underline-offset-4 group-hover:decoration-brand-400">
+                          {r.name}
+                        </span>
+                        <span className="text-[11px] font-semibold text-zinc-400 group-hover:text-brand-500">
+                          📖 {r.level.grade}
+                        </span>
+                      </button>
+                    </div>
                     {isOpen && (
                       <div className="mt-2 flex flex-col gap-1 pb-1">
                         {r.latest.map((read) => (
@@ -181,8 +210,10 @@ export default function GuidedTracker({
       </div>
 
       <p className="mt-3 text-center text-xs font-semibold text-zinc-400">
-        Tap a name to see every story they’ve read. Accuracy is from their most
-        recent read of each story.
+        Tap a name to start them reading on their level — by their latest
+        assessment, or their year if they haven’t been assessed. ▶ shows every
+        story they’ve read. Accuracy is from their most recent read of each
+        story.
       </p>
     </div>
   );

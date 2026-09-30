@@ -85,6 +85,7 @@ import {
 import type { SchoolStudent, ParentContact } from "@/lib/studentsApi";
 import ClassStats from "./ClassStats";
 import GuidedTracker from "./GuidedTracker";
+import type { GuidedStart } from "./GuidedReading";
 import type { Scoped } from "@/lib/lexileStats";
 
 const TERMS: TermNo[] = [1, 2, 3];
@@ -191,10 +192,13 @@ function buildGroups(edits: RosterEdits, store: TrackerStore) {
 
 export default function ClassTracker({
   onAssess,
+  onGuided,
   teacherName,
   teacherEmail,
 }: {
   onAssess: (init: { name: string; term: TermNo }) => void;
+  /** Open Guided Reading for one child, on their level. */
+  onGuided: (init: GuidedStart) => void;
   /** Signed-in staff name — signs the emails to parents. */
   teacherName?: string;
   /** Signed-in staff address — the mailbox parents' emails go from. */
@@ -505,6 +509,7 @@ export default function ClassTracker({
           students={scopeStudents}
           scopeLabel={scopeLabel}
           manage={manage}
+          onRead={onGuided}
         />
       ) : (
         <>

@@ -47,3 +47,27 @@ export const passageLevels: PassageLevel[] = levels.map((l) => ({
     quiz: s.quiz,
   })),
 }));
+
+/** The guided reading level a child should be reading at.
+
+    By their most recent assessment when they have one — the highest level
+    whose band they've reached, so a child at exactly 875L starts on the Year
+    5 stories rather than the top of Year 4. A Year 1 child assessed at 900L
+    belongs on the Year 5 stories too: the level follows the reading, not the
+    class. Without an assessment, their own year group's level. */
+export function levelForReader(
+  lexile: number | null,
+  yearKey: string,
+): PassageLevel {
+  if (lexile !== null) {
+    let chosen = passageLevels[0];
+    for (const l of passageLevels) {
+      if (l.source.lexileLow <= lexile) chosen = l;
+    }
+    return chosen;
+  }
+  const byYear = passageLevels.find(
+    (l) => l.id === yearKey.replace(/^y/, "year"),
+  );
+  return byYear ?? passageLevels[0];
+}
