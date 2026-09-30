@@ -10,7 +10,8 @@
 import { useState } from "react";
 import { latestLexile, type Scoped } from "@/lib/lexileStats";
 import { useTracker } from "@/lib/tracker";
-import { levelForReader } from "@/app/passages";
+import { levelForReader, passageLevels } from "@/app/passages";
+import { classifyAccuracy, type AccuracyVerdict } from "@/app/stories";
 import type { GuidedStart } from "./GuidedReading";
 import {
   useGuidedLog,
@@ -21,11 +22,37 @@ import {
   type GuidedRead,
 } from "@/lib/guidedLog";
 
-/** Reading accuracy, coloured the way the reports do. */
-function tone(accuracy: number) {
-  if (accuracy >= 95) return "text-emerald-700 dark:text-emerald-300";
-  if (accuracy >= 80) return "text-amber-600 dark:text-amber-400";
-  return "text-rose-600 dark:text-rose-400";
+/* A mark is coloured by what it means for the level of the story that was
+   read — the same judgement the reading report makes (classifyAccuracy), so
+   the two screens can't disagree. 91% is comfortable for a Year 1 story and
+   too hard for a Year 6 one. */
+const VERDICT_TONE: Record<AccuracyVerdict["label"], string> = {
+  Independent: "text-emerald-700 dark:text-emerald-300",
+  Instructional: "text-amber-600 dark:text-amber-400",
+  Developing: "text-rose-600 dark:text-rose-400",
+};
+
+/** The level a read was logged at. Older reads saved "y2" for "year2". */
+function levelOf(levelId: string | undefined) {
+  if (!levelId) return null;
+  const id = levelId.replace(/^y(\d)$/, "year$1");
+  return passageLevels.find((l) => l.id === id) ?? null;
+}
+
+function verdict(accuracy: number, levelId: string | undefined) {
+  const level = levelOf(levelId);
+  if (!level) return null;
+  return { ...classifyAccuracy(level.source, accuracy), grade: level.grade };
+}
+
+function tone(accuracy: number, levelId: string | undefined) {
+  const v = verdict(accuracy, levelId);
+  return v ? VERDICT_TONE[v.label] : "text-zinc-600 dark:text-zinc-300";
+}
+
+function toneTitle(accuracy: number, levelId: string | undefined) {
+  const v = verdict(accuracy, levelId);
+  return v ? `${v.label} for a ${v.grade} story — ${v.meaning}` : undefined;
 }
 
 function shortDate(iso: string): string {
@@ -183,7 +210,10 @@ export default function GuidedTracker({
                         —
                       </span>
                     ) : (
-                      <span className={`text-sm font-extrabold ${tone(r.avg)}`}>
+                      <span
+                        className={`text-sm font-extrabold ${tone(r.avg, last?.levelId)}`}
+                        title={toneTitle(r.avg, last?.levelId)}
+                      >
                         {r.avg}%
                       </span>
                     )}
@@ -208,6 +238,27 @@ export default function GuidedTracker({
           </tbody>
         </table>
       </div>
+
+      {/* What the colours mean */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+        <span>
+          <b className="text-emerald-700 dark:text-emerald-300">● Independent</b>{" "}
+          — can read this level alone
+        </span>
+        <span>
+          <b className="text-amber-600 dark:text-amber-400">● Instructional</b>{" "}
+          — right for guided reading, with help
+        </span>
+        <span>
+          <b className="text-rose-600 dark:text-rose-400">● Developing</b> — too
+          hard for now, try an easier level
+        </span>
+      </div>
+      <p className="mt-1 text-center text-[11px] font-semibold text-zinc-400">
+        Judged against the level of the story, the same as the reading report:
+        the bar rises each year, from 95% for Year 1 to 98% for Year 6. An
+        average is judged at the level of their latest story.
+      </p>
 
       <p className="mt-3 text-center text-xs font-semibold text-zinc-400">
         Tap a name to start them reading on their level — by their latest
@@ -248,7 +299,10 @@ function ReadLine({
 }) {
   return (
     <span className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-      <span className={`font-extrabold ${tone(read.accuracy)}`}>
+      <span
+        className={`font-extrabold ${tone(read.accuracy, read.levelId)}`}
+        title={toneTitle(read.accuracy, read.levelId)}
+      >
         {read.accuracy}%
       </span>
       <span className="font-bold text-zinc-600 dark:text-zinc-300">
