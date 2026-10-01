@@ -87,6 +87,7 @@ import ClassStats from "./ClassStats";
 import GuidedTracker from "./GuidedTracker";
 import type { GuidedStart } from "./GuidedReading";
 import type { Scoped } from "@/lib/lexileStats";
+import { askToSignIn } from "@/lib/signInNeeded";
 
 const TERMS: TermNo[] = [1, 2, 3];
 
@@ -338,6 +339,15 @@ export default function ClassTracker({
     setSync({ kind: "loading" });
     try {
       const res = await fetch("/api/students");
+      if (res.status === 401) {
+        askToSignIn();
+        setSync({
+          kind: "error",
+          message:
+            "Your sign-in has run out. Sign in again (the bar at the top of the screen), then press Sync students.",
+        });
+        return;
+      }
       const data = await res.json();
       if (data?.configured === false) {
         setSync({

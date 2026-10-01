@@ -12,9 +12,20 @@ import { schoolStudents, StudentsApiNotConfigured } from "@/lib/studentsApi";
 export async function GET() {
   const jar = await cookies();
   const session = verifyToken(jar.get(SESSION_COOKIE)?.value);
-  if (!isTrackerOwner(session?.email)) {
+  // An expired sign-in is the usual reason, and the page can fix that by
+  // asking the teacher to sign in again — so say which it is.
+  if (!session) {
     return NextResponse.json(
-      { ok: false, error: "forbidden" },
+      { ok: false, error: "signed-out" },
+      { status: 401 },
+    );
+  }
+  if (!isTrackerOwner(session.email)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Only the Class Tracker's owner can sync with the school system.",
+      },
       { status: 403 },
     );
   }

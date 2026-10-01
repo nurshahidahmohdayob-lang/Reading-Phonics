@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { forgetOwner } from "@/lib/owner";
+import { SIGN_IN_NEEDED } from "@/lib/signInNeeded";
 
 type Status = "loading" | "out" | "in";
 
@@ -11,6 +12,10 @@ type Status = "loading" | "out" | "in";
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [name, setName] = useState("");
+  // The sign-in ran out while the page stayed open: say so, and offer to sign
+  // in again over the top, rather than wiping what's on screen.
+  const [expired, setExpired] = useState(false);
+  const [reauth, setReauth] = useState(false);
   const pathname = usePathname();
   // Public by design: a parent's report link (it carries one child's report
   // inside the link), and the phone page that sends a drawing to the class
@@ -38,6 +43,34 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       alive = false;
     };
   }, []);
+
+  // Check again whenever the teacher comes back to the page, and every few
+  // minutes while it's open. Only a definite "not signed in" counts — being
+  // offline for a moment mustn't look like being signed out.
+  useEffect(() => {
+    if (status !== "in") return;
+    const check = () => {
+      fetch("/api/me")
+        .then((r) => {
+          if (r.status === 401) setExpired(true);
+        })
+        .catch(() => {});
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    const onNeeded = () => setExpired(true);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener(SIGN_IN_NEEDED, onNeeded);
+    const timer = window.setInterval(check, 5 * 60 * 1000);
+    return () => {
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(SIGN_IN_NEEDED, onNeeded);
+      window.clearInterval(timer);
+    };
+  }, [status]);
 
   async function signOut() {
     try {
@@ -84,13 +117,57 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         <span className="text-rose-500">Sign out</span>
       </button>
       {children}
+
+      {expired && !reauth && (
+        <div className="fixed inset-x-0 top-0 z-[60] flex justify-center px-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+          <div className="flex w-full max-w-xl flex-wrap items-center justify-center gap-3 rounded-2xl bg-amber-100 px-4 py-3 text-center text-sm font-bold text-amber-900 shadow-lg ring-2 ring-amber-300 dark:bg-amber-950 dark:text-amber-100">
+            <span>
+              ⏰ Your sign-in has run out, so nothing new can be saved or
+              synced.
+            </span>
+            <button
+              onClick={() => setReauth(true)}
+              className="rounded-full bg-amber-500 px-4 py-1.5 font-extrabold text-white shadow active:scale-95"
+            >
+              Sign in again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {reauth && (
+        <div className="fixed inset-0 z-[70] flex overflow-y-auto">
+          <SignIn
+            onSignedIn={(n) => {
+              forgetOwner();
+              // Someone else signing in at this screen gets a fresh page, not
+              // the last teacher's work.
+              if (name && n && n !== name) {
+                window.location.reload();
+                return;
+              }
+              setName(n);
+              setExpired(false);
+              setReauth(false);
+            }}
+            onCancel={() => setReauth(false)}
+          />
+        </div>
+      )}
     </>
   );
 }
 
 /* ---------- Sign-in screen ---------- */
 
-function SignIn({ onSignedIn }: { onSignedIn: (name: string) => void }) {
+function SignIn({
+  onSignedIn,
+  onCancel,
+}: {
+  onSignedIn: (name: string) => void;
+  /** Signing in again over the app: a way back without signing in. */
+  onCancel?: () => void;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -175,6 +252,15 @@ function SignIn({ onSignedIn }: { onSignedIn: (name: string) => void }) {
         <p className="text-xs font-semibold text-zinc-400">
           We check your email against the school staff directory.
         </p>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm font-bold text-zinc-500 underline underline-offset-4"
+          >
+            Not now — back to the app
+          </button>
+        )}
       </div>
     </div>
   );
