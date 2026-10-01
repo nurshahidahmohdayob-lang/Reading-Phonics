@@ -8,7 +8,7 @@
    read, how they're averaging, and the list of titles with their marks. */
 
 import { useState } from "react";
-import { latestLexile, type Scoped } from "@/lib/lexileStats";
+import { latestLexile, lexileLabel, type Scoped } from "@/lib/lexileStats";
 import { useTracker } from "@/lib/tracker";
 import { levelForReader, passageLevels } from "@/app/passages";
 import { classifyAccuracy, type AccuracyVerdict } from "@/app/stories";
@@ -90,11 +90,9 @@ export default function GuidedTracker({
     const reads = readsFor(log, s.yearKey, s.name);
     const latest = latestPerStory(reads);
     // Their level: by their latest assessment, or their year if not assessed.
-    const level = levelForReader(
-      latestLexile(store, s.yearKey, s.name),
-      s.yearKey,
-    );
-    return { ...s, reads, latest, avg: averageAccuracy(reads), level };
+    const lexile = latestLexile(store, s.yearKey, s.name);
+    const level = levelForReader(lexile, s.yearKey);
+    return { ...s, reads, latest, avg: averageAccuracy(reads), level, lexile };
   });
   const active = rows.filter((r) => r.reads.length);
   const storiesRead = active.reduce((n, r) => n + r.latest.length, 0);
@@ -184,6 +182,16 @@ export default function GuidedTracker({
                         <span className="underline decoration-zinc-300 decoration-dotted underline-offset-4 group-hover:decoration-brand-400">
                           {r.name}
                         </span>
+                        {/* Their reading level, and the stories it opens. */}
+                        {r.lexile !== null ? (
+                          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-extrabold text-sky-800 dark:bg-sky-950 dark:text-sky-200">
+                            {lexileLabel(r.lexile)}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-400 dark:bg-zinc-800">
+                            not assessed
+                          </span>
+                        )}
                         <span className="text-[11px] font-semibold text-zinc-400 group-hover:text-brand-500">
                           📖 {r.level.grade}
                         </span>
@@ -288,8 +296,9 @@ export default function GuidedTracker({
       )}
 
       <p className="mt-3 text-center text-xs font-semibold text-zinc-400">
-        Tap a name to start them reading on their level — by their latest
-        assessment, or their year if they haven’t been assessed. ▶ shows every
+        The blue Lexile beside each name is their reading level from their
+        latest assessment. Tap a name to start them reading at that level, or
+        at their year if they haven’t been assessed. ▶ shows every
         story they’ve read — tap one to open its report. Accuracy is from their
         most recent read of each story.
       </p>
