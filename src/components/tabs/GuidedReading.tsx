@@ -19,7 +19,12 @@ import {
   type ReadingReport,
   type WordStatus,
 } from "@/lib/reading";
-import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
+import {
+  useRosterEdits,
+  allStudents,
+  findStudent,
+  currentRosterEdits,
+} from "@/lib/rosterStore";
 import { useTracker } from "@/lib/tracker";
 import { latestLexile, lexileLabel } from "@/lib/lexileStats";
 import {
@@ -853,12 +858,17 @@ function Report({
   const yearKey = who?.yearKey ?? "other";
   const saved = useRef(false);
 
-  // Log the read once, as soon as the marks are in.
+  // Log the read once, as soon as the marks are in. The child's class is
+  // looked up from the class lists as they are now: `who` above comes from a
+  // hook that is still empty on this first render, which filed a child added
+  // by hand under "other" and kept them out of their class's tracker.
   useEffect(() => {
     const name = studentName.trim();
     if (saved.current || !name) return;
     saved.current = true;
-    addGuidedRead(yearKey, name, {
+    const filedUnder =
+      findStudent(currentRosterEdits(), name)?.yearKey ?? "other";
+    addGuidedRead(filedUnder, name, {
       passageId: passage.id,
       title: passage.title,
       lexile: passage.lexile,

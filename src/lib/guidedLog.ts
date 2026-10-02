@@ -66,23 +66,34 @@ export function addGuidedRead(
   write(log);
 }
 
-/** Forget one read (Manage mode in the tracker). */
+/** Forget one read (Manage mode in the tracker). It may be filed under the
+    child's class or, from before reads by a hand-added child were filed
+    correctly, under "other" — look in both. */
 export function removeGuidedRead(yearKey: string, name: string, at: string) {
   const log = read();
-  const k = studentKey(yearKey, name);
-  const kept = (log[k] ?? []).filter((r) => r.at !== at);
-  if (kept.length) log[k] = kept;
-  else delete log[k];
+  for (const k of new Set([studentKey(yearKey, name), studentKey("other", name)])) {
+    const kept = (log[k] ?? []).filter((r) => r.at !== at);
+    if (kept.length) log[k] = kept;
+    else delete log[k];
+  }
   write(log);
 }
 
-/** Everything this child has read, oldest first. */
+/** Everything this child has read, oldest first.
+
+    Until October 2026 a child added to a class by hand had their reads filed
+    under "other" (the report looked them up before the hand-added names had
+    loaded), so those count as theirs too. */
 export function readsFor(
   log: GuidedLog,
   yearKey: string,
   name: string,
 ): GuidedRead[] {
-  return log[studentKey(yearKey, name)] ?? [];
+  const own = log[studentKey(yearKey, name)] ?? [];
+  if (yearKey === "other") return own;
+  const misfiled = log[studentKey("other", name)] ?? [];
+  if (!misfiled.length) return own;
+  return [...own, ...misfiled].sort((a, b) => (a.at < b.at ? -1 : 1));
 }
 
 /** Their most recent attempt at each story, newest story first. */

@@ -39,6 +39,13 @@ function write(edits: RosterEdits) {
   window.dispatchEvent(new Event(EVT));
 }
 
+/** The class-list edits as they are right now. For code that runs once and
+    can't wait for useRosterEdits() to catch up after the first render — the
+    hook starts empty, so a child added by hand isn't found on that render. */
+export function currentRosterEdits(): RosterEdits {
+  return read();
+}
+
 /** Is this child locked? `pending` is the roster default when nothing is set. */
 export function isLocked(
   edits: RosterEdits,
