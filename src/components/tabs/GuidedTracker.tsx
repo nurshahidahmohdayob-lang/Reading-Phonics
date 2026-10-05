@@ -14,6 +14,7 @@ import { levelForReader, passageLevels } from "@/app/passages";
 import { classifyAccuracy, type AccuracyVerdict } from "@/app/stories";
 import type { GuidedStart } from "./GuidedReading";
 import GuidedReadReport from "@/components/GuidedReadReport";
+import { printWorksheetForRead } from "@/lib/worksheet";
 import {
   useGuidedLog,
   readsFor,
@@ -84,6 +85,7 @@ export default function GuidedTracker({
     name: string;
     year: string;
     read: GuidedRead;
+    lexile: number | null;
   } | null>(null);
 
   const rows = students.map((s) => {
@@ -205,7 +207,19 @@ export default function GuidedTracker({
                             read={read}
                             manage={manage}
                             onOpen={() =>
-                              setViewing({ name: r.name, year: r.year, read })
+                              setViewing({
+                                name: r.name,
+                                year: r.year,
+                                read,
+                                lexile: r.lexile,
+                              })
+                            }
+                            onWorksheet={() =>
+                              printWorksheetForRead(read, {
+                                name: r.name,
+                                year: r.year,
+                                lexile: r.lexile,
+                              })
                             }
                             onDelete={() =>
                               removeGuidedRead(r.yearKey, r.name, read.at)
@@ -240,7 +254,12 @@ export default function GuidedTracker({
                     {last ? (
                       <button
                         onClick={() =>
-                          setViewing({ name: r.name, year: r.year, read: last })
+                          setViewing({
+                            name: r.name,
+                            year: r.year,
+                            read: last,
+                            lexile: r.lexile,
+                          })
                         }
                         title="Open the report for this read"
                         className="text-left text-xs font-semibold text-zinc-500 hover:text-brand-700 dark:text-zinc-300"
@@ -291,16 +310,17 @@ export default function GuidedTracker({
           name={viewing.name}
           year={viewing.year}
           read={viewing.read}
+          lexile={viewing.lexile}
           onClose={() => setViewing(null)}
         />
       )}
 
       <p className="mt-3 text-center text-xs font-semibold text-zinc-400">
         The blue Lexile beside each name is their reading level from their
-        latest assessment. Tap a name to start them reading at that level, or
-        at their year if they haven’t been assessed. ▶ shows every
-        story they’ve read — tap one to open its report. Accuracy is from their
-        most recent read of each story.
+        latest assessment. Tap a name to start them reading at that level, or at
+        their year if they haven’t been assessed. ▶ shows every story they’ve
+        read — tap one to open its report. Accuracy is from their most recent
+        read of each story.
       </p>
     </div>
   );
@@ -328,11 +348,13 @@ function ReadLine({
   read,
   manage,
   onOpen,
+  onWorksheet,
   onDelete,
 }: {
   read: GuidedRead;
   manage: boolean;
   onOpen: () => void;
+  onWorksheet: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -357,6 +379,13 @@ function ReadLine({
           {shortDate(read.at)}
         </span>
         <span className="text-brand-600 dark:text-brand-300">📄 Report</span>
+      </button>
+      <button
+        onClick={onWorksheet}
+        title="A printable worksheet on this story, at this child's level"
+        className="rounded-lg px-1.5 py-0.5 font-bold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950"
+      >
+        📝 Worksheet
       </button>
       {manage && (
         <button

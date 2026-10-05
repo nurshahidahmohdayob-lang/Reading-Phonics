@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { findPassage } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
 import type { GuidedRead } from "@/lib/guidedLog";
+import { printWorksheetForRead } from "@/lib/worksheet";
 
 function longDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -29,11 +30,14 @@ export default function GuidedReadReport({
   name,
   year,
   read,
+  lexile,
   onClose,
 }: {
   name: string;
   year: string;
   read: GuidedRead;
+  /** The child's reading level, which sets how easy the worksheet is. */
+  lexile: number | null;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -104,6 +108,15 @@ export default function GuidedReadReport({
             {read.lexile ? ` · ${read.lexile}L` : ""}
           </span>
         </div>
+
+        {found && (
+          <button
+            onClick={() => printWorksheetForRead(read, { name, year, lexile })}
+            className="mt-3 rounded-full bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95"
+          >
+            📝 Print a worksheet on this story
+          </button>
+        )}
 
         {verdict && (
           <div className={`mt-3 rounded-2xl px-4 py-3 ${verdict.tone}`}>
