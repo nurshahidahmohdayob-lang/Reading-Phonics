@@ -6,10 +6,13 @@
    alone, after the read:
 
      Level 1 (below 200L)  a picture question, find-and-circle words,
-                           trace-and-write words, draw a picture
+                           draw a picture
      Level 2 (200–499L)    adds a fill-the-missing-word with a word bank,
                            and putting three sentences in order
      Level 3 (500L+)       four of each, and one written sentence
+
+   Year 1 children also trace and write the practice words; from Year 2 up
+   there's no tracing.
 
    The words to practise are the ones the child actually got wrong in the read,
    when the read kept them; otherwise the story's key picture words.
@@ -152,8 +155,14 @@ export function buildWorksheet(input: WorksheetInput): Worksheet {
     return { word: shown(word), emoji: emojiFor(word), row: shuffled([word, ...others], rnd).map(shown) };
   });
 
-  // Trace and write: the same practice words, big.
-  const trace = practice.slice(0, tier === 1 ? 3 : 4).map((word) => ({ word: shown(word), emoji: emojiFor(word) }));
+  // Trace and write: the same practice words, big — for Year 1 only. Older
+  // children write without tracing. Goes by the child's class; a name that
+  // isn't on a class list goes by the story's level instead.
+  const inYear1 = /\byear\s*1\b/i.test(input.year) ||
+    (!/\byear\s*\d/i.test(input.year) && input.level.id === "year1");
+  const trace = inYear1
+    ? practice.slice(0, tier === 1 ? 3 : 4).map((word) => ({ word: shown(word), emoji: emojiFor(word) }))
+    : [];
 
   // The story's own question, if it has one.
   const quiz = passage.quiz;
