@@ -89,6 +89,7 @@ export default function Assignments() {
   const [viewing, setViewing] = useState<{ item: Item; name: string } | null>(null);
   const [preview, setPreview] = useState<Item | null>(null);
   const [doing, setDoing] = useState<string | null>(null);
+  const [history, setHistory] = useState<string | null>(null);
 
   // Ask for the class (making its link on first use, and refreshing its names);
   // `apply` puts the answer on screen.
@@ -175,6 +176,7 @@ export default function Assignments() {
             levels={levels}
             onPick={setDoing}
             onView={(n) => setViewing({ item: READING, name: n })}
+            onHistory={setHistory}
           />
 
           <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
@@ -295,8 +297,17 @@ export default function Assignments() {
             setViewing(null);
             await load();
           }}
+          onHistory={
+            viewing.item === READING
+              ? () => {
+                  setHistory(viewing.name);
+                  setViewing(null);
+                }
+              : undefined
+          }
         />
       )}
+      {history && <HistoryView yearKey={yearKey} name={history} level={levels[history]} onClose={() => setHistory(null)} />}
       {preview && cls && <Preview item={preview} code={cls.code} onClose={() => setPreview(null)} />}
     </div>
   );
@@ -311,12 +322,14 @@ function StudentPicker({
   levels,
   onPick,
   onView,
+  onHistory,
 }: {
   names: string[];
   reading: ClassState["reading"];
   levels: Record<string, number>;
   onPick: (name: string) => void;
   onView: (name: string) => void;
+  onHistory: (name: string) => void;
 }) {
   const count = names.filter((n) => reading[n]?.done).length;
   if (!names.length) return <p className="mt-10 font-semibold text-zinc-400">No children on this class list yet.</p>;
@@ -360,6 +373,14 @@ function StudentPicker({
                   ▶ Start
                 </button>
               )}
+              <button
+                onClick={() => onHistory(n)}
+                title={`All of ${n}'s stories`}
+                aria-label={`History for ${n}`}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sky-50 text-lg active:scale-95 dark:bg-sky-950/40"
+              >
+                📚
+              </button>
             </div>
           );
         })}
@@ -681,12 +702,15 @@ function SubmissionView({
   name,
   onClose,
   onCleared,
+  onHistory,
 }: {
   yearKey: string;
   item: Item;
   name: string;
   onClose: () => void;
   onCleared: () => void;
+  /** Open this child's full history (their reading only). */
+  onHistory?: () => void;
 }) {
   const [sub, setSub] = useState<Submission | null | undefined>(undefined);
   useEffect(() => {
@@ -710,6 +734,32 @@ function SubmissionView({
       {sub === null && <p className="mt-6 font-bold text-zinc-500">Nothing found — it may have been cleared.</p>}
       {sub && (
         <>
+          <SubmissionBody sub={sub} name={name} story={item === READING} />
+          <button
+            onClick={async () => {
+              await call(item === READING ? { op: "clearReading", yearKey, name } : { op: "clear", id: item.id, name });
+              onCleared();
+            }}
+            className="mt-5 rounded-full bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            🔁 Let {name} do it again (clears this)
+          </button>
+        </>
+      )}
+      {onHistory && sub !== undefined && (
+        <button onClick={onHistory} className="ml-2 mt-5 rounded-full bg-sky-50 px-4 py-2 text-sm font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+          📚 All of {name}&apos;s stories
+        </button>
+      )}
+    </Modal>
+  );
+}
+
+/** What a child handed in: when, the score, their answers, any writing and
+    drawings, and (folded away) the story or page they were on. */
+function SubmissionBody({ sub, name, story }: { sub: Submission; name: string; story: boolean }) {
+  return (
+    <>
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-extrabold text-emerald-800">✅ {shortDate(sub.at)}</span>
             {sub.score && (
@@ -750,23 +800,126 @@ function SubmissionView({
               </tbody>
             </table>
           ) : (
-            item.kind === "html" && <p className="mt-4 text-sm font-semibold text-zinc-400">No typed or chosen answers were found in this lesson.</p>
+            <p className="mt-4 text-sm font-semibold text-zinc-400">No typed or chosen answers were found.</p>
           )}
           {sub.text && (
             <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-bold text-zinc-500">What their screen showed when they submitted</summary>
+              <summary className="cursor-pointer text-sm font-bold text-zinc-500">
+                {story ? "The story they read" : "What their screen showed when they submitted"}
+              </summary>
               <p className="mt-2 whitespace-pre-wrap rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{sub.text}</p>
             </details>
           )}
+    </>
+  );
+}
+
+type HistoryEntry = {
+  id: string;
+  at: string;
+  storyId: string;
+  levelId: string;
+  title: string;
+  score?: { score: number; total: number };
+  attempts: number;
+};
+
+/** Every story a child has submitted, newest first, with the date and score;
+    tap one to see the work they handed in that day. */
+function HistoryView({ yearKey, name, level, onClose }: { yearKey: string; name: string; level?: number; onClose: () => void }) {
+  const [list, setList] = useState<HistoryEntry[] | null | undefined>(undefined);
+  const [open, setOpen] = useState<HistoryEntry | null>(null);
+  const [sub, setSub] = useState<Submission | null | undefined>(undefined);
+  const base = `/api/assign?history=${encodeURIComponent(yearKey)}&name=${encodeURIComponent(name)}`;
+
+  useEffect(() => {
+    let alive = true;
+    fetch(base, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => alive && setList(d.ok ? d.history : null))
+      .catch(() => alive && setList(null));
+    return () => {
+      alive = false;
+    };
+  }, [base]);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    fetch(`${base}&entry=${open.id}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => alive && setSub(d.ok ? d.submission : null))
+      .catch(() => alive && setSub(null));
+    return () => {
+      alive = false;
+    };
+  }, [base, open]);
+
+  const scored = (list ?? []).filter((e) => e.score && e.score.total > 0);
+  const average = scored.length
+    ? Math.round((scored.reduce((t, e) => t + e.score!.score / e.score!.total, 0) / scored.length) * 100)
+    : null;
+
+  return (
+    <Modal onClose={onClose}>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-zinc-400">History</p>
+      <h3 className="mt-1 text-2xl font-extrabold text-zinc-800 dark:text-zinc-100">{name}</h3>
+      {open ? (
+        <>
           <button
-            onClick={async () => {
-              await call(item === READING ? { op: "clearReading", yearKey, name } : { op: "clear", id: item.id, name });
-              onCleared();
+            onClick={() => {
+              setOpen(null);
+              setSub(undefined);
             }}
-            className="mt-5 rounded-full bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+            className="mt-2 rounded-full bg-zinc-100 px-3 py-1 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
           >
-            🔁 Let {name} do it again (clears this)
+            ← All stories
           </button>
+          <p className="mt-3 font-semibold text-zinc-500">{open.title}</p>
+          {sub === undefined && <p className="mt-6 font-bold text-zinc-400">Loading…</p>}
+          {sub === null && <p className="mt-6 font-bold text-zinc-500">This work couldn&apos;t be found.</p>}
+          {sub && <SubmissionBody sub={sub} name={name} story />}
+        </>
+      ) : (
+        <>
+          <p className="font-semibold text-zinc-500">
+            {level !== undefined ? `Reading level ${lexileLabel(level)}` : "Not assessed yet"}
+            {list?.length ? ` · ${list.length} ${list.length === 1 ? "story" : "stories"} submitted` : ""}
+            {average !== null ? ` · average ${average}%` : ""}
+          </p>
+          {list === undefined && <p className="mt-6 font-bold text-zinc-400">Loading…</p>}
+          {list === null && <p className="mt-6 font-bold text-rose-600">Couldn&apos;t load the history. Try again.</p>}
+          {list?.length === 0 && <p className="mt-6 font-bold text-zinc-500">{name} hasn&apos;t submitted a story yet.</p>}
+          {!!list?.length && (
+            <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+              {list.map((e) => (
+                <li key={e.id}>
+                  <button
+                    onClick={() => setOpen(e)}
+                    className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    <span className="w-28 shrink-0 text-xs font-bold text-zinc-400">{shortDate(e.at)}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold text-zinc-800 dark:text-zinc-100">{e.title}</span>
+                    {e.score && (
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${
+                          e.score.score / e.score.total >= 0.8
+                            ? "bg-emerald-100 text-emerald-800"
+                            : e.score.score / e.score.total >= 0.5
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-rose-100 text-rose-700"
+                        }`}
+                      >
+                        {e.score.score}/{e.score.total}
+                      </span>
+                    )}
+                    {e.attempts > 1 && <span className="text-xs font-bold text-zinc-400">×{e.attempts}</span>}
+                    <span className="text-zinc-300">›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </Modal>

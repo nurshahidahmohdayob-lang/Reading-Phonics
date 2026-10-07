@@ -12,6 +12,8 @@
      asg:read:<code>:<name>    the child's own reading: a story at their level
                                and its questions, set when they tap their name
      asg:readsub:<code>:<name> what they submitted for it
+     asg:readhist:<code>:<name>         every story they've submitted, newest first
+     asg:readhsub:<code>:<name>:<id>    the work for one of those
 
    One key per child per assignment, so two children pressing Submit at the
    same moment can't overwrite each other.
@@ -311,6 +313,57 @@ export async function readingMarks(code: string, names: string[]): Promise<Recor
   return out;
 }
 
+/** One story a child has submitted, for their history. */
+export type HistoryEntry = {
+  id: string;
+  at: string;
+  storyId: string;
+  levelId: string;
+  title: string;
+  score?: { score: number; total: number };
+  attempts: number;
+};
+
+const histKey = (code: string, name: string) => `asg:readhist:${code}:${nameKey(name)}`;
+const histSubKey = (code: string, name: string, id: string) => `asg:readhsub:${code}:${nameKey(name)}:${id}`;
+const MAX_HISTORY = 300;
+
+/** Add (or, for a redo of the same story on the same day, update) the
+    child's history entry, keeping the work itself under its own key. */
+async function recordHistory(code: string, name: string, r: Reading, sub: Submission): Promise<void> {
+  const list = (await kvGetJson<HistoryEntry[]>(histKey(code, name))) ?? [];
+  const same = list.find((e) => e.storyId === r.storyId && schoolDay(e.at) === schoolDay(sub.at));
+  const entry: HistoryEntry = {
+    id: same?.id ?? rand(10),
+    at: sub.at,
+    storyId: r.storyId,
+    levelId: r.levelId,
+    title: storyTitle(r),
+    score: sub.score,
+    attempts: sub.attempts,
+  };
+  const next = [entry, ...list.filter((e) => e.id !== entry.id)];
+  const dropped = next.slice(MAX_HISTORY);
+  await kvSetJson(histSubKey(code, name, entry.id), sub);
+  await kvSetJson(histKey(code, name), next.slice(0, MAX_HISTORY));
+  if (dropped.length) await kvDel(...dropped.map((e) => histSubKey(code, name, e.id)));
+}
+
+/** A child's submitted stories, newest first. Work submitted before the
+    history existed is brought in the first time it's asked for. */
+export async function readingHistory(code: string, name: string): Promise<HistoryEntry[]> {
+  const list = await kvGetJson<HistoryEntry[]>(histKey(code, name));
+  if (list) return list;
+  const [cur, sub] = await Promise.all([kvGetJson<Reading>(readKey(code, name)), kvGetJson<Submission>(readSubKey(code, name))]);
+  if (!cur || !sub) return [];
+  await recordHistory(code, name, cur, sub);
+  return (await kvGetJson<HistoryEntry[]>(histKey(code, name))) ?? [];
+}
+
+export async function historySubmission(code: string, name: string, id: string): Promise<Submission | null> {
+  return isItemId(id) ? kvGetJson<Submission>(histSubKey(code, name, id)) : null;
+}
+
 export async function submitReading(
   code: string,
   name: string,
@@ -320,7 +373,9 @@ export async function submitReading(
   if (!cur) return null;
   const at = new Date().toISOString();
   const attempts = (cur.done?.attempts ?? 0) + 1;
-  await kvSetJson(readSubKey(code, name), { ...sub, at, attempts } satisfies Submission);
+  const full: Submission = { ...sub, at, attempts };
+  await kvSetJson(readSubKey(code, name), full);
+  await recordHistory(code, name, cur, full);
   const mark: DoneMark = { at, attempts, score: sub.score };
   await kvSetJson(readKey(code, name), { ...cur, done: mark } satisfies Reading);
   return mark;
@@ -335,6 +390,13 @@ export async function clearReading(code: string, name: string): Promise<void> {
   const cur = await kvGetJson<Reading>(readKey(code, name));
   if (cur) await kvSetJson(readKey(code, name), { ...cur, done: undefined });
   await kvDel(readSubKey(code, name));
+  // The cleared work leaves the history too; the redo will be recorded fresh.
+  const list = await kvGetJson<HistoryEntry[]>(histKey(code, name));
+  const gone = cur?.done ? list?.find((e) => e.storyId === cur.storyId && schoolDay(e.at) === schoolDay(cur.done!.at)) : undefined;
+  if (list && gone) {
+    await kvSetJson(histKey(code, name), list.filter((e) => e.id !== gone.id));
+    await kvDel(histSubKey(code, name, gone.id));
+  }
 }
 
 export function storyTitle(r: Reading): string {

@@ -10,7 +10,9 @@
    POST { op: "delete", id }
    POST { op: "clear", id, name }                    let a child do it again
    GET  ?id=…&name=…                                 one child's submission
-   GET  ?reading=<yearKey>&name=…                    one child's reading submission */
+   GET  ?reading=<yearKey>&name=…                    one child's reading submission
+   GET  ?history=<yearKey>&name=…                    every story a child has submitted
+   GET  ?history=<yearKey>&name=…&entry=…            the work for one of them */
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -30,6 +32,8 @@ import {
   getClass,
   getItem,
   getReadingSubmission,
+  historySubmission,
+  readingHistory,
   getSubmission,
   isItemId,
   MAX_HTML_CHARS,
@@ -131,6 +135,15 @@ export async function GET(req: Request) {
   if (!me) return bad("signed-out", 401);
   if (!assignmentsReady()) return NextResponse.json({ ok: false, configured: false });
   const q = new URL(req.url).searchParams;
+  const historyYear = q.get("history");
+  if (historyYear) {
+    const code = await classCodeFor(me, historyYear.slice(0, 20));
+    const name = q.get("name") ?? "";
+    if (!code || !name) return bad("not found", 404);
+    const entry = q.get("entry");
+    if (entry) return NextResponse.json({ ok: true, submission: await historySubmission(code, name, entry) });
+    return NextResponse.json({ ok: true, history: await readingHistory(code, name) });
+  }
   const readingYear = q.get("reading");
   if (readingYear) {
     const code = await classCodeFor(me, readingYear.slice(0, 20));
