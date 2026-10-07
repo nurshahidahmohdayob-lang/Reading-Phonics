@@ -1,14 +1,21 @@
-import { playSoundClip, speak } from "@/lib/speak";
+import { playClip, playSoundClip, speak } from "@/lib/speak";
 
 /* Said on their own, a couple of the commonest words come out wrong: the
    speech voice reads a lone "the" as "thee" and a lone "a" as "ay" — their
-   emphasised forms. In a sentence, and the way children are taught to read
-   them, they're "thuh" and "uh". So they're spelt the way they should sound.
-   (Checked by measuring the vowel: "the" sent as-is has a second formant of
-   ~2850 Hz, an "ee"; sent as "thuh" it's ~1135 Hz, the "uh" in "the", with
-   the "th" still voiced.) */
+   emphasised forms. That isn't how children are taught to read them.
+
+   "the" plays a short recording, public/sounds/word-the.mp3: "theh", in the
+   same voice as every other word. No spelling makes the voice say it — "theh",
+   "thè", "dheh" and the rest all come back as "thee" — so the recording is the
+   voice saying "thed", cut just before the d. Measured: its vowel has formants
+   of ~717/2074 Hz, the "e" in "then" (~737/2033 Hz), with the "th" voiced and
+   no d at the end. If the file can't play, it falls back to "thuh".
+
+   "a" is spelt "uh", which the voice says the way "a" sounds in a sentence. */
+const RECORDED: Record<string, { clip: string; fallback: string }> = {
+  the: { clip: "word-the", fallback: "thuh" },
+};
 const SAY_AS: Record<string, string> = {
-  the: "thuh",
   a: "uh",
 };
 
@@ -22,6 +29,11 @@ const SAY_AS: Record<string, string> = {
     tap on "the" or "said" should sound like the word and nothing else. */
 export function sayWord(word: string, rate = 0.85) {
   const key = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (RECORDED[key]) {
+    const { clip, fallback } = RECORDED[key];
+    playClip(clip, () => speak(fallback, rate));
+    return;
+  }
   if (SAY_AS[key]) {
     speak(SAY_AS[key], rate);
     return;
