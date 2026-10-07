@@ -48,10 +48,15 @@ export default function ClassPage() {
 
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
-      const c = window.location.hash.replace(/^#/, "").trim();
+      // The code is the first 12 characters after the #. Links shared in chat
+      // apps sometimes pick up text stuck to the end ("…#icj4fv7yfy8yLikeComment"),
+      // so read just the code and tidy the address bar.
+      const c = /^#?\s*([a-z2-9]{12})/.exec(window.location.hash)?.[1] ?? "";
       setCode(c);
-      if (/^[a-z2-9]{12}$/.test(c)) void load(c);
-      else setError("This class link isn't complete. Ask your teacher for it again.");
+      if (c) {
+        if (window.location.hash !== `#${c}`) history.replaceState(null, "", `#${c}`);
+        void load(c);
+      } else setError("This class link isn't complete. Ask your teacher for it again.");
     });
     return () => cancelAnimationFrame(frameId);
   }, [load]);
