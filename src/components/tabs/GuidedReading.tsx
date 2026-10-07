@@ -34,7 +34,7 @@ import {
   readsFor,
 } from "@/lib/guidedLog";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { speak, praise, playSoundClip, chime } from "@/lib/speak";
+import { speak, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 
 type Step = "choose" | "read" | "report" | "coach";
@@ -749,7 +749,7 @@ function ReadAloud({
                 No picture for this word yet — listen and sound it out!
               </p>
               <button
-                onClick={() => speak(picked, 0.5)}
+                onClick={() => sayWord(picked, 0.5)}
                 className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
               >
                 🐢 Say it slowly
@@ -1350,9 +1350,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
             onClick={() => {
               stop(); // don't let the mic hear the app's own voice
               // Single letters say their phonics sound ("a" -> "ah"), not a word.
-              if (word.length === 1)
-                playSoundClip(word, word === "a" ? "ah" : word);
-              else sayWord(word, 0.85);
+              sayWord(word, 0.85);
             }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
@@ -1361,9 +1359,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
           <button
             onClick={() => {
               stop();
-              if (word.length === 1)
-                playSoundClip(word, word === "a" ? "ah" : word);
-              else speak(word, 0.4);
+              sayWord(word, 0.4);
             }}
             className="rounded-full bg-white/70 px-5 py-3 font-bold text-sky-700 shadow-sm backdrop-blur active:scale-95"
           >
@@ -1470,7 +1466,7 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
                 Picture coming soon — let&apos;s sound it out together!
               </p>
               <button
-                onClick={() => speak(word, 0.5)}
+                onClick={() => sayWord(word, 0.5)}
                 className="rounded-full bg-brand-100 px-5 py-2 font-bold text-brand-700 active:scale-95 dark:bg-brand-950 dark:text-brand-300"
               >
                 🐢 Sound it out

@@ -336,7 +336,7 @@ function Reader({
                 No picture for this word yet — listen and sound it out!
               </p>
               <button
-                onClick={() => speak(picked, 0.5)}
+                onClick={() => sayWord(picked, 0.5)}
                 className="rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800 active:scale-95"
               >
                 🐢 Say it slowly
