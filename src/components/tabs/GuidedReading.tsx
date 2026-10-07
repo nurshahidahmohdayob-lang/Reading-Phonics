@@ -441,30 +441,47 @@ function Choose({
               {slice.map((p, i) => {
                 const style = CARD_STYLES[(start + i) % CARD_STYLES.length];
                 const isCustom = p.id.startsWith("custom-");
+                // Already read by the child named above: crossed out, so the
+                // teacher picks a new one — but still tappable, to read again.
+                const done = alreadyRead.get(p.id);
                 return (
                   <div key={p.id} className="relative">
                     <button
                       onClick={() => onPick(level, p)}
-                      className={`group flex w-full items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
+                      title={done ? `${studentName.trim()} has read this already` : undefined}
+                      className={`group flex w-full items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95 ${
+                        done ? "opacity-55 grayscale-[35%] hover:opacity-90" : ""
+                      }`}
                     >
                       <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
                         {p.emoji}
                       </span>
                       <div className="flex flex-col gap-1">
-                        <span className="text-lg font-extrabold">
+                        <span
+                          className={`text-lg font-extrabold ${
+                            done
+                              ? "line-through decoration-rose-500 decoration-[3px]"
+                              : ""
+                          }`}
+                        >
                           {p.title}
                         </span>
                         <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
                           {isCustom ? "📝 My story" : `${p.lexile}L`} ·{" "}
                           {p.text.split(/\s+/).length} words
                         </span>
-                        {alreadyRead.get(p.id) && (
+                        {done && (
                           <span className="w-fit rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-extrabold">
-                            ✓ read · {alreadyRead.get(p.id)!.accuracy}%
+                            read {new Date(done.at).toLocaleDateString(undefined, { day: "numeric", month: "short" })} · {done.accuracy}%
                           </span>
                         )}
                       </div>
                     </button>
+                    {done && (
+                      <span className="pointer-events-none absolute -right-1 -top-2 rotate-6 rounded-xl bg-rose-500 px-2.5 py-1 text-xs font-black tracking-wide text-white shadow-md ring-2 ring-white">
+                        ✓ READ
+                      </span>
+                    )}
                     {isCustom && (
                       <button
                         onClick={() => removeStory(p.id)}

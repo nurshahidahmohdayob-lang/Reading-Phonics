@@ -358,7 +358,7 @@ function ReadLine({
   onDelete: () => void;
 }) {
   return (
-    <span className="flex items-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
       <button
         onClick={onOpen}
         title="Open the report for this read"
@@ -378,12 +378,14 @@ function ReadLine({
           {read.wcpm} wpm · {read.correct}/{read.total} words ·{" "}
           {shortDate(read.at)}
         </span>
-        <span className="text-brand-600 dark:text-brand-300">📄 Report</span>
+        <span className="whitespace-nowrap text-brand-600 dark:text-brand-300">
+          📄 Report
+        </span>
       </button>
       <button
         onClick={onWorksheet}
         title="A printable worksheet on this story, at this child's level"
-        className="rounded-lg px-1.5 py-0.5 font-bold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950"
+        className="whitespace-nowrap rounded-lg px-1.5 py-0.5 font-bold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950"
       >
         📝 Worksheet
       </button>
