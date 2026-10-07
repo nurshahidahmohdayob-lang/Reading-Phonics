@@ -14,6 +14,7 @@ import { buildWorksheet, type Section, type WorksheetInput } from "@/lib/workshe
 import { speak } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { lexileLabel } from "@/lib/lexileStats";
+import StoryBook from "@/components/StoryBook";
 
 type Answer = number | string | number[] | null;
 
@@ -234,22 +235,8 @@ export default function OnlineWorksheet({
       case "read":
         return (
           <section key={i} className={CARD}>
-            <Title n={++n} title="Read the story" say="Read it out loud. Tap a word to hear it." />
-            <button
-              onClick={() => speak(passage.text, 0.8)}
-              className="mt-2 rounded-full bg-[#F7B917] px-4 py-2 font-extrabold text-[#0A4F29] shadow active:scale-95"
-            >
-              🔊 Read it to me
-            </button>
-            <p className="mt-3 rounded-2xl bg-amber-50 p-4 text-2xl font-bold leading-relaxed text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
-              {passage.text.split(/\s+/).map((w, j) => (
-                <span key={j}>
-                  <button onClick={() => sayWord(w.replace(/[^a-z']/gi, ""))} className="rounded-md px-0.5 hover:bg-amber-200">
-                    {w}
-                  </button>{" "}
-                </span>
-              ))}
-            </p>
+            <Title n={++n} title="Read the story" say="Turn the pages and read it out loud. Tap a word to hear it." />
+            <StoryBook passage={passage} level={input.level} />
           </section>
         );
       case "tick":

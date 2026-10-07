@@ -157,7 +157,9 @@ function unique<T>(xs: T[]): T[] {
 
 function sentencesOf(text: string): string[] {
   return text
-    .split(/(?<=[.!?])\s+/)
+    // A sentence ends at . ! or ?, or just after a closing speech mark —
+    // but not mid-speech: “Hello!” he called. stays one sentence.
+    .split(/(?<=[.!?]”?)\s+(?=[“"A-Z])/)
     .map((s) => s.trim())
     .filter(Boolean);
 }

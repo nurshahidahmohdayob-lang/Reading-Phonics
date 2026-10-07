@@ -240,7 +240,7 @@ export function scoreReading(
     new Set(
       targetWords
         .filter((_, i) => status[i] === "missed")
-        .map((w) => w.replace(/[.,!?;:"]/g, ""))
+        .map((w) => w.replace(/[.,!?;:"“”]/g, ""))
         .filter(Boolean),
     ),
   );

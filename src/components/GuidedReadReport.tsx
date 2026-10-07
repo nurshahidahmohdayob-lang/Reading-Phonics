@@ -62,7 +62,7 @@ export default function GuidedReadReport({
     new Set(
       [...missed]
         .sort((a, b) => a - b)
-        .map((i) => (words[i] ?? "").replace(/[.,!?;:"]/g, ""))
+        .map((i) => (words[i] ?? "").replace(/[.,!?;:"“”]/g, ""))
         .filter(Boolean),
     ),
   );

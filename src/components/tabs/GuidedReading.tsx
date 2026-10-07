@@ -573,7 +573,7 @@ function ReadAloud({
   const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
   // The part of speech of each word, computed once per passage.
   const wordPos = useMemo(
-    () => words.map((w) => describe(w.replace(/[.,!?;:"]/g, "")).pos),
+    () => words.map((w) => describe(w.replace(/[.,!?;:"“”]/g, "")).pos),
     [words],
   );
   function begin() {
@@ -668,7 +668,7 @@ function ReadAloud({
       >
         <p className="flex flex-wrap gap-x-2 gap-y-1">
           {words.map((w, i) => {
-            const clean = w.replace(/[.,!?;:"]/g, "");
+            const clean = w.replace(/[.,!?;:"“”]/g, "");
             const marked = missed.has(i);
             return (
               <button

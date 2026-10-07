@@ -638,7 +638,7 @@ function PassageReader({
     );
     const flagged = words
       .filter((_, i) => status[i] !== "correct")
-      .map((w) => w.replace(/[.,!?;:"]/g, ""))
+      .map((w) => w.replace(/[.,!?;:"“”]/g, ""))
       .filter(Boolean);
     setMissedWords(flagged);
     setMicSuggested(flagged.length);

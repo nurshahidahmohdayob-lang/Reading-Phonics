@@ -204,7 +204,7 @@ function Reader({
   const tokens = useMemo(
     () =>
       text.split(" ").map((word) => {
-        const clean = word.replace(/[.,!?;:"]/g, "");
+        const clean = word.replace(/[.,!?;:"“”]/g, "");
         return { word, clean, pos: describe(clean).pos };
       }),
     [text],
