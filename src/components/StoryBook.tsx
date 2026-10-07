@@ -6,8 +6,8 @@
    reads the page aloud. The last page says The End and points the child on
    to the questions.
 
-   Pages are cut at sentence ends (never mid-sentence or mid-speech), kept
-   short for beginning readers and longer for older ones. Each page's
+   Every story is five pages, cut at sentence ends (never mid-sentence or
+   mid-speech) and shared out evenly. Each page's
    picture is the first thing on it the app has a picture for, from the
    dictionary; otherwise the story's own. */
 
@@ -18,6 +18,7 @@ import { speak, stopSpeech } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { lexileLabel } from "@/lib/lexileStats";
 import type { Passage, PassageLevel } from "@/app/passages";
+import { paginate } from "@/lib/storyPages";
 
 // Andika is made for children learning to read: plain letter shapes, a
 // single-storey a and g. Fraunces gives the cover a storybook title.
@@ -29,37 +30,6 @@ const NO_PICTURE = new Set(
   ("day days time way lot thing things part end week year minute hour moment today morning afternoon evening night place idea kind side bit " +
     "one two three four five six seven eight nine ten hundred everyone everything nobody something").split(" "),
 );
-
-function sentencesOf(text: string): string[] {
-  return text
-    .split(/(?<=[.!?]”?)\s+(?=[“"A-Z])/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-/** Sentences gathered into pages of about `words` words each. */
-function paginate(text: string, words: number): string[] {
-  const pages: string[] = [];
-  let cur: string[] = [];
-  let count = 0;
-  for (const s of sentencesOf(text)) {
-    const n = s.split(/\s+/).length;
-    if (cur.length && count + n > words) {
-      pages.push(cur.join(" "));
-      cur = [];
-      count = 0;
-    }
-    cur.push(s);
-    count += n;
-  }
-  if (cur.length) pages.push(cur.join(" "));
-  // Don't leave a lonely last line on a page of its own.
-  if (pages.length > 2 && pages[pages.length - 1].split(/\s+/).length < words / 3) {
-    const last = pages.pop()!;
-    pages[pages.length - 1] += " " + last;
-  }
-  return pages;
-}
 
 function pictureFor(page: string, fallback: string, used: Set<string>): string {
   for (const raw of page.split(/\s+/)) {
@@ -85,10 +55,7 @@ const TINTS = [
 
 export default function StoryBook({ passage, level }: { passage: Passage; level: PassageLevel }) {
   const young = level.id === "starter" || level.id === "year1";
-  const pages = useMemo(
-    () => paginate(passage.text, level.id === "starter" ? 12 : young ? 22 : level.id === "year2" ? 34 : 48),
-    [passage.text, level.id, young],
-  );
+  const pages = useMemo(() => paginate(passage.text), [passage.text]);
   const pictures = useMemo(() => {
     const used = new Set<string>([passage.emoji]);
     return pages.map((p) => pictureFor(p, passage.emoji, used));
