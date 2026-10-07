@@ -1,15 +1,21 @@
 "use client";
 
-/* The page a class opens from its class link: tap your name, tap your
-   activity, do it, press Submit. No sign-in — the code in the link is the
-   permission (lib/assignments.ts). A name gets a ✅ once every activity set
-   for it has been submitted. */
+/* The page a class opens from its class link. A child taps their name and
+   their own reading opens straight away: a short story at their reading
+   level with its questions (the online worksheet), and a Submit button that
+   ticks it off. Any activities the teacher set are listed after it. No
+   sign-in — the code in the link is the permission (lib/assignments.ts). A
+   name gets a ✅ once today's story and every activity set for it are in. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
+import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
+import { findPassage } from "@/app/passages";
+import type { Tier, WorksheetInput } from "@/lib/worksheet";
 
 type Item = { id: string; title: string; kind: "html" | "link"; for: string[] };
-type ClassData = { className: string; names: string[]; items: Item[]; done: Record<string, string[]> };
+type ClassData = { className: string; names: string[]; items: Item[]; done: Record<string, string[]>; read: string[] };
+type Reading = { input: WorksheetInput; done: boolean };
 type Open = { item: Item; html?: string; url?: string };
 
 const key = (n: string) => n.toLowerCase().replace(/\s+/g, " ").trim();
@@ -22,6 +28,8 @@ export default function ClassPage() {
   const [open, setOpen] = useState<Open | null>(null);
   const [stage, setStage] = useState<"doing" | "confirm" | "sending" | "sent">("doing");
   const [note, setNote] = useState("");
+  const [reading, setReading] = useState<Reading | "loading" | "none" | null>(null);
+  const [onStory, setOnStory] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
 
   const load = useCallback(async (c: string) => {
@@ -50,7 +58,53 @@ export default function ClassPage() {
 
   const mine = (name: string) => (data?.items ?? []).filter((it) => it.for.some((n) => key(n) === key(name)));
   const isDone = (id: string, name: string) => (data?.done[id] ?? []).some((n) => key(n) === key(name));
-  const allDone = (name: string) => mine(name).length > 0 && mine(name).every((it) => isDone(it.id, name));
+  const hasRead = (name: string) => (data?.read ?? []).some((n) => key(n) === key(name));
+  const allDone = (name: string) => hasRead(name) && mine(name).every((it) => isDone(it.id, name));
+
+  /* Tap a name: their story at their level opens at once — unless today's
+     is already in, then their list, with it ticked. */
+  async function pick(name: string) {
+    setMe(name);
+    setReading("loading");
+    setOnStory(true);
+    try {
+      const res = await fetch(`/api/class?code=${encodeURIComponent(code!)}&reader=${encodeURIComponent(name)}`, { cache: "no-store" });
+      const d = await res.json();
+      const r = d.ok ? (d.reading as { storyId: string; levelId: string; tier: Tier; done: boolean }) : null;
+      const found = r ? findPassage(r.storyId, r.levelId) : null;
+      if (!r || !found) {
+        setReading("none");
+        setOnStory(false);
+        return;
+      }
+      setReading({
+        input: { childName: name, year: "", lexile: null, passage: found.passage, level: found.level, missedWords: [], tier: r.tier },
+        done: r.done,
+      });
+      setOnStory(!r.done);
+    } catch {
+      setReading("none");
+      setOnStory(false);
+    }
+  }
+
+  async function sendReading(r: WorksheetResult): Promise<string | null> {
+    if (!me || !code) return "Something went wrong.";
+    try {
+      const res = await fetch("/api/class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, reading: true, name: me, ...r }),
+      });
+      const d = await res.json();
+      if (!d.ok) return d.error ?? "That didn't send. Try again.";
+      setReading((cur) => (cur && typeof cur === "object" ? { ...cur, done: true } : cur));
+      void load(code);
+      return null;
+    } catch {
+      return "That didn't send — check the internet and try again.";
+    }
+  }
 
   async function start(item: Item) {
     setStage("doing");
@@ -202,20 +256,82 @@ export default function ClassPage() {
     );
   }
 
+  /* ---- their story at their level ---- */
+  if (me && onStory) {
+    const others = mine(me).filter((it) => !isDone(it.id, me)).length;
+    return (
+      <main className="min-h-dvh bg-gradient-to-b from-[#D8EEFF] via-[#EEF8FF] to-[#E6F6E0]">
+        <div className="sticky top-0 z-10 flex items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white shadow">
+          <button
+            onClick={() => {
+              setMe(null);
+              setReading(null);
+              setOnStory(false);
+            }}
+            className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold active:scale-95"
+          >
+            ← Not me
+          </button>
+          <p className="min-w-0 flex-1 truncate text-lg font-extrabold">
+            Hi, <span className="text-[#F7B917]">{me}</span>! 📖 Your story
+          </p>
+          {mine(me).length > 0 && (
+            <button onClick={() => setOnStory(false)} className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold active:scale-95">
+              My activities{others ? ` (${others})` : ""} →
+            </button>
+          )}
+        </div>
+        {reading === "loading" || reading === null ? (
+          <p className="pt-24 text-center text-lg font-bold text-zinc-400">Finding your story… 📚</p>
+        ) : reading === "none" ? null : (
+          <OnlineWorksheet key={reading.input.passage.id} input={reading.input} childName={me} onSubmit={sendReading} />
+        )}
+      </main>
+    );
+  }
+
   /* ---- a child's activities ---- */
   if (me) {
     const list = mine(me);
+    const story = reading && typeof reading === "object" ? reading : null;
     return (
       <main className={shell}>
         <div className="mx-auto max-w-2xl">
-          <button onClick={() => setMe(null)} className="rounded-full bg-white px-4 py-2 font-bold text-zinc-600 shadow-sm active:scale-95">
+          <button
+            onClick={() => {
+              setMe(null);
+              setReading(null);
+            }}
+            className="rounded-full bg-white px-4 py-2 font-bold text-zinc-600 shadow-sm active:scale-95"
+          >
             ← Not me
           </button>
           <h1 className="mt-4 text-center text-3xl font-extrabold text-[#0A4F29]">Hi, {me}! 👋</h1>
           <p className="text-center font-semibold text-zinc-500">
-            {list.length ? "Tap an activity to start." : "You have no activities right now. 🎉"}
+            {list.length || story ? "Tap an activity to start." : "You have no activities right now. 🎉"}
           </p>
           <div className="mt-6 grid gap-4">
+            {story && (
+              <button
+                onClick={() => setOnStory(true)}
+                className={`flex items-center gap-4 rounded-[1.8rem] p-5 text-left shadow-md ring-4 ring-white/70 transition-all active:scale-[.98] ${
+                  story.done ? "bg-emerald-50" : "bg-white hover:-translate-y-0.5"
+                }`}
+              >
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-amber-100 text-3xl">{story.input.passage.emoji}</span>
+                <span className="flex-1">
+                  <span className="block text-xl font-extrabold text-zinc-800">{story.input.passage.title}</span>
+                  <span className="text-sm font-bold text-zinc-500">📖 Today&apos;s story — just right for you</span>
+                </span>
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-extrabold ${
+                    story.done ? "bg-emerald-600 text-white" : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {story.done ? "✅ Done" : "▶ Start"}
+                </span>
+              </button>
+            )}
             {list.map((it) => {
               const done = isDone(it.id, me);
               return (
@@ -254,12 +370,12 @@ export default function ClassPage() {
         <p className="mt-1 text-center text-lg font-semibold text-zinc-500">Tap your name 👇</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {data.names.map((n) => {
-            const count = mine(n).filter((it) => !isDone(it.id, n)).length;
+            const count = mine(n).filter((it) => !isDone(it.id, n)).length + (hasRead(n) ? 0 : 1);
             const finished = allDone(n);
             return (
               <button
                 key={n}
-                onClick={() => setMe(n)}
+                onClick={() => pick(n)}
                 className={`flex items-center gap-3 rounded-2xl px-5 py-4 text-left text-lg font-extrabold shadow-sm ring-4 ring-white/70 transition-all active:scale-[.98] ${
                   finished ? "bg-emerald-50 text-emerald-900" : "bg-white text-zinc-800 hover:-translate-y-0.5"
                 }`}

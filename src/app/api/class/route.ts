@@ -3,7 +3,9 @@
 
    GET  ?code=…            the class's names, their assignments, who's done what
    GET  ?code=…&id=…       one assignment's lesson (or link)
-   POST { code, id, name, answers, score, text, images, note }   submit */
+   GET  ?code=…&reader=…   that child's own reading: a story at their level
+   POST { code, id, name, answers, score, text, images, note }   submit
+   POST { code, reading: true, name, answers, score, text }      submit the reading */
 
 import { NextResponse } from "next/server";
 import {
@@ -16,6 +18,10 @@ import {
   getHtml,
   getItem,
   isItemId,
+  readingFor,
+  readingMarks,
+  readToday,
+  submitReading,
   MAX_SUBMISSION_CHARS,
   nameKey,
   submit,
@@ -28,6 +34,19 @@ export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const cls = await getClass(q.get("code") ?? "");
   if (!cls) return bad("This class link doesn't work any more — ask your teacher for a new one.", 404);
+
+  const code = q.get("code")!;
+  const reader = q.get("reader");
+  if (reader !== null) {
+    const name = cls.names.find((n) => nameKey(n) === nameKey(reader));
+    if (!name) return bad("That name isn't on this class.", 404);
+    const r = await readingFor(code, cls, name);
+    if (!r) return bad("No stories for this level yet.", 404);
+    return NextResponse.json({
+      ok: true,
+      reading: { storyId: r.storyId, levelId: r.levelId, tier: r.tier, done: readToday(r) },
+    });
+  }
 
   const id = q.get("id");
   if (id) {
@@ -42,6 +61,7 @@ export async function GET(req: Request) {
 
   const items = await classItems(cls.owner, cls.yearKey);
   const done = await doneMarks(items, cls);
+  const reads = await readingMarks(code, cls.names);
   return NextResponse.json({
     ok: true,
     className: cls.className,
@@ -49,6 +69,7 @@ export async function GET(req: Request) {
     items: items.map((a) => ({ id: a.id, title: a.title, kind: a.kind, for: assignedNames(a, cls) })),
     // Only who's done what — never their answers.
     done: Object.fromEntries(Object.entries(done).map(([id, m]) => [id, Object.keys(m)])),
+    read: cls.names.filter((n) => readToday(reads[n])),
   });
 }
 
@@ -62,8 +83,15 @@ export async function POST(req: Request) {
   } catch {
     return bad("bad request");
   }
-  const cls = await getClass(String(body.code ?? ""));
+  const code = String(body.code ?? "");
+  const cls = await getClass(code);
   if (!cls) return bad("This class link doesn't work any more.", 404);
+  if (body.reading === true) {
+    const name = cls.names.find((n) => nameKey(n) === nameKey(String(body.name ?? "")));
+    if (!name) return bad("That name isn't on this class.", 403);
+    const mark = await submitReading(code, name, cleanSubmission(body));
+    return mark ? NextResponse.json({ ok: true, done: mark }) : bad("Open your story first.", 409);
+  }
   const a = isItemId(body.id) ? await getItem(body.id) : null;
   if (!a || a.owner !== cls.owner || a.yearKey !== cls.yearKey) return bad("not found", 404);
   const name = typeof body.name === "string" ? body.name : "";

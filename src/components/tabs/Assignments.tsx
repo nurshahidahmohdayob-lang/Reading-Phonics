@@ -17,6 +17,8 @@ import { allStudents, useRosterEdits } from "@/lib/rosterStore";
 import { publicSiteBase } from "@/lib/reportLink";
 import { askToSignIn } from "@/lib/signInNeeded";
 import { lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
+import { useTracker } from "@/lib/tracker";
+import { latestLexile, lexileLabel } from "@/lib/lexileStats";
 
 type Kind = "html" | "link";
 type Item = { id: string; title: string; kind: Kind; url?: string; assignees: string[] | "all"; createdAt: string };
@@ -27,7 +29,17 @@ type Submission = Done & {
   images: string[];
   note?: string;
 };
-type ClassState = { yearKey: string; code: string; names: string[]; items: Item[]; done: Record<string, Record<string, Done>> };
+type ClassState = {
+  yearKey: string;
+  code: string;
+  names: string[];
+  items: Item[];
+  done: Record<string, Record<string, Done>>;
+  /** Each child's own reading: the story they're on, and today's submission. */
+  reading: Record<string, { story: string; done?: Done }>;
+};
+/** The child's own reading, standing in for an assignment in SubmissionView. */
+const READING: Item = { id: "reading", title: "📖 Reading at their level", kind: "html", assignees: "all", createdAt: "" };
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -53,6 +65,19 @@ export default function Assignments() {
     () => allStudents(edits).filter((s) => s.yearKey === yearKey && !s.locked).map((s) => s.name),
     [edits, yearKey],
   );
+  const { store } = useTracker();
+  // Each child's level from their latest assessment, so the story they get
+  // on the class link is pitched for them. Kept as a string so the class is
+  // only re-asked for when a level really changes.
+  const levelsJson = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const n of names) {
+      const lex = latestLexile(store, yearKey, n);
+      if (lex !== null) out[n] = lex;
+    }
+    return JSON.stringify(out);
+  }, [store, names, yearKey]);
+  const levels = useMemo(() => JSON.parse(levelsJson) as Record<string, number>, [levelsJson]);
   const [cls, setCls] = useState<ClassState | null>(null);
   const [problem, setProblem] = useState<{ yearKey: string; kind: "off" | "error" } | null>(null);
   const [error, setError] = useState("");
@@ -63,8 +88,8 @@ export default function Assignments() {
   // Ask for the class (making its link on first use, and refreshing its names);
   // `apply` puts the answer on screen.
   const fetchClass = useCallback(
-    () => call({ op: "class", yearKey, className: group?.year ?? yearKey, names }),
-    [yearKey, group?.year, names],
+    () => call({ op: "class", yearKey, className: group?.year ?? yearKey, names, levels }),
+    [yearKey, group?.year, names, levels],
   );
   const apply = useCallback(
     (d: Record<string, unknown>) => {
@@ -80,6 +105,7 @@ export default function Assignments() {
         names: d.names as string[],
         items: d.items as Item[],
         done: d.done as ClassState["done"],
+        reading: (d.reading ?? {}) as ClassState["reading"],
       });
     },
     [yearKey],
@@ -162,6 +188,12 @@ export default function Assignments() {
           )}
 
           <div className="mt-6 flex w-full flex-col gap-4">
+            <ReadingCard
+              names={cls.names}
+              reading={cls.reading}
+              levels={levels}
+              onView={(n) => setViewing({ item: READING, name: n })}
+            />
             {cls.items.length === 0 && !adding && (
               <p className="text-center font-semibold text-zinc-400">No assignments for {group?.year} yet.</p>
             )}
@@ -231,6 +263,7 @@ export default function Assignments() {
 
       {viewing && (
         <SubmissionView
+          yearKey={yearKey}
           item={viewing.item}
           name={viewing.name}
           onClose={() => setViewing(null)}
@@ -241,6 +274,63 @@ export default function Assignments() {
         />
       )}
       {preview && cls && <Preview item={preview} code={cls.code} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
+
+/** Every child's own reading: a short story at their level that opens when
+    they tap their name on the class link. ✅ once today's is submitted. */
+function ReadingCard({
+  names,
+  reading,
+  levels,
+  onView,
+}: {
+  names: string[];
+  reading: ClassState["reading"];
+  levels: Record<string, number>;
+  onView: (name: string) => void;
+}) {
+  const count = names.filter((n) => reading[n]?.done).length;
+  return (
+    <div className="rounded-[1.6rem] bg-amber-50 p-5 shadow-sm ring-2 ring-amber-100 dark:bg-amber-950/20 dark:ring-amber-900/40">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-2xl">📖</span>
+        <span className="flex-1 text-lg font-extrabold text-zinc-800 dark:text-zinc-100">Today&apos;s reading — at each child&apos;s level</span>
+        <span className={`rounded-full px-3 py-1 text-sm font-extrabold ${count === names.length && count > 0 ? "bg-emerald-600 text-white" : "bg-white text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"}`}>
+          {count} / {names.length} submitted
+        </span>
+      </div>
+      <p className="mt-1 text-xs font-semibold text-zinc-500">
+        Opens as soon as a child taps their name: a short story at their reading level (from their latest assessment), with
+        questions to answer. A new story each day once they&apos;ve submitted.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {names.map((n) => {
+          const r = reading[n];
+          const lvl = levels[n] !== undefined ? lexileLabel(levels[n]) : "not assessed";
+          const tip = `${r?.story ?? "Not opened yet"} · ${lvl}`;
+          return r?.done ? (
+            <button
+              key={n}
+              onClick={() => onView(n)}
+              title={`${tip} — see what they submitted`}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800 ring-2 ring-emerald-200 hover:bg-emerald-100"
+            >
+              ✅ {n}
+              {r.done.score && (
+                <span className="rounded-full bg-white px-1.5 text-xs">
+                  {r.done.score.score}/{r.done.score.total}
+                </span>
+              )}
+            </button>
+          ) : (
+            <span key={n} title={tip} className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-zinc-400 ring-2 ring-zinc-100 dark:bg-zinc-800">
+              ⬜ {n}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -482,11 +572,13 @@ function Modal({ children, onClose, wide }: { children: React.ReactNode; onClose
 }
 
 function SubmissionView({
+  yearKey,
   item,
   name,
   onClose,
   onCleared,
 }: {
+  yearKey: string;
   item: Item;
   name: string;
   onClose: () => void;
@@ -495,14 +587,15 @@ function SubmissionView({
   const [sub, setSub] = useState<Submission | null | undefined>(undefined);
   useEffect(() => {
     let alive = true;
-    fetch(`/api/assign?id=${item.id}&name=${encodeURIComponent(name)}`, { cache: "no-store" })
+    const q = item === READING ? `reading=${encodeURIComponent(yearKey)}` : `id=${item.id}`;
+    fetch(`/api/assign?${q}&name=${encodeURIComponent(name)}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => alive && setSub(d.ok ? d.submission : null))
       .catch(() => alive && setSub(null));
     return () => {
       alive = false;
     };
-  }, [item.id, name]);
+  }, [item, name, yearKey]);
 
   return (
     <Modal onClose={onClose}>
@@ -563,7 +656,7 @@ function SubmissionView({
           )}
           <button
             onClick={async () => {
-              await call({ op: "clear", id: item.id, name });
+              await call(item === READING ? { op: "clearReading", yearKey, name } : { op: "clear", id: item.id, name });
               onCleared();
             }}
             className="mt-5 rounded-full bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"

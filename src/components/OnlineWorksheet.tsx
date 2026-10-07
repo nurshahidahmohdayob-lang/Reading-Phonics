@@ -17,54 +17,80 @@ import { lexileLabel } from "@/lib/lexileStats";
 
 type Answer = number | string | number[] | null;
 
-/** Every marked question, with what counts as right. */
-type Item = { key: string; right: (a: Answer) => boolean };
+/** Every marked question, with what counts as right, and how to say what
+    the child chose — for the teacher, when the worksheet is submitted. */
+type Item = { key: string; label: string; right: (a: Answer) => boolean; show: (a: Answer) => string };
 
 const norm = (s: unknown) => String(s ?? "").trim().toLowerCase().replace(/[^a-z']/g, "");
+const asText = (a: Answer) => (a === null || a === undefined || a === "" ? "—" : String(a));
 
 function itemsFor(sections: Section[]): Item[] {
   const items: Item[] = [];
   sections.forEach((s, i) => {
     switch (s.kind) {
       case "tick":
-        items.push({ key: `${i}`, right: (a) => a === s.answer });
+        items.push({ key: `${i}`, label: s.question, right: (a) => a === s.answer, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
         break;
       case "circle":
-        s.rows.forEach((r, k) => items.push({ key: `${i}.${k}`, right: (a) => norm(a) === norm(r.word) }));
+        s.rows.forEach((r, k) =>
+          items.push({ key: `${i}.${k}`, label: `Find the word “${r.word}”`, right: (a) => norm(a) === norm(r.word), show: asText }),
+        );
         break;
       case "matchpic":
         s.words.forEach((w, k) =>
-          items.push({ key: `${i}.${k}`, right: (a) => a === s.pics.findIndex((p) => p.word === w) }),
+          items.push({
+            key: `${i}.${k}`,
+            label: `Picture for “${w}”`,
+            right: (a) => a === s.pics.findIndex((p) => p.word === w),
+            show: (a) => (typeof a === "number" ? `${s.pics[a]?.emoji ?? ""} ${s.pics[a]?.word ?? ""}`.trim() : "—"),
+          }),
         );
         break;
       case "trace":
-        s.words.forEach((t, k) => items.push({ key: `${i}.${k}`, right: (a) => norm(a) === norm(t.word) }));
+        s.words.forEach((t, k) =>
+          items.push({ key: `${i}.${k}`, label: `Copy “${t.word}”`, right: (a) => norm(a) === norm(t.word), show: asText }),
+        );
         break;
       case "yesno":
-        s.items.forEach((y, k) => items.push({ key: `${i}.${k}`, right: (a) => a === (y.yes ? 0 : 1) }));
+        s.items.forEach((y, k) =>
+          items.push({ key: `${i}.${k}`, label: y.text, right: (a) => a === (y.yes ? 0 : 1), show: (a) => (a === 0 ? "Yes" : a === 1 ? "No" : "—") }),
+        );
         break;
       case "fill":
-        s.items.forEach((b, k) => items.push({ key: `${i}.${k}`, right: (a) => norm(a) === norm(b.answer) }));
+        s.items.forEach((b, k) =>
+          items.push({ key: `${i}.${k}`, label: `${b.before} ___ ${b.after}`, right: (a) => norm(a) === norm(b.answer), show: asText }),
+        );
         break;
       case "choose":
-        s.items.forEach((c, k) => items.push({ key: `${i}.${k}`, right: (a) => norm(a) === norm(c.answer) }));
+        s.items.forEach((c, k) =>
+          items.push({ key: `${i}.${k}`, label: `${c.before} (${c.options.join(" / ")}) ${c.after}`, right: (a) => norm(a) === norm(c.answer), show: asText }),
+        );
         break;
       case "order":
         items.push({
           key: `${i}`,
+          label: "Put the sentences in order",
           right: (a) => Array.isArray(a) && a.length === s.items.length && a.every((idx, n) => s.items[idx]?.answer === n + 1),
+          show: (a) => (Array.isArray(a) && a.length ? a.map((idx) => s.items[idx]?.text ?? "?").join(" → ") : "—"),
         });
         break;
       case "written":
-        items.push({ key: `${i}`, right: (a) => a === s.answerIndex });
+        items.push({ key: `${i}`, label: s.question, right: (a) => a === s.answerIndex, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
         break;
       case "meanings":
         s.words.forEach((w, k) =>
-          items.push({ key: `${i}.${k}`, right: (a) => a === s.meanings.find((m) => m.word === w)?.letter }),
+          items.push({
+            key: `${i}.${k}`,
+            label: `Meaning of “${w}”`,
+            right: (a) => a === s.meanings.find((m) => m.word === w)?.letter,
+            show: (a) => s.meanings.find((m) => m.letter === a)?.text ?? "—",
+          }),
         );
         break;
       case "hunt":
-        s.items.forEach((h, k) => items.push({ key: `${i}.${k}`, right: (a) => norm(a) === norm(h.answer) }));
+        s.items.forEach((h, k) =>
+          items.push({ key: `${i}.${k}`, label: `A word that means “${h.meaning}”`, right: (a) => norm(a) === norm(h.answer), show: asText }),
+        );
         break;
     }
   });
@@ -75,13 +101,36 @@ const CARD = "rounded-[1.6rem] bg-white p-5 shadow-md ring-4 ring-white/70 dark:
 const OPT =
   "rounded-2xl border-4 px-4 py-2.5 text-lg font-extrabold transition-all active:scale-95 disabled:cursor-default";
 
-export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
+/** What a submitted worksheet sends: the score, each answer, and any
+    writing and drawing. */
+export type WorksheetResult = {
+  score: { score: number; total: number };
+  answers: { label: string; value: string }[];
+  text: string;
+  images: string[];
+};
+
+export default function OnlineWorksheet({
+  input,
+  childName,
+  onSubmit,
+}: {
+  input: WorksheetInput;
+  /** Who is doing it, when known — the name box is then left out. */
+  childName?: string;
+  /** Hand in the work: the check button becomes Submit, and once it's in a
+      big ✅ says so. Resolves with an error to show, or null if it went. */
+  onSubmit?: (r: WorksheetResult) => Promise<string | null>;
+}) {
   const ws = useMemo(() => buildWorksheet(input), [input]);
   const items = useMemo(() => itemsFor(ws.sections), [ws]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [checked, setChecked] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(childName ?? "");
+  const [sending, setSending] = useState<"no" | "sending" | "sent">("no");
+  const [sendError, setSendError] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
   const { passage } = input;
 
   const set = (key: string, a: Answer) => {
@@ -124,6 +173,58 @@ export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
         <span className="w-full text-sm font-semibold text-zinc-500 dark:text-zinc-400">{say}</span>
       </h2>
     );
+  }
+
+  /** The writing boxes and drawing pads aren't marked, but the teacher
+      should see them — read them straight off the page. */
+  function handIn(): WorksheetResult {
+    const given = items.map((it) => {
+      const a = answers[it.key] ?? null;
+      return { label: it.label, value: `${it.right(a) ? "✅" : "❌"} ${it.show(a)}` };
+    });
+    const root = sheet.current;
+    root?.querySelectorAll("textarea").forEach((t) => {
+      const v = t.value.trim();
+      if (v) given.push({ label: t.closest("section")?.querySelector("h2 span:nth-child(2)")?.textContent ?? "Writing", value: v });
+    });
+    const images: string[] = [];
+    root?.querySelectorAll("canvas").forEach((c) => {
+      if (images.length >= 2) return;
+      const k = Math.min(1, 480 / Math.max(c.width, c.height));
+      const o = document.createElement("canvas");
+      o.width = Math.round(c.width * k);
+      o.height = Math.round(c.height * k);
+      const x = o.getContext("2d");
+      if (!x) return;
+      x.fillStyle = "#fff";
+      x.fillRect(0, 0, o.width, o.height);
+      x.drawImage(c, 0, 0, o.width, o.height);
+      const d = x.getImageData(0, 0, o.width, o.height).data;
+      let ink = 0;
+      for (let i = 0; i < d.length; i += 40) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) ink++;
+      if (ink > 20) images.push(o.toDataURL("image/jpeg", 0.7));
+    });
+    return { score: { score, total: items.length }, answers: given, text: `${passage.title}\n\n${passage.text}`.slice(0, 8000), images };
+  }
+
+  async function check() {
+    setChecked(true);
+    const right = items.filter((it) => it.right(answers[it.key] ?? null)).length;
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+    if (!onSubmit) {
+      speak(`${right} out of ${items.length}!`, 0.9);
+      return;
+    }
+    setSending("sending");
+    setSendError("");
+    const err = await onSubmit(handIn());
+    if (err) {
+      setSending("no");
+      setSendError(err);
+      return;
+    }
+    setSending("sent");
+    speak(`Submitted! ${right} out of ${items.length}!`, 0.9);
   }
 
   let n = 0;
@@ -399,7 +500,7 @@ export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
   const cheer = pct === 1 ? "Amazing" : pct >= 0.6 ? "Great job" : "Good try";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6">
+    <div ref={sheet} className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6">
       <header className="flex flex-wrap items-center gap-3 rounded-[1.8rem] bg-[#0A4F29] px-6 py-5 text-white shadow-lg">
         <span className="text-5xl">{passage.emoji}</span>
         <div className="flex-1">
@@ -408,31 +509,27 @@ export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
             {input.level.grade} story{passage.lexile ? ` · ${lexileLabel(passage.lexile)}` : ""} · Worksheet level {ws.tier}
           </p>
         </div>
-        <input
+        {childName === undefined && <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name ✏️"
           maxLength={40}
           className="w-full rounded-full border-0 bg-white px-4 py-2 text-center text-lg font-bold text-zinc-800 placeholder:text-zinc-400 sm:w-56"
-        />
+        />}
       </header>
 
       {blocks}
 
       {!checked ? (
         <button
-          onClick={() => {
-            setChecked(true);
-            const right = items.filter((it) => it.right(answers[it.key] ?? null)).length;
-            speak(`${right} out of ${items.length}!`, 0.9);
-            setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-          }}
+          onClick={check}
           className="rounded-full bg-gradient-to-r from-[#0A4F29] to-[#668C4A] py-5 text-2xl font-extrabold text-white shadow-lg active:scale-[.98]"
         >
-          ✅ Check my answers
+          {onSubmit ? "📤 Submit my work" : "✅ Check my answers"}
         </button>
       ) : (
         <div ref={resultRef} className={`${CARD} text-center`}>
+          {onSubmit && <SubmitBadge state={sending} error={sendError} onRetry={check} />}
           <div className="text-6xl">{stars}</div>
           <p className="mt-2 text-4xl font-extrabold text-[#0A4F29] dark:text-emerald-300">
             {score} out of {items.length}!
@@ -444,7 +541,7 @@ export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
           {ws.sections.some((s) => ["draw", "drawlabel", "written", "next", "summary"].includes(s.kind)) && (
             <p className="mt-2 text-sm font-semibold text-zinc-500">✍️ Show your teacher your drawing and writing too.</p>
           )}
-          <button
+          {!onSubmit && <button
             onClick={() => {
               setAnswers({});
               setChecked(false);
@@ -453,9 +550,33 @@ export default function OnlineWorksheet({ input }: { input: WorksheetInput }) {
             className="mt-4 rounded-full border-4 border-emerald-200 px-6 py-2 text-lg font-extrabold text-[#0A4F29] active:scale-95"
           >
             🔁 Try again
-          </button>
+          </button>}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The hand-in indicator: a big tick once the work is in. */
+function SubmitBadge({ state, error, onRetry }: { state: "no" | "sending" | "sent"; error: string; onRetry: () => void }) {
+  if (state === "sent") {
+    return (
+      <div className="mb-4 flex flex-col items-center gap-1 rounded-3xl bg-emerald-50 py-4 ring-4 ring-emerald-200 dark:bg-emerald-950/40">
+        <span className="tick-pop grid h-20 w-20 place-items-center rounded-full bg-emerald-500 text-5xl font-black text-white shadow-lg">✓</span>
+        <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">Submitted!</p>
+        <p className="text-sm font-semibold text-emerald-800/70 dark:text-emerald-200/70">Your teacher can see your work now.</p>
+      </div>
+    );
+  }
+  if (state === "sending") {
+    return <p className="mb-4 rounded-3xl bg-sky-50 py-4 text-xl font-extrabold text-sky-700">📤 Sending your work…</p>;
+  }
+  return (
+    <div className="mb-4 rounded-3xl bg-rose-50 py-4">
+      <p className="font-bold text-rose-700">{error || "That didn't send."}</p>
+      <button onClick={onRetry} className="mt-2 rounded-full bg-rose-600 px-5 py-2 font-extrabold text-white active:scale-95">
+        Try sending again
+      </button>
     </div>
   );
 }

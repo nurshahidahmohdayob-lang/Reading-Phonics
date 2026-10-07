@@ -1,12 +1,16 @@
 /* Assignments, the teacher's side. Signed-in staff only; everything is filed
    under the signed-in teacher, so each sees only their own.
 
-   POST { op: "class", yearKey, className, names }  open a class: its link, its
-                                                     assignments, who's done them
+   POST { op: "class", yearKey, className, names, levels }
+                                                     open a class: its link, its
+                                                     assignments, who's done them,
+                                                     and each child's reading
+   POST { op: "clearReading", yearKey, name }        let a child redo today's reading
    POST { op: "create", yearKey, title, kind, html | url, assignees }
    POST { op: "delete", id }
    POST { op: "clear", id, name }                    let a child do it again
-   GET  ?id=…&name=…                                 one child's submission */
+   GET  ?id=…&name=…                                 one child's submission
+   GET  ?reading=<yearKey>&name=…                    one child's reading submission */
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -14,19 +18,25 @@ import { SESSION_COOKIE, verifyToken } from "@/lib/session";
 import {
   assignmentsReady,
   assignedNames,
+  classCodeFor,
   classFor,
   classItems,
   cleanUrl,
+  clearReading,
   clearSubmission,
   createAssignment,
   deleteAssignment,
   doneMarks,
   getClass,
   getItem,
+  getReadingSubmission,
   getSubmission,
   isItemId,
   MAX_HTML_CHARS,
   openClass,
+  readingMarks,
+  readToday,
+  storyTitle,
 } from "@/lib/assignments";
 
 async function teacher(): Promise<string | null> {
@@ -52,11 +62,21 @@ export async function POST(req: Request) {
   if (body.op === "class") {
     if (!yearKey) return bad("bad request");
     const names = Array.isArray(body.names) ? body.names.filter((n): n is string => typeof n === "string") : [];
-    const code = await openClass(me, yearKey, String(body.className ?? yearKey), names);
+    const levels: Record<string, number> = {};
+    if (body.levels && typeof body.levels === "object") {
+      for (const [n, v] of Object.entries(body.levels as Record<string, unknown>)) {
+        if (typeof v === "number" && Number.isFinite(v)) levels[n] = v;
+      }
+    }
+    const code = await openClass(me, yearKey, String(body.className ?? yearKey), names, levels);
     const cls = (await getClass(code))!;
     const items = await classItems(me, yearKey);
     const done = await doneMarks(items, cls);
-    return NextResponse.json({ ok: true, code, names: cls.names, items, done });
+    const reads = await readingMarks(code, cls.names);
+    const reading = Object.fromEntries(
+      Object.entries(reads).map(([n, r]) => [n, { story: storyTitle(r), done: readToday(r) ? r.done : undefined }]),
+    );
+    return NextResponse.json({ ok: true, code, names: cls.names, items, done, reading });
   }
 
   if (body.op === "create") {
@@ -82,6 +102,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, item: a });
   }
 
+  if (body.op === "clearReading") {
+    const code = await classCodeFor(me, yearKey);
+    if (!code || typeof body.name !== "string") return bad("not found", 404);
+    await clearReading(code, body.name);
+    return NextResponse.json({ ok: true });
+  }
+
   if (body.op === "delete" || body.op === "clear") {
     if (!isItemId(body.id)) return bad("bad request");
     const a = await getItem(body.id);
@@ -104,6 +131,13 @@ export async function GET(req: Request) {
   if (!me) return bad("signed-out", 401);
   if (!assignmentsReady()) return NextResponse.json({ ok: false, configured: false });
   const q = new URL(req.url).searchParams;
+  const readingYear = q.get("reading");
+  if (readingYear) {
+    const code = await classCodeFor(me, readingYear.slice(0, 20));
+    const name = q.get("name") ?? "";
+    if (!code || !name) return bad("not found", 404);
+    return NextResponse.json({ ok: true, submission: await getReadingSubmission(code, name) });
+  }
   const id = q.get("id") ?? "";
   const name = q.get("name") ?? "";
   const a = isItemId(id) ? await getItem(id) : null;

@@ -9,6 +9,9 @@
      asg:html:<id>             the lesson itself (kept apart, so lists stay light)
      asg:done:<id>:<name>      a child has submitted: when, score, attempts
      asg:sub:<id>:<name>       what they submitted: answers, drawings, page text
+     asg:read:<code>:<name>    the child's own reading: a story at their level
+                               and its questions, set when they tap their name
+     asg:readsub:<code>:<name> what they submitted for it
 
    One key per child per assignment, so two children pressing Submit at the
    same moment can't overwrite each other.
@@ -18,6 +21,8 @@
    submit — nothing else. Only the teacher who made it can see submissions. */
 
 import { randomBytes } from "crypto";
+import { passageLevels, levelForReader } from "@/app/passages";
+import { worksheetTier, type Tier } from "./worksheet";
 import { kvConfigured, kvDel, kvGetJson, kvMGetJson, kvSetJson } from "./kv";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -34,6 +39,9 @@ export type ClassLink = {
   yearKey: string;
   className: string;
   names: string[];
+  /** Each child's reading level (Lexile), by nameKey, from their latest
+      assessment — so their reading activity is pitched for them. */
+  levels?: Record<string, number>;
   updatedAt: string;
 };
 
@@ -104,10 +112,12 @@ export async function openClass(
   yearKey: string,
   className: string,
   names: string[],
+  levels: Record<string, number> = {},
 ): Promise<string> {
   const idx = await ownerIndex(owner);
   let code = idx.classes[yearKey];
-  if (!code || !(await kvGetJson<ClassLink>(classKey(code)))) {
+  const before = code ? await kvGetJson<ClassLink>(classKey(code)) : null;
+  if (!code || !before) {
     code = rand(12);
     idx.classes[yearKey] = code;
     await kvSetJson(ownerKey(owner), idx);
@@ -118,14 +128,27 @@ export async function openClass(
     yearKey,
     className: className.slice(0, 40),
     names: clean,
+    levels: Object.fromEntries(
+      clean.flatMap((n) => {
+        // A level not sent this time (the teacher's results still loading)
+        // keeps the one saved before.
+        const lex = levels[n] ?? before?.levels?.[nameKey(n)];
+        return Number.isFinite(lex) ? [[nameKey(n), Math.round(lex!)]] : [];
+      }),
+    ),
     updatedAt: new Date().toISOString(),
   } satisfies ClassLink);
   return code;
 }
 
+/** The code of the class link this teacher already has for a class, if any. */
+export async function classCodeFor(owner: string, yearKey: string): Promise<string | null> {
+  return (await ownerIndex(owner)).classes[yearKey] ?? null;
+}
+
 /** The class link this teacher already has for a class, if any. */
 export async function classFor(owner: string, yearKey: string): Promise<ClassLink | null> {
-  const code = (await ownerIndex(owner)).classes[yearKey];
+  const code = await classCodeFor(owner, yearKey);
   return code ? getClass(code) : null;
 }
 
@@ -220,6 +243,89 @@ export async function getSubmission(id: string, name: string): Promise<Submissio
 /** Clear a child's submission, so they can do it again from scratch. */
 export async function clearSubmission(id: string, name: string): Promise<void> {
   await kvDel(doneKey(id, name), subKey(id, name));
+}
+
+/* ---------- each child's own reading ---------- */
+
+/** A child's reading activity: one short story at their level, with its
+    questions. It stays until they submit it; the day after, the next story
+    at their level takes its place. */
+export type Reading = {
+  storyId: string;
+  levelId: string;
+  tier: Tier;
+  lexile: number | null;
+  setAt: string;
+  done?: DoneMark;
+};
+
+const readKey = (code: string, name: string) => `asg:read:${code}:${nameKey(name)}`;
+const readSubKey = (code: string, name: string) => `asg:readsub:${code}:${nameKey(name)}`;
+
+/** The school's day, so a story finished in the afternoon is still ✅ that day. */
+export const schoolDay = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
+
+/** The child's reading for today, choosing the next story at their level
+    when there isn't one yet or yesterday's is finished. */
+export async function readingFor(code: string, cls: ClassLink, name: string): Promise<Reading | null> {
+  const lexile = cls.levels?.[nameKey(name)] ?? null;
+  const level = levelForReader(lexile, cls.yearKey);
+  if (!level.passages.length) return null;
+  const now = new Date().toISOString();
+  const cur = await kvGetJson<Reading>(readKey(code, name));
+  const sameLevel = cur?.levelId === level.id && level.passages.some((p) => p.id === cur.storyId);
+  if (cur && sameLevel && (!cur.done || schoolDay(cur.done.at) === schoolDay(now))) return cur;
+  // Next story along at this level (the first one, if they've moved level).
+  const at = sameLevel ? level.passages.findIndex((p) => p.id === cur!.storyId) : -1;
+  const story = level.passages[(at + 1) % level.passages.length];
+  const next: Reading = { storyId: story.id, levelId: level.id, tier: worksheetTier(lexile, level), lexile, setAt: now };
+  await kvSetJson(readKey(code, name), next);
+  return next;
+}
+
+/** Submitted today — yesterday's ✅ doesn't count for today. */
+export const readToday = (r: Reading | undefined) =>
+  !!r?.done && schoolDay(r.done.at) === schoolDay(new Date().toISOString());
+
+/** Whose reading is submitted, for the class list and the teacher. */
+export async function readingMarks(code: string, names: string[]): Promise<Record<string, Reading>> {
+  const got = await kvMGetJson<Reading>(names.map((n) => readKey(code, n)));
+  const out: Record<string, Reading> = {};
+  names.forEach((n, i) => {
+    if (got[i]) out[n] = got[i]!;
+  });
+  return out;
+}
+
+export async function submitReading(
+  code: string,
+  name: string,
+  sub: Omit<Submission, "at" | "attempts">,
+): Promise<DoneMark | null> {
+  const cur = await kvGetJson<Reading>(readKey(code, name));
+  if (!cur) return null;
+  const at = new Date().toISOString();
+  const attempts = (cur.done?.attempts ?? 0) + 1;
+  await kvSetJson(readSubKey(code, name), { ...sub, at, attempts } satisfies Submission);
+  const mark: DoneMark = { at, attempts, score: sub.score };
+  await kvSetJson(readKey(code, name), { ...cur, done: mark } satisfies Reading);
+  return mark;
+}
+
+export async function getReadingSubmission(code: string, name: string): Promise<Submission | null> {
+  return kvGetJson<Submission>(readSubKey(code, name));
+}
+
+/** Let a child do today's reading again. */
+export async function clearReading(code: string, name: string): Promise<void> {
+  const cur = await kvGetJson<Reading>(readKey(code, name));
+  if (cur) await kvSetJson(readKey(code, name), { ...cur, done: undefined });
+  await kvDel(readSubKey(code, name));
+}
+
+export function storyTitle(r: Reading): string {
+  const p = passageLevels.find((l) => l.id === r.levelId)?.passages.find((x) => x.id === r.storyId);
+  return p ? `${p.emoji} ${p.title}` : "Reading";
 }
 
 /* ---------- checking what comes in ---------- */
