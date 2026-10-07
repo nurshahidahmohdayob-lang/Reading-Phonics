@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
-import { findPassage } from "@/app/passages";
+import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
 
 type Item = { id: string; title: string; kind: "html" | "link"; for: string[] };
@@ -71,7 +71,7 @@ export default function ClassPage() {
       const res = await fetch(`/api/class?code=${encodeURIComponent(code!)}&reader=${encodeURIComponent(name)}`, { cache: "no-store" });
       const d = await res.json();
       const r = d.ok ? (d.reading as { storyId: string; levelId: string; tier: Tier; done: boolean }) : null;
-      const found = r ? findPassage(r.storyId, r.levelId) : null;
+      const found = r ? storyFor(r.storyId, r.levelId) : null;
       if (!r || !found) {
         setReading("none");
         setOnStory(false);

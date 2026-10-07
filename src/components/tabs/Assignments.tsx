@@ -21,7 +21,7 @@ import { useTracker } from "@/lib/tracker";
 import { latestLexile, lexileLabel } from "@/lib/lexileStats";
 import { createPortal } from "react-dom";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
-import { findPassage } from "@/app/passages";
+import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
 
 type Kind = "html" | "link";
@@ -389,7 +389,7 @@ function ChildAssignment({
       .then((d) => {
         if (!alive) return;
         const r = d.ok ? (d.reading as { storyId: string; levelId: string; tier: Tier }) : null;
-        const found = r ? findPassage(r.storyId, r.levelId) : null;
+        const found = r ? storyFor(r.storyId, r.levelId) : null;
         setInput(
           r && found
             ? { childName: name, year: "", lexile: null, passage: found.passage, level: found.level, missedWords: [], tier: r.tier }

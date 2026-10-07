@@ -22,6 +22,7 @@
 
 import { randomBytes } from "crypto";
 import { passageLevels, levelForReader } from "@/app/passages";
+import { assignmentStories, findAssignmentStory } from "@/app/assignmentStories";
 import { worksheetTier, type Tier } from "./worksheet";
 import { kvConfigured, kvDel, kvGetJson, kvMGetJson, kvSetJson } from "./kv";
 
@@ -277,17 +278,20 @@ function startFor(name: string, len: number): number {
 export async function readingFor(code: string, cls: ClassLink, name: string): Promise<Reading | null> {
   const lexile = cls.levels?.[nameKey(name)] ?? null;
   const level = levelForReader(lexile, cls.yearKey);
-  if (!level.passages.length) return null;
+  // The storybook tales written for assignments; the level's Guided Reading
+  // passages only if a level has none.
+  const stories = assignmentStories(level.id).length ? assignmentStories(level.id) : level.passages;
+  if (!stories.length) return null;
   const now = new Date().toISOString();
   const cur = await kvGetJson<Reading>(readKey(code, name));
-  const sameLevel = cur?.levelId === level.id && level.passages.some((p) => p.id === cur.storyId);
+  const sameLevel = cur?.levelId === level.id && stories.some((p) => p.id === cur.storyId);
   if (cur && sameLevel && (!cur.done || schoolDay(cur.done.at) === schoolDay(now))) return cur;
   // Next story along at this level. A child new to the level starts at a
   // place of their own, so children reading at the same level don't all get
   // the same story.
-  const len = level.passages.length;
-  const at = sameLevel ? level.passages.findIndex((p) => p.id === cur!.storyId) : startFor(name, len) - 1;
-  const story = level.passages[(((at + 1) % len) + len) % len];
+  const len = stories.length;
+  const at = sameLevel ? stories.findIndex((p) => p.id === cur!.storyId) : startFor(name, len) - 1;
+  const story = stories[(((at + 1) % len) + len) % len];
   const next: Reading = { storyId: story.id, levelId: level.id, tier: worksheetTier(lexile, level), lexile, setAt: now };
   await kvSetJson(readKey(code, name), next);
   return next;
@@ -334,7 +338,8 @@ export async function clearReading(code: string, name: string): Promise<void> {
 }
 
 export function storyTitle(r: Reading): string {
-  const p = passageLevels.find((l) => l.id === r.levelId)?.passages.find((x) => x.id === r.storyId);
+  const p =
+    findAssignmentStory(r.storyId) ?? passageLevels.find((l) => l.id === r.levelId)?.passages.find((x) => x.id === r.storyId);
   return p ? `${p.emoji} ${p.title}` : "Reading";
 }
 
