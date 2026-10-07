@@ -235,7 +235,7 @@ export default function OnlineWorksheet({
       case "read":
         return (
           <section key={i} className={CARD}>
-            <Title n={++n} title="Read the story" say="Turn the pages and read it out loud. Tap a word to hear it." />
+            <Title n={++n} title="Read the story" say="Read it out loud. Tap a word to hear it." />
             <StoryBook passage={passage} level={input.level} />
           </section>
         );

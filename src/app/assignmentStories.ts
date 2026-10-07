@@ -7,7 +7,7 @@ import type { StoryQuiz } from "@/app/stories";
    names, comic disasters, a twist, and a heart at the end. All original.
 
    Kept apart from the Guided Reading passages (timed read-alouds). Every
-   story is short, 50 to 80 words, so it fills a five-page book; what grows
+   story is short, 50 to 80 words, so it fits on one page; what grows
    through the levels is the sentence length and the vocabulary.
 
    The Lexile figures are estimates within each level's band. */
