@@ -64,10 +64,11 @@ export default function InstallApp() {
   const [isIOS, setIsIOS] = useState(false);
   const [show, setShow] = useState(false);
   const [howTo, setHowTo] = useState(false);
-  // A parent opening their child's report shouldn't be asked to install
-  // the teachers' app.
+  // A parent opening their child's report, or a child opening a worksheet or
+  // their class's activities, shouldn't be asked to install the teachers' app.
   const pathname = usePathname();
-  const parentPage = !!pathname && pathname.startsWith("/report");
+  const parentPage =
+    !!pathname && ["/report", "/worksheet", "/class", "/scan"].some((p) => pathname.startsWith(p));
 
   useEffect(() => {
     // Nothing to offer if it's already installed, or was waved away before.

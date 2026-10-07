@@ -22,11 +22,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   // screen (the code in its link is the permission, and it expires). Neither
   // can read anything about the school, so neither asks to sign in. Nor does
   // an online worksheet: its link carries a story and a level, nothing else.
+  // Nor the class activities page, which a class code opens (lib/assignments).
   const isPublic =
     !!pathname &&
     (pathname.startsWith("/report") ||
       pathname.startsWith("/scan") ||
-      pathname.startsWith("/worksheet"));
+      pathname.startsWith("/worksheet") ||
+      pathname.startsWith("/class"));
 
   useEffect(() => {
     let alive = true;

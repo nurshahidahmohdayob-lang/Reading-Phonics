@@ -59,3 +59,30 @@ export async function kvSetJson(
   if (ttlSeconds && ttlSeconds > 0) set.push("EX", Math.floor(ttlSeconds));
   await cmd(set);
 }
+
+/** Read several keys in one round trip. Missing keys come back as null. */
+export async function kvMGetJson<T>(keys: string[]): Promise<(T | null)[]> {
+  if (!kvConfigured() || keys.length === 0) return keys.map(() => null);
+  const out: (T | null)[] = [];
+  // MGET in batches, so a big class never makes one oversized request.
+  for (let i = 0; i < keys.length; i += 100) {
+    const batch = keys.slice(i, i + 100);
+    const result = (await cmd(["MGET", ...batch])) as (string | null)[] | null;
+    for (const raw of result ?? batch.map(() => null)) {
+      if (raw == null) out.push(null);
+      else {
+        try {
+          out.push(JSON.parse(raw) as T);
+        } catch {
+          out.push(null);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+export async function kvDel(...keys: string[]): Promise<void> {
+  if (!kvConfigured() || keys.length === 0) return;
+  await cmd(["DEL", ...keys]);
+}

@@ -13,6 +13,7 @@ import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import ClassTracker, { type TrackerStart } from "@/components/tabs/ClassTracker";
 import ThreeD from "@/components/tabs/ThreeD";
+import Assignments from "@/components/tabs/Assignments";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
 import Backdrop from "@/components/Backdrop";
@@ -32,6 +33,7 @@ type SectionId =
   | "storyplay"
   | "threed"
   | "tracker"
+  | "assignments"
   | "guide";
 
 const SECTIONS: {
@@ -129,6 +131,14 @@ const SECTIONS: {
     emoji: "🪄",
     color: "from-[#E9DFFF] to-[#D2C0FF]", // soft violet
     text: "text-violet-700",
+  },
+  {
+    id: "assignments",
+    label: "Assignments",
+    blurb: "Set online lessons · see who's done them",
+    emoji: "📮",
+    color: "from-[#FFE7C2] to-[#FFD08A]", // warm apricot
+    text: "text-amber-800",
   },
   {
     id: "tracker",
@@ -393,6 +403,18 @@ function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
           />
         </svg>
       );
+    case "assignments": // a tray of lessons, the top one ticked
+      return (
+        <svg {...p}>
+          <rect x="7" y="12" width="34" height="26" rx="4" fill="#F7B917" />
+          <rect x="11" y="8" width="26" height="20" rx="3" fill="#fff" />
+          <rect x="15" y="13" width="14" height="2.6" rx="1.3" fill="#B7C2BB" />
+          <rect x="15" y="19" width="10" height="2.6" rx="1.3" fill="#B7C2BB" />
+          <circle cx="32" cy="24" r="6" fill="#34C38A" />
+          <path d="M29 24l2.2 2.2L35 22" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="7" y="30" width="34" height="8" rx="3" fill="#E59E0B" />
+        </svg>
+      );
     case "tracker": // register with rows of ticks per term
       return (
         <svg {...p}>
@@ -641,6 +663,7 @@ export default function Home() {
             )}
             {section === "storyplay" && <StoryPlay />}
             {section === "threed" && <ThreeD />}
+            {section === "assignments" && <Assignments />}
             {section === "tracker" && trackerOwner && (
               <ClassTracker
                 key={trackerKey}
