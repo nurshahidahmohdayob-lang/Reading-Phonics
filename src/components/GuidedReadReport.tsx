@@ -12,6 +12,7 @@
 import { useEffect } from "react";
 import { findPassage } from "@/app/passages";
 import { classifyAccuracy } from "@/app/stories";
+import { lexileLabel } from "@/lib/lexileStats";
 import type { GuidedRead } from "@/lib/guidedLog";
 import { printWorksheetForRead } from "@/lib/worksheet";
 
@@ -105,7 +106,7 @@ export default function GuidedReadReport({
           </span>
           <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
             {read.grade}
-            {read.lexile ? ` · ${read.lexile}L` : ""}
+            {read.lexile ? ` · ${lexileLabel(read.lexile)}` : ""}
           </span>
         </div>
 

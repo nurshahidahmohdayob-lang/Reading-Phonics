@@ -1,4 +1,5 @@
 import { levels, type Level, type StoryQuiz } from "@/app/stories";
+import { STARTER_LEVEL } from "@/app/starterStories";
 
 export type Passage = {
   id: string;
@@ -26,8 +27,10 @@ export type PassageLevel = {
   passages: Passage[];
 };
 
-/** Reading-aloud passages, built from the leveled stories (Lexile bands). */
-export const passageLevels: PassageLevel[] = levels.map((l) => ({
+/** Reading-aloud passages, built from the leveled stories (Lexile bands).
+    Guided Reading starts with the Starter level (BR99L) for beginning
+    readers, below Year 1 — see app/starterStories.ts. */
+export const passageLevels: PassageLevel[] = [STARTER_LEVEL, ...levels].map((l) => ({
   id: l.id,
   grade: l.grade,
   age: l.age,
@@ -69,7 +72,8 @@ export function levelForReader(
   const byYear = passageLevels.find(
     (l) => l.id === yearKey.replace(/^y/, "year"),
   );
-  return byYear ?? passageLevels[0];
+  // Not assessed and not on a class list: Year 1, as before Starter existed.
+  return byYear ?? passageLevels.find((l) => l.id === "year1") ?? passageLevels[0];
 }
 
 /* Stories a teacher has added for a level live in this browser, one list per

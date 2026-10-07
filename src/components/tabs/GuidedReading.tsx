@@ -64,7 +64,15 @@ const CARD_STYLES = [
   },
 ];
 
-const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
+const LEVEL_EMOJI: Record<string, string> = {
+  starter: "🥚",
+  year1: "🐣",
+  year2: "🌱",
+  year3: "🦋",
+  year4: "🚀",
+  year5: "🌈",
+  year6: "🏆",
+};
 
 /** Opening Guided Reading for one child, from the Class Tracker: their name
     already in, and the stories for their level already on screen. */
@@ -318,7 +326,7 @@ function Choose({
                 className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
               >
                 <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
-                  {LEVEL_EMOJI[i % LEVEL_EMOJI.length]}
+                  {LEVEL_EMOJI[l.id] ?? "📚"}
                 </span>
                 <div className="flex flex-col gap-1">
                   <span className="text-lg font-extrabold">
@@ -467,7 +475,7 @@ function Choose({
                           {p.title}
                         </span>
                         <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
-                          {isCustom ? "📝 My story" : `${p.lexile}L`} ·{" "}
+                          {isCustom ? "📝 My story" : lexileLabel(p.lexile)} ·{" "}
                           {p.text.split(/\s+/).length} words
                         </span>
                         {done && (
@@ -626,7 +634,7 @@ function ReadAloud({
         <span
           className={`rounded-full ${level.swatch} ${level.swatchText} px-3 py-1 text-xs font-bold`}
         >
-          {level.grade} · {passage.lexile}L
+          {level.grade} · {lexileLabel(passage.lexile)}
         </span>
       </div>
 
@@ -915,7 +923,7 @@ function Report({
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <h2 className="text-2xl font-extrabold">Your reading report 📊</h2>
       <p className="text-zinc-400">
-        &ldquo;{passage.title}&rdquo; · {passage.lexile}L · {level.grade}
+        &ldquo;{passage.title}&rdquo; · {lexileLabel(passage.lexile)} · {level.grade}
       </p>
 
       <div className="mt-3 text-4xl">

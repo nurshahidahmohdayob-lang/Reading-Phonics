@@ -27,6 +27,7 @@
 import { findPassage, type Passage, type PassageLevel } from "@/app/passages";
 import { lookup, type DictEntry } from "@/app/dictionary";
 import type { GuidedRead } from "@/lib/guidedLog";
+import { lexileLabel } from "@/lib/lexileStats";
 
 export type WorksheetInput = {
   childName: string;
@@ -44,7 +45,7 @@ type Tier = 1 | 2 | 3;
 export function worksheetTier(lexile: number | null, level: PassageLevel): Tier {
   if (lexile === null) {
     // Not assessed: go by the story's level instead.
-    return level.id === "year1" ? 1 : level.id === "year2" ? 2 : 3;
+    return level.id === "starter" || level.id === "year1" ? 1 : level.id === "year2" ? 2 : 3;
   }
   return lexile < 200 ? 1 : lexile < 500 ? 2 : 3;
 }
@@ -241,7 +242,7 @@ export function buildWorksheet(input: WorksheetInput): Worksheet {
     });
     // Tracing is for Year 1 only; older children write without it. Goes by the
     // child's class; a name not on a class list goes by the story's level.
-    const inYear1 = /\byear\s*1\b/i.test(input.year) || (!/\byear\s*\d/i.test(input.year) && input.level.id === "year1");
+    const inYear1 = /\byear\s*1\b/i.test(input.year) || (!/\byear\s*\d/i.test(input.year) && ["starter", "year1"].includes(input.level.id));
     if (inYear1) {
       sections.push({ kind: "trace", words: circleWords.map((w) => ({ word: shown(w), emoji: lookup(w)?.emoji ?? null })) });
     }
@@ -551,7 +552,7 @@ export function worksheetHtml(input: WorksheetInput): string {
 <div class="sheet t${ws.tier}">
   <header>
     <div><h1>${esc(passage.emoji)} ${esc(passage.title)}</h1>
-      <div class="meta">${esc(input.level.grade)} story · ${passage.lexile ? passage.lexile + "L · " : ""}Worksheet level ${ws.tier}</div></div>
+      <div class="meta">${esc(input.level.grade)} story · ${passage.lexile ? lexileLabel(passage.lexile) + " · " : ""}Worksheet level ${ws.tier}</div></div>
     <div class="who">Name: <span>${esc(childName)}</span><br>Date: <span>${esc(today)}</span></div>
   </header>
   ${html.join("\n")}

@@ -374,7 +374,7 @@ function ReadLine({
           {read.title}
         </span>
         <span className="text-zinc-400">
-          {read.lexile ? `${read.lexile}L · ` : ""}
+          {read.lexile ? `${lexileLabel(read.lexile)} · ` : ""}
           {read.wcpm} wpm · {read.correct}/{read.total} words ·{" "}
           {shortDate(read.at)}
         </span>
