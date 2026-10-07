@@ -265,6 +265,13 @@ const readSubKey = (code: string, name: string) => `asg:readsub:${code}:${nameKe
 /** The school's day, so a story finished in the afternoon is still ✅ that day. */
 export const schoolDay = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
 
+/** Where in a level's stories a child starts: fixed for each name. */
+function startFor(name: string, len: number): number {
+  let h = 2166136261;
+  for (const ch of nameKey(name)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0) % len;
+}
+
 /** The child's reading for today, choosing the next story at their level
     when there isn't one yet or yesterday's is finished. */
 export async function readingFor(code: string, cls: ClassLink, name: string): Promise<Reading | null> {
@@ -275,9 +282,12 @@ export async function readingFor(code: string, cls: ClassLink, name: string): Pr
   const cur = await kvGetJson<Reading>(readKey(code, name));
   const sameLevel = cur?.levelId === level.id && level.passages.some((p) => p.id === cur.storyId);
   if (cur && sameLevel && (!cur.done || schoolDay(cur.done.at) === schoolDay(now))) return cur;
-  // Next story along at this level (the first one, if they've moved level).
-  const at = sameLevel ? level.passages.findIndex((p) => p.id === cur!.storyId) : -1;
-  const story = level.passages[(at + 1) % level.passages.length];
+  // Next story along at this level. A child new to the level starts at a
+  // place of their own, so children reading at the same level don't all get
+  // the same story.
+  const len = level.passages.length;
+  const at = sameLevel ? level.passages.findIndex((p) => p.id === cur!.storyId) : startFor(name, len) - 1;
+  const story = level.passages[(((at + 1) % len) + len) % len];
   const next: Reading = { storyId: story.id, levelId: level.id, tier: worksheetTier(lexile, level), lexile, setAt: now };
   await kvSetJson(readKey(code, name), next);
   return next;

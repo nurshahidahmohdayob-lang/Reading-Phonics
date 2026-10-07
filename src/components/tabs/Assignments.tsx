@@ -19,6 +19,10 @@ import { askToSignIn } from "@/lib/signInNeeded";
 import { lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
 import { useTracker } from "@/lib/tracker";
 import { latestLexile, lexileLabel } from "@/lib/lexileStats";
+import { createPortal } from "react-dom";
+import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
+import { findPassage } from "@/app/passages";
+import type { Tier, WorksheetInput } from "@/lib/worksheet";
 
 type Kind = "html" | "link";
 type Item = { id: string; title: string; kind: Kind; url?: string; assignees: string[] | "all"; createdAt: string };
@@ -84,6 +88,7 @@ export default function Assignments() {
   const [adding, setAdding] = useState(false);
   const [viewing, setViewing] = useState<{ item: Item; name: string } | null>(null);
   const [preview, setPreview] = useState<Item | null>(null);
+  const [doing, setDoing] = useState<string | null>(null);
 
   // Ask for the class (making its link on first use, and refreshing its names);
   // `apply` puts the answer on screen.
@@ -136,8 +141,8 @@ export default function Assignments() {
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <h2 className="text-center text-2xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📮 Assignments</h2>
       <p className="mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        Set an online lesson for your class. Children open the class link, tap their name and their activity, and
-        press Submit when they&apos;re done — a ✅ appears beside their name here.
+        Tap a child&apos;s name and their assignment opens: a short story at their own reading level, with questions.
+        When they press Submit, a ✅ appears beside their name.
       </p>
 
       <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -164,6 +169,18 @@ export default function Assignments() {
 
       {status === "ready" && cls && (
         <>
+          <StudentPicker
+            names={cls.names}
+            reading={cls.reading}
+            levels={levels}
+            onPick={setDoing}
+            onView={(n) => setViewing({ item: READING, name: n })}
+          />
+
+          <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
+            <summary className="cursor-pointer text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
+              🔗 Class link (children on their own devices) · ➕ set your own lesson
+            </summary>
           <ClassLinkCard link={link} className={group?.year ?? ""} count={cls.names.length} />
 
           {adding ? (
@@ -188,14 +205,8 @@ export default function Assignments() {
           )}
 
           <div className="mt-6 flex w-full flex-col gap-4">
-            <ReadingCard
-              names={cls.names}
-              reading={cls.reading}
-              levels={levels}
-              onView={(n) => setViewing({ item: READING, name: n })}
-            />
             {cls.items.length === 0 && !adding && (
-              <p className="text-center font-semibold text-zinc-400">No assignments for {group?.year} yet.</p>
+              <p className="text-center font-semibold text-zinc-400">No lessons of your own for {group?.year} yet.</p>
             )}
             {cls.items.map((it) => {
               const forNames = it.assignees === "all" ? cls.names : cls.names.filter((n) => (it.assignees as string[]).includes(n));
@@ -258,7 +269,20 @@ export default function Assignments() {
               );
             })}
           </div>
+          </details>
         </>
+      )}
+
+      {doing && cls && (
+        <ChildAssignment
+          name={doing}
+          code={cls.code}
+          lexile={levels[doing] ?? null}
+          onClose={() => {
+            setDoing(null);
+            void load();
+          }}
+        />
       )}
 
       {viewing && (
@@ -278,60 +302,140 @@ export default function Assignments() {
   );
 }
 
-/** Every child's own reading: a short story at their level that opens when
-    they tap their name on the class link. ✅ once today's is submitted. */
-function ReadingCard({
+/** The class's names, straight away. Each opens that child's own
+    assignment — a story at their reading level — and gets a ✅ once today's
+    is submitted (tap the ✅ to see what they did). */
+function StudentPicker({
   names,
   reading,
   levels,
+  onPick,
   onView,
 }: {
   names: string[];
   reading: ClassState["reading"];
   levels: Record<string, number>;
+  onPick: (name: string) => void;
   onView: (name: string) => void;
 }) {
   const count = names.filter((n) => reading[n]?.done).length;
+  if (!names.length) return <p className="mt-10 font-semibold text-zinc-400">No children on this class list yet.</p>;
   return (
-    <div className="rounded-[1.6rem] bg-amber-50 p-5 shadow-sm ring-2 ring-amber-100 dark:bg-amber-950/20 dark:ring-amber-900/40">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-2xl">📖</span>
-        <span className="flex-1 text-lg font-extrabold text-zinc-800 dark:text-zinc-100">Today&apos;s reading — at each child&apos;s level</span>
-        <span className={`rounded-full px-3 py-1 text-sm font-extrabold ${count === names.length && count > 0 ? "bg-emerald-600 text-white" : "bg-white text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"}`}>
-          {count} / {names.length} submitted
-        </span>
-      </div>
-      <p className="mt-1 text-xs font-semibold text-zinc-500">
-        Opens as soon as a child taps their name: a short story at their reading level (from their latest assessment), with
-        questions to answer. A new story each day once they&apos;ve submitted.
+    <div className="mt-6 w-full">
+      <p className="text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
+        {count} of {names.length} submitted today
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {names.map((n) => {
           const r = reading[n];
-          const lvl = levels[n] !== undefined ? lexileLabel(levels[n]) : "not assessed";
-          const tip = `${r?.story ?? "Not opened yet"} · ${lvl}`;
-          return r?.done ? (
-            <button
+          const done = !!r?.done;
+          const lvl = levels[n] !== undefined ? lexileLabel(levels[n]) : "Not assessed";
+          return (
+            <div
               key={n}
-              onClick={() => onView(n)}
-              title={`${tip} — see what they submitted`}
-              className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800 ring-2 ring-emerald-200 hover:bg-emerald-100"
+              className={`flex items-center gap-2 rounded-2xl p-2 pl-4 shadow-sm ring-4 ring-white/70 transition-all ${
+                done ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-white dark:bg-zinc-900"
+              }`}
             >
-              ✅ {n}
-              {r.done.score && (
-                <span className="rounded-full bg-white px-1.5 text-xs">
-                  {r.done.score.score}/{r.done.score.total}
+              <button onClick={() => onPick(n)} className="min-w-0 flex-1 py-2 text-left active:scale-[.98]">
+                <span className="block truncate text-lg font-extrabold text-zinc-800 dark:text-zinc-100">{n}</span>
+                <span className="block truncate text-xs font-bold text-zinc-400">
+                  📖 {lvl}
+                  {r?.story ? ` · ${r.story}` : ""}
                 </span>
+              </button>
+              {done ? (
+                <button
+                  onClick={() => onView(n)}
+                  title="See what they submitted"
+                  className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-extrabold text-white active:scale-95"
+                >
+                  ✅{r!.done!.score ? ` ${r!.done!.score.score}/${r!.done!.score.total}` : ""}
+                </button>
+              ) : (
+                <button
+                  onClick={() => onPick(n)}
+                  className="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-extrabold text-amber-800 active:scale-95"
+                >
+                  ▶ Start
+                </button>
               )}
-            </button>
-          ) : (
-            <span key={n} title={tip} className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-zinc-400 ring-2 ring-zinc-100 dark:bg-zinc-800">
-              ⬜ {n}
-            </span>
+            </div>
           );
         })}
       </div>
     </div>
+  );
+}
+
+/** One child's assignment, full screen: their story at their level and its
+    questions. Submit sends it in and shows the big ✅. */
+function ChildAssignment({
+  name,
+  code,
+  lexile,
+  onClose,
+}: {
+  name: string;
+  code: string;
+  lexile: number | null;
+  onClose: () => void;
+}) {
+  const [input, setInput] = useState<WorksheetInput | null | "none">(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/class?code=${encodeURIComponent(code)}&reader=${encodeURIComponent(name)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!alive) return;
+        const r = d.ok ? (d.reading as { storyId: string; levelId: string; tier: Tier }) : null;
+        const found = r ? findPassage(r.storyId, r.levelId) : null;
+        setInput(
+          r && found
+            ? { childName: name, year: "", lexile: null, passage: found.passage, level: found.level, missedWords: [], tier: r.tier }
+            : "none",
+        );
+      })
+      .catch(() => alive && setInput("none"));
+    return () => {
+      alive = false;
+    };
+  }, [code, name]);
+
+  async function send(r: WorksheetResult): Promise<string | null> {
+    try {
+      const res = await fetch("/api/class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, reading: true, name, ...r }),
+      });
+      const d = await res.json();
+      return d.ok ? null : (d.error ?? "That didn't send. Try again.");
+    } catch {
+      return "That didn't send — check the internet and try again.";
+    }
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-b from-[#D8EEFF] via-[#EEF8FF] to-[#E6F6E0] dark:from-zinc-950 dark:to-zinc-900">
+      <div className="sticky top-0 z-10 flex items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white shadow">
+        <button onClick={onClose} className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold active:scale-95">
+          ← Names
+        </button>
+        <p className="min-w-0 flex-1 truncate text-lg font-extrabold">
+          <span className="text-[#F7B917]">{name}</span>&apos;s assignment
+          <span className="ml-2 text-sm font-semibold opacity-80">📖 {lexile !== null ? lexileLabel(lexile) : "class level"}</span>
+        </p>
+      </div>
+      {input === null ? (
+        <p className="pt-24 text-center text-lg font-bold text-zinc-400">Finding {name}&apos;s story… 📚</p>
+      ) : input === "none" ? (
+        <p className="pt-24 text-center text-lg font-bold text-rose-600">Couldn&apos;t open {name}&apos;s assignment. Try again.</p>
+      ) : (
+        <OnlineWorksheet key={input.passage.id} input={input} childName={name} onSubmit={send} />
+      )}
+    </div>,
+    document.body,
   );
 }
 
