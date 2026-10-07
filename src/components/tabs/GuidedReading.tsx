@@ -36,6 +36,9 @@ import {
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 import { speak, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
+import qrcode from "qrcode-generator";
+import { openWorksheet, worksheetTier, type Tier } from "@/lib/worksheet";
+import { worksheetLink } from "@/lib/worksheetLink";
 
 type Step = "choose" | "read" | "report" | "coach";
 
@@ -115,6 +118,7 @@ export default function GuidedReading({
       <ReadAloud
         passage={passage}
         level={level}
+        studentName={studentName}
         onBack={() => setStep("choose")}
         onLevels={goLevels}
         onDone={(r) => {
@@ -534,12 +538,15 @@ function Choose({
 function ReadAloud({
   passage,
   level,
+  studentName,
   onBack,
   onLevels,
   onDone,
 }: {
   passage: Passage;
   level: PassageLevel;
+  /** Who's reading, if a name is in — sets the worksheet level. */
+  studentName: string;
   onBack: () => void;
   onLevels: () => void;
   onDone: (r: ReadingReport) => void;
@@ -852,6 +859,136 @@ function ReadAloud({
           </div>
         )}
       </div>
+
+      {!reading && !asking && !pickingStop && (
+        <WorksheetPanel passage={passage} level={level} studentName={studentName} />
+      )}
+    </div>
+  );
+}
+
+/* ---------- Worksheets for any story ---------- */
+
+const TIER_LABEL: Record<Tier, string> = {
+  1: "Level 1 · pictures & words",
+  2: "Level 2 · sentences",
+  3: "Level 3 · meaning & writing",
+};
+
+/** A worksheet on this story, whether or not anyone has read it yet: printed
+    for paper, or as a link and QR code children open on their own device.
+    The level follows the named child's Lexile, or the story's level if no one
+    is named; the teacher can change it. */
+function WorksheetPanel({
+  passage,
+  level,
+  studentName,
+}: {
+  passage: Passage;
+  level: PassageLevel;
+  studentName: string;
+}) {
+  const edits = useRosterEdits();
+  const { store } = useTracker();
+  const who = studentName.trim() ? findStudent(edits, studentName) : undefined;
+  const lexile = who ? latestLexile(store, who.yearKey, who.name) : null;
+  const suggested = worksheetTier(lexile, level);
+  const [picked, setPicked] = useState<Tier | null>(null);
+  const tier = picked ?? suggested;
+  const [online, setOnline] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const link = worksheetLink(passage, level.id, tier);
+
+  const qr = useMemo(() => {
+    const q = qrcode(0, "M");
+    q.addData(link);
+    q.make();
+    return q.createDataURL(6, 2);
+  }, [link]);
+
+  return (
+    <div className="mt-8 w-full max-w-2xl rounded-[2rem] bg-white p-5 text-center shadow-lg ring-4 ring-white/60 dark:bg-zinc-900">
+      <h3 className="text-xl font-extrabold text-emerald-800 dark:text-emerald-300">📝 Worksheet on this story</h3>
+      <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        Children can do it before or after reading it with you.
+        {who && lexile !== null ? ` Set for ${who.name} (${lexileLabel(lexile)}).` : ""}
+      </p>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        {([1, 2, 3] as Tier[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setPicked(t)}
+            className={`rounded-full px-3.5 py-1.5 text-sm font-extrabold transition-all active:scale-95 ${
+              tier === t ? "bg-emerald-700 text-white shadow" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+            }`}
+          >
+            {TIER_LABEL[t]}
+            {t === suggested ? " ✓" : ""}
+          </button>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap justify-center gap-3">
+        <button
+          onClick={() =>
+            openWorksheet({
+              childName: who?.name ?? studentName.trim(),
+              year: who?.year ?? "",
+              lexile,
+              passage,
+              level,
+              missedWords: [],
+              tier,
+            })
+          }
+          className="rounded-full bg-emerald-600 px-5 py-2.5 font-extrabold text-white shadow active:scale-95"
+        >
+          🖨️ Print worksheet
+        </button>
+        <button
+          onClick={() => setOnline((v) => !v)}
+          className="rounded-full bg-sky-600 px-5 py-2.5 font-extrabold text-white shadow active:scale-95"
+        >
+          💻 Online worksheet {online ? "▲" : "▼"}
+        </button>
+      </div>
+
+      {online && (
+        <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl bg-sky-50 p-4 dark:bg-sky-950/30">
+          <p className="text-sm font-extrabold text-sky-900 dark:text-sky-200">
+            Children scan this, or open the link — no sign-in needed
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qr} alt="QR code for the online worksheet" className="h-44 w-44 rounded-xl bg-white" />
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(link);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  /* the link is still shown below to copy by hand */
+                }
+              }}
+              className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-sky-800 shadow-sm active:scale-95"
+            >
+              {copied ? "✓ Copied" : "🔗 Copy link"}
+            </button>
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-sky-800 shadow-sm active:scale-95"
+            >
+              ↗ Open it
+            </a>
+          </div>
+          <p className="max-w-full break-all text-[11px] font-semibold text-sky-800/70 dark:text-sky-200/70">{link}</p>
+          <p className="text-xs font-semibold text-sky-900/70 dark:text-sky-200/70">
+            It holds the story and the worksheet level only — no child&apos;s name or marks.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

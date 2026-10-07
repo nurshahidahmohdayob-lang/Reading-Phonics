@@ -38,9 +38,11 @@ export type WorksheetInput = {
   level: PassageLevel;
   /** Words the child couldn't read in this story, if the read kept them. */
   missedWords: string[];
+  /** Set the worksheet level by hand, instead of from the child's Lexile. */
+  tier?: Tier;
 };
 
-type Tier = 1 | 2 | 3;
+export type Tier = 1 | 2 | 3;
 
 export function worksheetTier(lexile: number | null, level: PassageLevel): Tier {
   if (lexile === null) {
@@ -64,7 +66,7 @@ export type Section =
   | { kind: "choose"; items: { before: string; options: [string, string]; after: string; answer: string }[] }
   | { kind: "order"; items: { text: string; answer: number }[] }
   | { kind: "drawlabel"; subject: string }
-  | { kind: "written"; question: string; answer: string }
+  | { kind: "written"; question: string; answer: string; options: { emoji: string; label: string }[]; answerIndex: number }
   | { kind: "meanings"; words: string[]; meanings: { letter: string; text: string; word: string }[] }
   | { kind: "hunt"; items: { meaning: string; first: string; answer: string }[] }
   | { kind: "next" }
@@ -173,7 +175,7 @@ function splitAt(parts: string[], i: number) {
 
 export function buildWorksheet(input: WorksheetInput): Worksheet {
   const { passage, missedWords } = input;
-  const tier = worksheetTier(input.lexile, input.level);
+  const tier = input.tier ?? worksheetTier(input.lexile, input.level);
   const rnd = seeded(passage.id + ":" + passage.title + ":" + tier);
   const text = passage.text;
   const tokens = text.split(/\s+/);
@@ -345,7 +347,13 @@ export function buildWorksheet(input: WorksheetInput): Worksheet {
   } else {
     // --- Level 3: meaning and writing ---
     if (quiz) {
-      sections.push({ kind: "written", question: quiz.question, answer: quiz.options[quiz.answer]?.label ?? "" });
+      sections.push({
+        kind: "written",
+        question: quiz.question,
+        answer: quiz.options[quiz.answer]?.label ?? "",
+        options: quiz.options.map((o) => ({ emoji: o.emoji, label: o.label })),
+        answerIndex: quiz.answer,
+      });
     }
     // Word meanings: four words, longer and missed words first.
     const byInterest = unique([...missed.filter((w) => known.has(w)), ...[...contentWords].sort((a, b) => b.length - a.length)]);
