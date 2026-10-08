@@ -313,9 +313,10 @@ export default function Assignments() {
   );
 }
 
-/** The class's names, straight away. Each opens that child's own
-    assignment — a story at their reading level — and gets a ✅ once today's
-    is submitted (tap the ✅ to see what they did). */
+/** The class's names, straight away. Tapping a name shows the child's
+    answers (today's if they've submitted, otherwise their history); ▶ Start
+    opens their own assignment, a story at their reading level. A ✅ shows
+    once today's is submitted. */
 function StudentPicker({
   names,
   reading,
@@ -338,6 +339,9 @@ function StudentPicker({
       <p className="text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
         {count} of {names.length} submitted today
       </p>
+      <p className="text-center text-xs font-semibold text-zinc-400">
+        Tap a name to see their answers and what to help with. ▶ Start opens their story.
+      </p>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {names.map((n) => {
           const r = reading[n];
@@ -350,7 +354,11 @@ function StudentPicker({
                 done ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-white dark:bg-zinc-900"
               }`}
             >
-              <button onClick={() => onPick(n)} className="min-w-0 flex-1 py-2 text-left active:scale-[.98]">
+              <button
+                onClick={() => (done ? onView(n) : onHistory(n))}
+                title={done ? "See today's answers" : "See their past answers"}
+                className="min-w-0 flex-1 py-2 text-left active:scale-[.98]"
+              >
                 <span className="block truncate text-lg font-extrabold text-zinc-800 dark:text-zinc-100">{n}</span>
                 <span className="block truncate text-xs font-bold text-zinc-400">
                   📖 {lvl}
@@ -783,22 +791,7 @@ function SubmissionBody({ sub, name, story }: { sub: Submission; name: string; s
             </div>
           )}
           {sub.answers.length > 0 ? (
-            <table className="mt-4 w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase text-zinc-400">
-                  <th className="py-1 pr-3">Question</th>
-                  <th className="py-1">Their answer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sub.answers.map((a, i) => (
-                  <tr key={i} className="border-t border-zinc-100 align-top dark:border-zinc-800">
-                    <td className="py-1.5 pr-3 text-zinc-500">{a.label}</td>
-                    <td className="py-1.5 font-bold text-zinc-800 dark:text-zinc-100">{a.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <AnswerReview answers={sub.answers} />
           ) : (
             <p className="mt-4 text-sm font-semibold text-zinc-400">No typed or chosen answers were found.</p>
           )}
@@ -811,6 +804,105 @@ function SubmissionBody({ sub, name, story }: { sub: Submission; name: string; s
             </details>
           )}
     </>
+  );
+}
+
+/** One answer, read back from how the worksheet records it:
+    label "Skill · question", value "✅ their answer" or
+    "❌ their answer ⟹ the right answer". Older work has no skill or right
+    answer; it still shows. */
+function readAnswer(a: { label: string; value: string }) {
+  const dot = a.label.indexOf(" · ");
+  const skill = dot > 0 ? a.label.slice(0, dot) : null;
+  const question = dot > 0 ? a.label.slice(dot + 3) : a.label;
+  const marked = /^(✅|❌)\s*/.exec(a.value);
+  const wrong = marked?.[1] === "❌";
+  const rest = marked ? a.value.slice(marked[0].length) : a.value;
+  const arrow = wrong ? rest.indexOf(" ⟹ ") : -1;
+  return {
+    skill,
+    question,
+    marked: !!marked,
+    wrong,
+    given: arrow >= 0 ? rest.slice(0, arrow) : rest,
+    right: arrow >= 0 ? rest.slice(arrow + 3) : null,
+  };
+}
+
+/** A child's answers, with what to help them with first: the skills they
+    got wrong, then each wrong answer beside the right one, then (folded
+    away) what they got right, and any writing. */
+function AnswerReview({ answers }: { answers: { label: string; value: string }[] }) {
+  const all = answers.map(readAnswer);
+  const wrong = all.filter((a) => a.wrong);
+  const right = all.filter((a) => a.marked && !a.wrong);
+  const other = all.filter((a) => !a.marked);
+  const skills = [...new Set(wrong.map((a) => a.skill).filter((x): x is string => !!x))];
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      {wrong.length === 0 ? (
+        right.length > 0 && (
+          <div className="rounded-2xl bg-emerald-50 p-3 font-extrabold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+            ⭐ Every answer right. Nothing to help with this time.
+          </div>
+        )
+      ) : (
+        <div className="rounded-2xl bg-rose-50 p-3 dark:bg-rose-950/30">
+          <p className="font-extrabold text-rose-700 dark:text-rose-300">
+            Needs help with {wrong.length} {wrong.length === 1 ? "question" : "questions"}
+            {skills.length ? ":" : ""}
+          </p>
+          {skills.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {skills.map((k) => (
+                <span key={k} className="rounded-full bg-white px-2.5 py-0.5 text-xs font-extrabold text-rose-700 ring-1 ring-rose-200 dark:bg-zinc-900">
+                  {k}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {wrong.map((a, i) => (
+        <div key={`w${i}`} className="rounded-2xl border-2 border-rose-200 p-3 dark:border-rose-900">
+          {a.skill && <p className="text-[11px] font-extrabold uppercase tracking-wide text-rose-500">{a.skill}</p>}
+          <p className="font-bold text-zinc-800 dark:text-zinc-100">{a.question}</p>
+          <p className="mt-1 text-sm">
+            <span className="font-bold text-rose-700 dark:text-rose-300">❌ They chose: {a.given}</span>
+          </p>
+          {a.right && (
+            <p className="text-sm">
+              <span className="font-bold text-emerald-700 dark:text-emerald-300">✅ Right answer: {a.right}</span>
+            </p>
+          )}
+        </div>
+      ))}
+
+      {other.map((a, i) => (
+        <div key={`o${i}`} className="rounded-2xl bg-sky-50 p-3 dark:bg-sky-950/30">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sky-600">{a.skill ?? "Their writing"}</p>
+          <p className="font-bold text-zinc-800 dark:text-zinc-100">{a.question}</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-200">{a.given}</p>
+        </div>
+      ))}
+
+      {right.length > 0 && (
+        <details className="rounded-2xl bg-emerald-50/60 p-3 dark:bg-emerald-950/20">
+          <summary className="cursor-pointer text-sm font-extrabold text-emerald-700 dark:text-emerald-300">
+            ✅ Got {right.length} right
+          </summary>
+          <ul className="mt-2 flex flex-col gap-1.5 text-sm">
+            {right.map((a, i) => (
+              <li key={i} className="text-zinc-600 dark:text-zinc-300">
+                {a.skill && <span className="font-bold text-emerald-700 dark:text-emerald-300">{a.skill}: </span>}
+                {a.question} — <b>{a.given}</b>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }
 

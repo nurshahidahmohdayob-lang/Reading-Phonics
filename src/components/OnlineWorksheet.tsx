@@ -18,9 +18,32 @@ import StoryBook from "@/components/StoryBook";
 
 type Answer = number | string | number[] | null;
 
-/** Every marked question, with what counts as right, and how to say what
-    the child chose — for the teacher, when the worksheet is submitted. */
-type Item = { key: string; label: string; right: (a: Answer) => boolean; show: (a: Answer) => string };
+/** Every marked question, with what counts as right, how to say what the
+    child chose and what the answer was, and the reading skill it tests — so
+    the teacher can see where a child needs help. */
+type Item = {
+  key: string;
+  label: string;
+  right: (a: Answer) => boolean;
+  show: (a: Answer) => string;
+  expected: string;
+  skill?: string;
+};
+
+/** The reading skill each kind of question practises. */
+const SKILL: Partial<Record<Section["kind"], string>> = {
+  tick: "Understanding the story",
+  written: "Understanding the story",
+  circle: "Recognising words",
+  matchpic: "Word meanings",
+  meanings: "Word meanings",
+  trace: "Writing words",
+  yesno: "Checking facts",
+  fill: "Words in context",
+  choose: "Words in context",
+  order: "Sequencing",
+  hunt: "Finding words",
+};
 
 const norm = (s: unknown) => String(s ?? "").trim().toLowerCase().replace(/[^a-z']/g, "");
 const asText = (a: Answer) => (a === null || a === undefined || a === "" ? "—" : String(a));
@@ -28,13 +51,14 @@ const asText = (a: Answer) => (a === null || a === undefined || a === "" ? "—"
 function itemsFor(sections: Section[]): Item[] {
   const items: Item[] = [];
   sections.forEach((s, i) => {
+    const from = items.length;
     switch (s.kind) {
       case "tick":
-        items.push({ key: `${i}`, label: s.question, right: (a) => a === s.answer, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
+        items.push({ key: `${i}`, label: s.question, expected: s.options[s.answer]?.label ?? "", right: (a) => a === s.answer, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
         break;
       case "circle":
         s.rows.forEach((r, k) =>
-          items.push({ key: `${i}.${k}`, label: `Find the word “${r.word}”`, right: (a) => norm(a) === norm(r.word), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `Find the word “${r.word}”`, expected: r.word, right: (a) => norm(a) === norm(r.word), show: asText }),
         );
         break;
       case "matchpic":
@@ -42,6 +66,7 @@ function itemsFor(sections: Section[]): Item[] {
           items.push({
             key: `${i}.${k}`,
             label: `Picture for “${w}”`,
+            expected: `${s.pics.find((p) => p.word === w)?.emoji ?? ""} ${w}`.trim(),
             right: (a) => a === s.pics.findIndex((p) => p.word === w),
             show: (a) => (typeof a === "number" ? `${s.pics[a]?.emoji ?? ""} ${s.pics[a]?.word ?? ""}`.trim() : "—"),
           }),
@@ -49,40 +74,42 @@ function itemsFor(sections: Section[]): Item[] {
         break;
       case "trace":
         s.words.forEach((t, k) =>
-          items.push({ key: `${i}.${k}`, label: `Copy “${t.word}”`, right: (a) => norm(a) === norm(t.word), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `Copy “${t.word}”`, expected: t.word, right: (a) => norm(a) === norm(t.word), show: asText }),
         );
         break;
       case "yesno":
         s.items.forEach((y, k) =>
-          items.push({ key: `${i}.${k}`, label: y.text, right: (a) => a === (y.yes ? 0 : 1), show: (a) => (a === 0 ? "Yes" : a === 1 ? "No" : "—") }),
+          items.push({ key: `${i}.${k}`, label: y.text, expected: y.yes ? "Yes" : y.fix ? `No (it was “${y.fix}”)` : "No", right: (a) => a === (y.yes ? 0 : 1), show: (a) => (a === 0 ? "Yes" : a === 1 ? "No" : "—") }),
         );
         break;
       case "fill":
         s.items.forEach((b, k) =>
-          items.push({ key: `${i}.${k}`, label: `${b.before} ___ ${b.after}`, right: (a) => norm(a) === norm(b.answer), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `${b.before} ___ ${b.after}`, expected: b.answer, right: (a) => norm(a) === norm(b.answer), show: asText }),
         );
         break;
       case "choose":
         s.items.forEach((c, k) =>
-          items.push({ key: `${i}.${k}`, label: `${c.before} (${c.options.join(" / ")}) ${c.after}`, right: (a) => norm(a) === norm(c.answer), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `${c.before} (${c.options.join(" / ")}) ${c.after}`, expected: c.answer, right: (a) => norm(a) === norm(c.answer), show: asText }),
         );
         break;
       case "order":
         items.push({
           key: `${i}`,
           label: "Put the sentences in order",
+          expected: [...s.items].sort((x, y) => x.answer - y.answer).map((x) => x.text).join(" → "),
           right: (a) => Array.isArray(a) && a.length === s.items.length && a.every((idx, n) => s.items[idx]?.answer === n + 1),
           show: (a) => (Array.isArray(a) && a.length ? a.map((idx) => s.items[idx]?.text ?? "?").join(" → ") : "—"),
         });
         break;
       case "written":
-        items.push({ key: `${i}`, label: s.question, right: (a) => a === s.answerIndex, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
+        items.push({ key: `${i}`, label: s.question, expected: s.options[s.answerIndex]?.label ?? "", right: (a) => a === s.answerIndex, show: (a) => (typeof a === "number" ? s.options[a]?.label ?? "—" : "—") });
         break;
       case "meanings":
         s.words.forEach((w, k) =>
           items.push({
             key: `${i}.${k}`,
             label: `Meaning of “${w}”`,
+            expected: s.meanings.find((m) => m.word === w)?.text ?? "",
             right: (a) => a === s.meanings.find((m) => m.word === w)?.letter,
             show: (a) => s.meanings.find((m) => m.letter === a)?.text ?? "—",
           }),
@@ -90,10 +117,11 @@ function itemsFor(sections: Section[]): Item[] {
         break;
       case "hunt":
         s.items.forEach((h, k) =>
-          items.push({ key: `${i}.${k}`, label: `A word that means “${h.meaning}”`, right: (a) => norm(a) === norm(h.answer), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `A word that means “${h.meaning}”`, expected: h.answer, right: (a) => norm(a) === norm(h.answer), show: asText }),
         );
         break;
     }
+    for (const it of items.slice(from)) it.skill = SKILL[s.kind];
   });
   return items;
 }
@@ -181,7 +209,10 @@ export default function OnlineWorksheet({
   function handIn(): WorksheetResult {
     const given = items.map((it) => {
       const a = answers[it.key] ?? null;
-      return { label: it.label, value: `${it.right(a) ? "✅" : "❌"} ${it.show(a)}` };
+      // "Skill · question" and "✅ answer" or "❌ answer ⟹ right answer", read
+      // back by the teacher's view to show what to help with.
+      const label = it.skill ? `${it.skill} · ${it.label}` : it.label;
+      return { label, value: it.right(a) ? `✅ ${it.show(a)}` : `❌ ${it.show(a)} ⟹ ${it.expected}` };
     });
     const root = sheet.current;
     root?.querySelectorAll("textarea").forEach((t) => {
