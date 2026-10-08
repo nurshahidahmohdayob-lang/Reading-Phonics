@@ -4,13 +4,13 @@
 export const ISLAND_SIZE = { w: 1920, h: 1080 };
 
 /** The picture, with its version so browsers fetch a new render. */
-export const ISLAND_IMAGE = "/images/home-island.webp?v=83b5806967";
+export const ISLAND_IMAGE = "/images/home-island.webp?v=03d461a166";
 
 export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = {
   "tricky": {
     "sign": [
-      22.51,
-      21.51
+      22.23,
+      19.34
     ],
     "foot": [
       23.75,
@@ -19,8 +19,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "stories": {
     "sign": [
-      40.14,
-      11.41
+      40.39,
+      17.0
     ],
     "foot": [
       40.91,
@@ -29,8 +29,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "guided": {
     "sign": [
-      60.22,
-      3.08
+      59.61,
+      17.0
     ],
     "foot": [
       59.09,
@@ -39,8 +39,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "assessment": {
     "sign": [
-      77.49,
-      21.51
+      77.77,
+      19.34
     ],
     "foot": [
       76.25,
@@ -49,8 +49,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "phonics": {
     "sign": [
-      11.66,
-      35.33
+      11.24,
+      33.12
     ],
     "foot": [
       13.54,
@@ -59,8 +59,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "soundout": {
     "sign": [
-      29.53,
-      34.39
+      29.31,
+      32.19
     ],
     "foot": [
       30.53,
@@ -69,8 +69,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "storyplay": {
     "sign": [
-      70.47,
-      34.39
+      70.69,
+      32.19
     ],
     "foot": [
       69.47,
@@ -79,8 +79,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "threed": {
     "sign": [
-      88.34,
-      35.33
+      88.76,
+      33.12
     ],
     "foot": [
       86.46,
@@ -89,8 +89,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "flashcards": {
     "sign": [
-      16.68,
-      52.88
+      16.28,
+      50.66
     ],
     "foot": [
       18.47,
@@ -99,8 +99,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "spelling": {
     "sign": [
-      33.16,
-      57.54
+      32.95,
+      55.32
     ],
     "foot": [
       34.09,
@@ -110,7 +110,7 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   "formation": {
     "sign": [
       50.0,
-      58.74
+      56.52
     ],
     "foot": [
       50.0,
@@ -119,8 +119,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "assignments": {
     "sign": [
-      66.84,
-      57.54
+      67.05,
+      55.32
     ],
     "foot": [
       65.91,
@@ -129,8 +129,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "tracker": {
     "sign": [
-      83.32,
-      52.88
+      83.72,
+      50.66
     ],
     "foot": [
       81.53,
@@ -140,7 +140,7 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   "interactive": {
     "sign": [
       50.0,
-      30.42
+      31.54
     ],
     "foot": [
       50.0,
@@ -163,101 +163,101 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
     the picture) and how many frames it has, side by side. */
 export const ISLAND_LANDMARKS: Record<string, { x: number; y: number; w: number; h: number; frames: number }> = {
   "assessment": {
-    "x": 74.271,
-    "y": 11.389,
-    "w": 6.823,
-    "h": 22.315,
+    "x": 72.135,
+    "y": 16.759,
+    "w": 9.219,
+    "h": 17.13,
     "frames": 12
   },
   "assignments": {
-    "x": 63.49,
-    "y": 54.259,
-    "w": 8.438,
-    "h": 16.481,
+    "x": 60.833,
+    "y": 52.685,
+    "w": 10.938,
+    "h": 19.074,
     "frames": 12
   },
   "flashcards": {
-    "x": 13.49,
-    "y": 51.852,
-    "w": 8.542,
-    "h": 12.963,
+    "x": 12.292,
+    "y": 47.963,
+    "w": 10.938,
+    "h": 18.981,
     "frames": 12
   },
   "formation": {
-    "x": 45.521,
-    "y": 46.852,
-    "w": 10.156,
-    "h": 24.352,
+    "x": 44.531,
+    "y": 53.796,
+    "w": 10.938,
+    "h": 19.259,
     "frames": 12
   },
   "guided": {
-    "x": 54.427,
-    "y": 3.241,
-    "w": 11.094,
-    "h": 31.019,
+    "x": 54.792,
+    "y": 14.444,
+    "w": 8.958,
+    "h": 16.944,
     "frames": 12
   },
   "interactive": {
-    "x": 44.792,
-    "y": 25.926,
-    "w": 10.417,
-    "h": 20.741,
+    "x": 45.156,
+    "y": 28.889,
+    "w": 9.688,
+    "h": 17.87,
     "frames": 12
   },
   "phonics": {
-    "x": 8.281,
-    "y": 32.13,
-    "w": 8.958,
-    "h": 13.704,
+    "x": 7.708,
+    "y": 30.556,
+    "w": 10.156,
+    "h": 17.87,
     "frames": 12
   },
   "soundout": {
-    "x": 25.938,
-    "y": 30.926,
-    "w": 7.656,
-    "h": 14.259,
+    "x": 25.208,
+    "y": 29.537,
+    "w": 9.844,
+    "h": 17.87,
     "frames": 12
   },
   "spelling": {
-    "x": 29.844,
-    "y": 57.87,
-    "w": 7.917,
-    "h": 10.926,
+    "x": 28.229,
+    "y": 52.593,
+    "w": 10.938,
+    "h": 19.167,
     "frames": 12
   },
   "stories": {
-    "x": 33.229,
-    "y": 10.0,
-    "w": 15.156,
-    "h": 20.833,
+    "x": 36.25,
+    "y": 14.444,
+    "w": 8.958,
+    "h": 16.944,
     "frames": 12
   },
   "storyplay": {
-    "x": 64.792,
-    "y": 29.259,
-    "w": 9.583,
-    "h": 20.833,
+    "x": 64.948,
+    "y": 29.537,
+    "w": 9.844,
+    "h": 17.963,
     "frames": 12
   },
   "threed": {
-    "x": 84.583,
-    "y": 28.981,
-    "w": 8.125,
-    "h": 20.185,
+    "x": 82.135,
+    "y": 30.463,
+    "w": 10.156,
+    "h": 17.963,
     "frames": 12
   },
   "tracker": {
-    "x": 77.604,
-    "y": 46.019,
-    "w": 10.26,
-    "h": 22.037,
+    "x": 76.771,
+    "y": 47.963,
+    "w": 10.938,
+    "h": 18.889,
     "frames": 12
   },
   "tricky": {
-    "x": 18.385,
-    "y": 12.407,
-    "w": 7.083,
-    "h": 21.019,
+    "x": 18.646,
+    "y": 16.759,
+    "w": 9.219,
+    "h": 17.13,
     "frames": 12
   }
 };

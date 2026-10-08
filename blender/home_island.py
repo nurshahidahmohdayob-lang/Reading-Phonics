@@ -1,7 +1,7 @@
 """
-The home screen's island: one tropical island with a landmark for
-every section of the app (giant letters for Phonics, a pencil for Letter
-Formation, a circus tent for Story Play...), round a lagoon, with mountains,
+The home screen's island: one tropical island with a LocoRoco-style
+jelly friend for every section of the app, each in its section's colour,
+round a lagoon, with mountains,
 palms and a sandy beach. Rendered whole, in perspective, on a transparent
 background: the app floats it on its own sky, with clouds and birds passing,
 and puts a glowing sign on each landmark. The app needs to know where
@@ -55,25 +55,13 @@ ZONES = {
 
 LAGOON = (0.0, 0.3)
 
-# Each landmark's loop: how it moves while the app plays its frames.
-#   spin   turns all the way round       sway   turns side to side
-#   hop    bounces up and down            (amplitudes in degrees / units)
+# Each friend's loop: a jelly bounce (stretch up, squash down) with a little
+# sway, each a beat apart from its neighbours, and one blink.
 FRAMES = 12
-MOTION = {
-    "tricky": dict(spin=True),
-    "tracker": dict(spin=True),
-    "storyplay": dict(spin=True),
-    "phonics": dict(sway=22, hop=0.12),
-    "spelling": dict(sway=14, hop=0.14),
-    "assignments": dict(sway=16, hop=0.08),
-    "interactive": dict(sway=10, hop=0.05),
-    "stories": dict(sway=12, hop=0.04),
-    "guided": dict(sway=18, hop=0.06),
-}
-DEFAULT_MOTION = dict(sway=16, hop=0.06)
 
 # How high above a landmark its sign floats, for the tall ones.
-SIGN_LIFT = {"stories": 1.75, "guided": 2.45, "interactive": 1.35}
+SIGN_LIFT = {}
+SIGN_HEIGHT = 1.25
 
 # Section colours, linear (a touch deeper than the app's pastels, for walls).
 COL = {
@@ -130,30 +118,6 @@ def slab(name, pts, z0, z1, mat, bevel=0.0):
     return obj
 
 
-def text(body, loc, size, mat, rot=(math.radians(70), 0, 0), extrude=0.06):
-    bpy.ops.object.text_add(location=loc, rotation=rot)
-    t = bpy.context.active_object
-    t.data.body = body
-    t.data.size = size
-    t.data.extrude = extrude
-    t.data.bevel_depth = 0.01
-    t.data.align_x = "CENTER"
-    t.data.align_y = "CENTER"
-    t.data.materials.append(mat)
-    return t
-
-
-def hut(x, y, colour, w=0.55, h=0.42, roof_colour=(0.75, 0.22, 0.15)):
-    """A little house in the section's colour, with a door and a roof."""
-    wall = I.material("Wall", colour, rough=0.6)
-    I.box("Hut", (w, w, h), (x, y, h / 2 + 0.12), wall, bevel=0.03)
-    roof = I.material("Roof", roof_colour, rough=0.55)
-    W.cone(w * 0.82, 0.0, w * 0.55, (x, y, h + 0.12 + w * 0.27), roof, vertices=4, rotation=(0, 0, math.radians(45)))
-    I.box("Door", (w * 0.28, 0.02, h * 0.55), (x, y - w / 2 - 0.005, 0.12 + h * 0.28), I.material("Door", (0.25, 0.12, 0.05)), bevel=0)
-    for dx in (-0.16, 0.16):
-        I.box("Win", (0.1, 0.02, 0.1), (x + dx * w / 0.55, y - w / 2 - 0.006, 0.12 + h * 0.7), W.glow_material("Glass", (1.0, 0.92, 0.6), 0.6), bevel=0)
-
-
 def pad(x, y, colour, r=0.62):
     """A round stone plaza under each landmark."""
     p = W.cylinder(r, 0.08, (x, y, 0.08), I.material("Plaza", (0.55, 0.4, 0.28), rough=0.8), vertices=40)
@@ -161,222 +125,70 @@ def pad(x, y, colour, r=0.62):
     return p
 
 
-def star_mesh(x, y, z, r, mat, depth=0.08):
-    pts = []
-    for i in range(10):
-        a = math.pi / 2 + i * math.pi / 5
-        rr = r if i % 2 == 0 else r * 0.45
-        pts.append((x + math.cos(a) * rr, z + math.sin(a) * rr))
-    mesh = bpy.data.meshes.new("Star")
-    bm = bmesh.new()
-    verts = [bm.verts.new((px, y, pz)) for px, pz in pts]
-    face = bm.faces.new(verts)
-    res = bmesh.ops.extrude_face_region(bm, geom=[face])
-    for v in [v for v in res["geom"] if isinstance(v, bmesh.types.BMVert)]:
-        v.co.y += depth
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    bm.to_mesh(mesh)
-    bm.free()
-    obj = bpy.data.objects.new("Star", mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    obj.data.materials.append(mat)
+# --- The landmarks: a LocoRoco jelly friend for every section ---------------------------
+
+CAM = Vector((0, -9.8, 9.6))
+JELLY_R = 0.46
+
+
+def facing(centre):
+    """Directions for a face on a body at centre, looking at the camera."""
+    d = (CAM - centre).normalized()
+    right = d.cross(Vector((0, 0, 1))).normalized()
+    up = right.cross(d).normalized()
+    return d, right, up
+
+
+def ellipsoid(name, loc, size, aim, mat):
+    """A squashed sphere at loc whose local z points along aim."""
+    obj = I.blob(loc, 1.0, mat)
+    obj.name = name
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = aim.to_track_quat("Z", "Y")
+    obj.scale = size
     return obj
 
 
-# --- The landmarks -------------------------------------------------------------------
-
-
-def lm_phonics(x, y, c):
+def jelly(x, y, c):
+    """A round, glossy jelly blob in the section's colour, with big eyes,
+    an open smile, rosy cheeks and a little sprout on top."""
     pad(x, y, c)
-    text("Aa", (x, y, 0.55), 0.85, I.material("Letters", c, rough=0.35), extrude=0.12)
-    W.cone(0.06, 0.0, 0.12, (x + 0.42, y, 0.95), W.glow_material("Spark", (1, 0.85, 0.2), 2), vertices=4)
-
-
-def lm_soundout(x, y, c):
-    pad(x, y, c)
-    wall = I.material("BellWall", c, rough=0.6)
-    for dx in (-0.22, 0.22):
-        I.box("Pillar", (0.1, 0.1, 0.8), (x + dx, y, 0.52), wall, bevel=0.02)
-    W.cone(0.42, 0.0, 0.3, (x, y, 1.08), I.material("BellRoof", (0.75, 0.22, 0.15), rough=0.5), vertices=4, rotation=(0, 0, math.radians(45)))
-    gold = W.metal("Bell", (1.0, 0.72, 0.15))
-    W.cone(0.2, 0.08, 0.3, (x, y, 0.72), gold, vertices=24)
-    I.blob((x, y, 0.56), 0.04, gold)
-    W.cone(0.05, 0.0, 0.1, (x + 0.38, y - 0.1, 0.9), W.glow_material("Ring", (1, 0.85, 0.2), 1.5), vertices=4)
-    W.cone(0.04, 0.0, 0.08, (x - 0.36, y - 0.1, 0.8), W.glow_material("Ring2", (1, 0.85, 0.2), 1.5), vertices=4)
-
-
-def lm_flashcards(x, y, c):
-    pad(x, y, c)
-    cols = [(1.0, 0.35, 0.5), (0.35, 0.65, 1.0), (1.0, 0.85, 0.2), c]
-    for k, col in enumerate(cols):
-        card = I.box("Card", (0.4, 0.03, 0.54), (x - 0.2 + k * 0.13, y + 0.12 - k * 0.07, 0.42 + k * 0.015), I.material("Card", col, rough=0.5), bevel=0.02)
-        I.tilt(card, (math.radians(-12), 0, math.radians(-20 + k * 13)))
-    I.box("Pic", (0.2, 0.02, 0.16), (x + 0.2, y - 0.1, 0.5), I.material("Pic", (1, 1, 1)), bevel=0.01)
-
-
-def lm_formation(x, y, c):
-    pad(x, y, c)
-    yellow = I.material("Pencil", (1.0, 0.78, 0.1), rough=0.5)
-    body = W.cylinder(0.14, 1.5, (x, y, 0.9), yellow, vertices=6)
-    body.rotation_euler = (0, math.radians(28), 0)
-    tip = W.cone(0.14, 0.0, 0.32, (x - 0.73 * math.sin(math.radians(28)) * 1.0, y, 0.9 - 0.75 * math.cos(math.radians(28)) - 0.12), I.material("Wood", (0.95, 0.75, 0.5)), vertices=6)
-    tip.rotation_euler = (0, math.radians(28 + 180), 0)
-    eraser = W.cylinder(0.14, 0.18, (x + 0.75 * math.sin(math.radians(28)) + 0.04, y, 0.9 + 0.75 * math.cos(math.radians(28)) + 0.06), I.material("Eraser", (1.0, 0.45, 0.55)), vertices=16)
-    eraser.rotation_euler = (0, math.radians(28), 0)
-
-
-def lm_spelling(x, y, c):
-    pad(x, y, c)
-    cols = [(0.95, 0.3, 0.3), (0.3, 0.6, 1.0), (0.3, 0.8, 0.4), (1.0, 0.8, 0.15), (0.75, 0.4, 1.0)]
-    letters = "CATAB"
-    spots = [(-0.26, 0, 0), (0.0, 0, 0), (0.26, 0, 0), (-0.13, 0, 1), (0.13, 0, 1)]
-    for k, (bx, by, bz) in enumerate(spots):
-        cx, cz = x + bx, 0.27 + bz * 0.26
-        I.box("Block", (0.24, 0.24, 0.24), (cx, y + by, cz), I.material("Block", cols[k], rough=0.45), bevel=0.03)
-        text(letters[k], (cx, y - 0.125, cz), 0.2, I.material("Ink", (1, 1, 1)), rot=(math.radians(90), 0, 0), extrude=0.01)
-
-
-def lm_tricky(x, y, c):
-    pad(x, y, c)
-    W.cylinder(0.18, 0.9, (x, y, 0.55), I.material("Tower", (0.95, 0.9, 0.8), rough=0.7), vertices=16)
-    star_mesh(x, y - 0.04, 1.35, 0.42, W.glow_material("StarGold", (1.0, 0.75, 0.1), 0.8))
-
-
-def lm_stories(x, y, c):
-    pad(x, y, c, r=0.78)
-    page = I.material("Page", (1.0, 0.98, 0.92), rough=0.6)
-    cover = I.material("Cover", c, rough=0.5)
-    ink = I.material("Ink", (0.35, 0.35, 0.45))
-    # A giant storybook standing open, leaning back so its pages face the
-    # viewer, with lines of words and a picture.
-    tilt = math.radians(-32)
+    R = JELLY_R
+    centre = Vector((x, y, 0.12 + R * 0.88))
+    body = I.blob(centre, R, I.material("Jelly", c, rough=0.15))
+    body.scale = (1.15, 1.1, 0.9)
+    body.modifiers.new("Smooth", "SUBSURF").levels = 2
+    d, right, up = facing(centre)
+    white = I.material("EyeWhite", (1, 1, 1), rough=0.2)
+    ink = I.material("Pupil", (0.02, 0.01, 0.04), rough=0.2)
     for side in (-1, 1):
-        cv = I.box("Cover", (0.95, 0.07, 1.25), (x + side * 0.47, y + 0.1, 0.78), cover, bevel=0.03)
-        I.tilt(cv, (tilt, 0, math.radians(side * 16)))
-        pg = I.box("Pages", (0.86, 0.09, 1.12), (x + side * 0.44, y + 0.02, 0.8), page, bevel=0.03)
-        I.tilt(pg, (tilt, 0, math.radians(side * 16)))
-        for k in range(5):
-            if side == 1 and k < 2:
-                continue
-            ln = I.box("Line", (0.58, 0.02, 0.05), (x + side * 0.45, y - 0.08 + k * 0.06, 1.1 - k * 0.17), ink, bevel=0)
-            I.tilt(ln, (tilt, 0, math.radians(side * 16)))
-    pic = I.box("Picture", (0.5, 0.02, 0.32), (x + 0.45, y - 0.12, 1.08), I.material("BookPic", (0.4, 0.75, 1.0)), bevel=0.01)
-    I.tilt(pic, (tilt, 0, math.radians(16)))
-    sunpic = I.blob((x + 0.58, y - 0.16, 1.14), 0.07, I.material("BookSun", (1.0, 0.8, 0.15)))
-    W.cylinder(0.05, 1.2, (x, y + 0.12, 0.78), cover, vertices=8).rotation_euler = (tilt, 0, 0)
+        on = (d + right * side * 0.34 + up * 0.26).normalized()
+        spot = centre + Vector((on.x * R * 1.1, on.y * R * 1.05, on.z * R * 0.88))
+        eye = ellipsoid("Eye", spot, (0.11, 0.15, 0.05), on, white)
+        eye["blink"] = True
+        pupil = ellipsoid("Pupil", spot + on * 0.045 + up * -0.015, (0.06, 0.085, 0.025), on, ink)
+        pupil["blink"] = True
+        ellipsoid("Glint", spot + on * 0.07 + up * 0.03 + right * -0.02, (0.022, 0.022, 0.01), on, W.glow_material("Glint", (1, 1, 1), 2))
+        cheek_on = (d + right * side * 0.62 - up * 0.08).normalized()
+        cheek = centre + Vector((cheek_on.x * R * 1.12, cheek_on.y * R * 1.07, cheek_on.z * R * 0.9))
+        ellipsoid("Cheek", cheek, (0.06, 0.04, 0.01), cheek_on, I.material("Cheek", (1.0, 0.35, 0.45), rough=0.6))
+    # a wide grin: the bottom half of a dark oval, with a pink tongue
+    mouth_on = (d - up * 0.1).normalized()
+    mouth = centre + Vector((mouth_on.x * R * 1.12, mouth_on.y * R * 1.07, mouth_on.z * R * 0.9))
+    grin = ellipsoid("Mouth", mouth, (0.15, 0.11, 0.03), mouth_on, I.material("Mouth", (0.35, 0.02, 0.08), rough=0.4))
+    bm = bmesh.new()
+    bm.from_mesh(grin.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.y > 0.02], context="VERTS")
+    bm.to_mesh(grin.data)
+    bm.free()
+    ellipsoid("Tongue", mouth + mouth_on * 0.018 - up * 0.06, (0.07, 0.035, 0.02), mouth_on, I.material("Tongue", (1.0, 0.35, 0.45), rough=0.4))
+    top = centre.z + R * 0.9
+    W.cylinder(0.018, 0.2, (x, y, top + 0.08), I.material("Sprout", (0.05, 0.35, 0.05), rough=0.5), vertices=12)
+    leaf = I.blob((x + 0.06, y, top + 0.2), 0.07, I.material("Leaf", (0.15, 0.75, 0.1), rough=0.3))
+    leaf.scale = (1.4, 0.6, 0.7)
 
 
-def lm_storyplay(x, y, c):
-    pad(x, y, c)
-    tent = W.cone(0.55, 0.0, 0.9, (x, y, 0.58), W.striped("Tent", (0.95, 0.25, 0.3), (1, 1, 1), gores=8), vertices=32)
-    W.cylinder(0.56, 0.12, (x, y, 0.18), I.material("TentBase", (0.95, 0.25, 0.3)), vertices=32)
-    W.cylinder(0.012, 0.3, (x, y, 1.15), I.material("Pole", (0.3, 0.2, 0.1)), vertices=6)
-    flag = I.box("Flag", (0.18, 0.01, 0.1), (x + 0.09, y, 1.25), I.material("Flag", (1.0, 0.8, 0.1)), bevel=0)
-    I.box("TentDoor", (0.22, 0.02, 0.3), (x, y - 0.5, 0.3), I.material("TentDoor", (0.3, 0.05, 0.1)), bevel=0)
-
-
-def lm_guided(x, y, c):
-    pad(x, y, c, r=0.72)
-    # A big stage with a giant microphone on a stand.
-    W.cylinder(0.6, 0.22, (x, y, 0.22), I.material("Stage", c, rough=0.5), vertices=32)
-    W.cylinder(0.62, 0.04, (x, y, 0.34), W.metal("StageRim", (1.0, 0.75, 0.25)), vertices=32)
-    metal = W.metal("Mic", (0.8, 0.82, 0.88))
-    W.cylinder(0.25, 0.05, (x, y, 0.38), metal, vertices=24)
-    W.cylinder(0.045, 1.1, (x, y, 0.95), metal, vertices=12)
-    W.cylinder(0.07, 0.35, (x, y, 1.55), I.material("Grip", (0.15, 0.15, 0.2), rough=0.4), vertices=16)
-    head = I.blob((x, y, 1.9), 0.3, I.material("MicHead", (0.4, 0.4, 0.48), rough=0.35))
-    head.scale = (1, 1, 1.25)
-    W.cylinder(0.31, 0.06, (x, y, 1.78), W.metal("MicBand", (1.0, 0.75, 0.25)), vertices=24)
-    note = W.glow_material("Note", (1, 0.85, 0.2), 1.5)
-    for (dx, dz, r) in ((0.5, 2.0, 0.09), (-0.48, 1.75, 0.07), (0.62, 1.6, 0.06)):
-        I.blob((x + dx, y - 0.05, dz), r, note)
-        W.cylinder(0.012, 0.22, (x + dx + r * 0.9, y - 0.05, dz + 0.11), note, vertices=6)
-
-
-def lm_assessment(x, y, c):
-    pad(x, y, c)
-    W.cylinder(0.22, 1.0, (x, y, 0.6), I.material("Tower", (0.95, 0.92, 0.85), rough=0.7), vertices=12)
-    W.cone(0.28, 0.0, 0.35, (x, y, 1.28), I.material("Spire", c, rough=0.5), vertices=12)
-    W.cylinder(0.012, 0.35, (x, y, 1.6), I.material("Pole", (0.3, 0.2, 0.1)), vertices=6)
-    I.box("Flag", (0.26, 0.01, 0.16), (x + 0.13, y, 1.7), I.material("FlagGreen", (0.2, 0.75, 0.35)), bevel=0)
-    for k in range(3):
-        I.box("Slit", (0.06, 0.02, 0.12), (x, y - 0.22, 0.45 + k * 0.25), I.material("Slit", (0.25, 0.15, 0.1)), bevel=0)
-
-
-def lm_threed(x, y, c):
-    pad(x, y, c)
-    wood = I.material("Easel", (0.55, 0.32, 0.15), rough=0.7)
-    for dx in (-0.25, 0.25):
-        leg = W.cylinder(0.03, 1.2, (x + dx, y + 0.05, 0.7), wood, vertices=8)
-        leg.rotation_euler = (math.radians(-10), math.radians(dx * 30), 0)
-    canvas = I.box("Canvas", (0.62, 0.04, 0.5), (x, y - 0.03, 0.85), I.material("Canvas", (1, 1, 1)), bevel=0.01)
-    I.tilt(canvas, (math.radians(-10), 0, 0))
-    for k, col in enumerate([(1.0, 0.35, 0.5), (0.35, 0.65, 1.0), (1.0, 0.8, 0.2)]):
-        I.blob((x - 0.15 + k * 0.15, y - 0.07, 0.85 + (k % 2) * 0.08), 0.07, I.material("Paint", col, rough=0.4))
-    cube = I.box("Cube3D", (0.22, 0.22, 0.22), (x + 0.42, y - 0.25, 0.28), W.glow_material("Cube", c, 0.4), bevel=0.02)
-    I.tilt(cube, (math.radians(20), math.radians(30), math.radians(15)))
-
-
-def lm_assignments(x, y, c):
-    pad(x, y, c)
-    red = I.material("PostBox", (0.9, 0.18, 0.15), rough=0.45)
-    W.cylinder(0.24, 0.8, (x, y, 0.52), red, vertices=24)
-    top = I.blob((x, y, 0.92), 0.24, red)
-    top.scale = (1, 1, 0.5)
-    I.box("Slot", (0.24, 0.03, 0.04), (x, y - 0.24, 0.75), I.material("SlotDark", (0.1, 0.05, 0.05)), bevel=0)
-    for k in range(3):
-        env = I.box("Letter", (0.26, 0.02, 0.17), (x + 0.42, y - 0.15 + k * 0.05, 0.25 + k * 0.17), I.material("Envelope", (1, 0.97, 0.88)), bevel=0.01)
-        I.tilt(env, (0, math.radians(-15 + k * 15), math.radians(10)))
-    I.box("Tick", (0.07, 0.025, 0.07), (x + 0.42, y - 0.17, 0.25), I.material("TickGreen", (0.2, 0.75, 0.35)), bevel=0.01)
-
-
-def lm_tracker(x, y, c):
-    pad(x, y, c)
-    W.cylinder(0.42, 0.55, (x, y, 0.4), I.material("Obs", (0.95, 0.95, 0.98), rough=0.4), vertices=32)
-    dome = I.blob((x, y, 0.68), 0.43, I.material("Dome", c, rough=0.35))
-    dome.scale = (1, 1, 0.8)
-    scope = W.cylinder(0.06, 0.6, (x - 0.1, y - 0.15, 1.0), W.metal("Scope", (1.0, 0.75, 0.25)), vertices=12)
-    scope.rotation_euler = (math.radians(35), math.radians(-25), 0)
-
-
-def lm_interactive(x, y, c):
-    """A puppet theatre on the lagoon's island: a stage with red curtains
-    and two puppets, a gold arch and a star on top."""
-    red = I.material("Curtain", (0.85, 0.08, 0.15), rough=0.6)
-    gold = W.metal("TheatreGold", (1.0, 0.72, 0.18))
-    wood = I.material("TheatreWood", c, rough=0.5)
-    I.box("Stage", (0.95, 0.5, 0.3), (x, y, 0.25), wood, bevel=0.03)
-    I.box("Back", (0.95, 0.08, 0.95), (x, y + 0.22, 0.85), I.material("Backdrop", (0.15, 0.2, 0.55), rough=0.7), bevel=0.02)
-    for side in (-1, 1):
-        I.box("Curtain", (0.22, 0.1, 0.9), (x + side * 0.38, y - 0.12, 0.85), red, bevel=0.05)
-        W.cylinder(0.035, 1.0, (x + side * 0.5, y - 0.2, 0.85), gold, vertices=12)
-    I.box("Valance", (1.05, 0.12, 0.16), (x, y - 0.2, 1.32), red, bevel=0.04)
-    I.box("Arch", (1.1, 0.1, 0.06), (x, y - 0.22, 1.42), gold, bevel=0.02)
-    star_mesh(x, y - 0.24, 1.62, 0.16, W.glow_material("TheatreStar", (1.0, 0.8, 0.15), 1.2), depth=0.05)
-    # two puppets on the stage
-    for (dx, col) in ((-0.15, (1.0, 0.75, 0.2)), (0.17, (0.35, 0.7, 1.0))):
-        I.blob((x + dx, y - 0.05, 0.6), 0.12, I.material("PuppetBody", col, rough=0.5))
-        I.blob((x + dx, y - 0.05, 0.8), 0.1, I.material("PuppetHead", (1.0, 0.85, 0.7), rough=0.5))
-        for ex in (-0.035, 0.035):
-            I.blob((x + dx + ex, y - 0.14, 0.82), 0.018, I.material("Eye", (0.05, 0.05, 0.08)))
-
-
-LANDMARKS = {
-    "interactive": lm_interactive,
-    "phonics": lm_phonics,
-    "soundout": lm_soundout,
-    "flashcards": lm_flashcards,
-    "formation": lm_formation,
-    "spelling": lm_spelling,
-    "tricky": lm_tricky,
-    "stories": lm_stories,
-    "storyplay": lm_storyplay,
-    "guided": lm_guided,
-    "assessment": lm_assessment,
-    "threed": lm_threed,
-    "assignments": lm_assignments,
-    "tracker": lm_tracker,
-}
+LANDMARKS = {zone: jelly for zone in ZONES}
 
 
 def shine(objs):
@@ -427,20 +239,34 @@ def build_landmark(scene, zone, x, y):
         world = obj.matrix_world.copy()
         obj.parent = pivot
         obj.matrix_world = world
-    m = MOTION.get(zone, DEFAULT_MOTION)
+    beat = list(ZONES).index(zone) / len(ZONES)
+    eyes = [o for o in parts if o.get("blink")]
+    shut = (list(ZONES).index(zone) * 5) % FRAMES
     for f in range(FRAMES + 1):
-        t = f / FRAMES
-        if m.get("spin"):
-            pivot.rotation_euler = (0, 0, t * math.tau)
-        else:
-            pivot.rotation_euler = (0, 0, math.radians(m.get("sway", 0)) * math.sin(t * math.tau))
-        pivot.location = (x, y, 0.12 + m.get("hop", 0) * abs(math.sin(t * math.tau)))
-        pivot.keyframe_insert("rotation_euler", frame=f + 1)
-        pivot.keyframe_insert("location", frame=f + 1)
+        w = math.cos((f / FRAMES + beat) * math.tau)
+        pivot.scale = (1 - 0.08 * w, 1 - 0.08 * w, 1 + 0.13 * w)
+        pivot.rotation_euler = (0, 0, 0)
+        pivot.rotation_euler.y = math.radians(6) * math.sin((f / FRAMES + beat) * math.tau)
+        pivot.location = (x, y, 0.12 + 0.09 * max(0.0, w))
+        for k in ("scale", "rotation_euler", "location"):
+            pivot.keyframe_insert(k, frame=f + 1)
+        for eye in eyes:
+            base = eye.get("open_z", eye.scale.z)
+            eye["open_z"] = base
+            eye.scale.z = base
+            eye.scale.y = eye.get("open_y", eye.scale.y)
+            eye["open_y"] = eye.scale.y
+            if f % FRAMES == shut:
+                eye.scale.y = eye["open_y"] * 0.12
+            eye.keyframe_insert("scale", frame=f + 1)
     if pivot.animation_data and pivot.animation_data.action:
         for fc in getattr(pivot.animation_data.action, "fcurves", []):
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
+    for eye in eyes:
+        for fc in getattr(eye.animation_data.action, "fcurves", []):
+            for kp in fc.keyframe_points:
+                kp.interpolation = "CONSTANT"
     return col
 
 
@@ -559,7 +385,7 @@ def build():
     # Where each landmark lands on the picture: the sign goes above it.
     spots = {}
     for zone, (zx, zy) in ZONES.items():
-        lift = SIGN_LIFT.get(zone, 1.05)
+        lift = SIGN_LIFT.get(zone, SIGN_HEIGHT)
         top = world_to_camera_view(scene, cam, Vector((zx, zy, lift)))
         foot = world_to_camera_view(scene, cam, Vector((zx, zy, 0.1)))
         spots[zone] = {
