@@ -41,3 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Blender build output (the app uses public/images/home-island.webp)
+blender/out/
+blender/__pycache__/
