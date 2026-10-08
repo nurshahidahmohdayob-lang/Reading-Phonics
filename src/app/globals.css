@@ -539,20 +539,23 @@ body {
   .act-hop, .act-wiggle, .act-spin, .act-shake, .act-drive, .act-grow, .act-float, .act-talk, .act-idle-float { animation: none; }
 }
 
-/* The home house (components/HomeHouse): its signs, and the glow over a room. */
-.house-sign-wrap { animation: house-bob 3.5s ease-in-out infinite; }
-@keyframes house-bob { 0%,100% { margin-top: 0; } 50% { margin-top: -4px; } }
-.house-sign { transition: transform 0.2s, box-shadow 0.2s; }
-.house-sign-wrap:hover .house-sign, .house-sign-wrap:focus-visible .house-sign { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px var(--glow), 0 0 22px 6px var(--glow); }
-.house-sign-lit { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--glow), 0 0 36px 14px var(--glow) !important; }
-.house-ring { border: 3px solid var(--glow); animation: house-ring 0.65s ease-out forwards; }
-@keyframes house-ring { from { transform: scale(1); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
-.house-halo { animation: house-halo 1.6s ease-in-out infinite; }
-@keyframes house-halo { 0%,100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); } }
-.house-halo-burst { animation: house-halo-burst 0.65s ease-out forwards; }
-@keyframes house-halo-burst { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(-50%,-50%) scale(2.4); } }
+/* The home screen's signs (components/HomeSigns), each bobbing gently, and
+   Polly the parrot flying to the one being pointed at. */
+.home-sign-wrap { animation: home-bob 3.5s ease-in-out infinite; }
+@keyframes home-bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+.home-sign { transition: transform 0.2s, box-shadow 0.2s; }
+.home-sign-wrap:hover .home-sign, .home-sign-wrap:focus-visible .home-sign { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px var(--glow), 0 0 26px 8px var(--glow); }
+.home-sign-lit { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--glow), 0 0 36px 14px var(--glow) !important; }
+.home-ring { border: 3px solid var(--glow); animation: home-ring 0.65s ease-out forwards; }
+@keyframes home-ring { from { transform: scale(1); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
+.home-polly { transition: left 0.85s cubic-bezier(0.45, 0.05, 0.3, 1), top 0.85s cubic-bezier(0.45, 0.05, 0.3, 1); }
+.home-polly-flap { animation: polly-flap 0.3s ease-in-out 3; }
+.home-polly-idle { animation: polly-idle 2.4s ease-in-out infinite; }
+@keyframes polly-flap { 50% { transform: translateY(-18%) rotate(-8deg) scale(1.05); } }
+@keyframes polly-idle { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .house-sign-wrap, .house-halo { animation: none; }
+  .home-sign-wrap, .home-polly-flap, .home-polly-idle { animation: none; }
+  .home-polly { transition: none; }
 }
 
 /* Skills Quest: confetti burst on a correct answer. */
@@ -564,23 +567,6 @@ body {
 .quest-confetti { animation: quest-confetti 1.1s cubic-bezier(0.2, 0.7, 0.4, 1) both; }
 @media (prefers-reduced-motion: reduce) { .quest-confetti { display: none; } }
 
-/* The living house: Polly, the light path and the house's small life. */
-.house-polly { transition: left 0.85s cubic-bezier(0.45, 0.05, 0.3, 1), top 0.85s cubic-bezier(0.45, 0.05, 0.3, 1); }
-.house-polly-flap { animation: polly-flap 0.3s ease-in-out 3; }
-.house-polly-idle { animation: polly-idle 2.4s ease-in-out infinite; }
-@keyframes polly-flap { 50% { transform: translateY(-18%) rotate(-8deg) scale(1.05); } }
-@keyframes polly-idle { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
-.house-trail path { fill: none; stroke: #fff3a0; stroke-width: 0.55; stroke-linecap: round; stroke-dasharray: 1 1.8; filter: drop-shadow(0 0 0.7px #ffc400); animation: house-march 1s linear infinite; }
-@keyframes house-march { to { stroke-dashoffset: -5.6; } }
-.house-note { font-size: max(14px, 2cqw); font-weight: 800; line-height: 1; color: #ffc400; text-shadow: 0 0 0.6cqw rgba(255, 196, 0, 0.8); animation: house-rise 3.2s ease-out infinite; }
-.house-twinkle { width: max(7px, 1.1cqw); height: max(7px, 1.1cqw); border-radius: 50%; background: radial-gradient(circle, #fff 0 25%, #ffe35a 40%, transparent 70%); animation: house-twinkle 1.8s ease-in-out infinite; }
-.house-bubble { width: max(6px, 0.9cqw); height: max(6px, 0.9cqw); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9); animation: house-rise 2.6s ease-in infinite; }
-@keyframes house-rise { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(1.5cqw, -9cqw); opacity: 0; } }
-@keyframes house-twinkle { 0%,100% { transform: scale(0.4); opacity: 0.3; } 50% { transform: scale(1.3); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .house-polly { transition: none; }
-  .house-polly-flap, .house-polly-idle, .house-trail path, .house-note, .house-twinkle, .house-bubble { animation: none; }
-}
 
 /* The header bar (app/page.tsx): a wooden signboard in the garden, with a
    cream inner frame, a chunky outlined cream-and-gold title and leafy buttons. */
