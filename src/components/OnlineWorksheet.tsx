@@ -14,6 +14,7 @@ import { buildWorksheet, type Section, type WorksheetInput } from "@/lib/workshe
 import { speak } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { lexileLabel } from "@/lib/lexileStats";
+import { lookup } from "@/app/dictionary";
 import StoryBook from "@/components/StoryBook";
 
 type Answer = number | string | number[] | null;
@@ -46,6 +47,23 @@ const SKILL: Partial<Record<Section["kind"], string>> = {
 };
 
 const norm = (s: unknown) => String(s ?? "").trim().toLowerCase().replace(/[^a-z']/g, "");
+
+/** The same word, allowing another form of it: "shadow" for "shadows",
+    "puppy" for "puppies", "jump" for "jumped". Two words count as the same
+    when the dictionary files them under the same entry. For finding a word
+    by its meaning, where the meaning fits any form of the word. */
+function sameWord(given: Answer, answer: string): boolean {
+  const a = norm(given);
+  const b = norm(answer);
+  if (!a) return false;
+  if (a === b) return true;
+  // A plain plural or singular of the same word: shadow/shadows, box/boxes,
+  // puppy/puppies (even when the dictionary doesn't list the word).
+  const plurals = (w: string) => [w + "s", w + "es", w.endsWith("y") ? w.slice(0, -1) + "ies" : ""];
+  if (plurals(a).includes(b) || plurals(b).includes(a)) return true;
+  const entry = lookup(b);
+  return !!entry && lookup(a) === entry;
+}
 const asText = (a: Answer) => (a === null || a === undefined || a === "" ? "—" : String(a));
 
 function itemsFor(sections: Section[]): Item[] {
@@ -117,7 +135,7 @@ function itemsFor(sections: Section[]): Item[] {
         break;
       case "hunt":
         s.items.forEach((h, k) =>
-          items.push({ key: `${i}.${k}`, label: `A word that means “${h.meaning}”`, expected: h.answer, right: (a) => norm(a) === norm(h.answer), show: asText }),
+          items.push({ key: `${i}.${k}`, label: `A word that means “${h.meaning}”`, expected: h.answer, right: (a) => sameWord(a, h.answer), show: asText }),
         );
         break;
     }

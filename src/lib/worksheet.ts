@@ -194,13 +194,20 @@ export function buildWorksheet(input: WorksheetInput): Worksheet {
   );
   const shown = (w: string) => (proper.has(w) ? w[0].toUpperCase() + w.slice(1) : w);
 
-  // Content words the picture dictionary knows, with their entries.
-  const known = new Map<string, DictEntry>();
+  // Content words the picture dictionary knows, with their entries. When a
+  // story uses more than one form of a word ("shadow" twice, "shadows"
+  // once), it counts as one word, in the form the story uses most (the
+  // shorter on a tie), so a question never asks for the rarer form.
+  const count = (w: string) => tokens.filter((t) => clean(t) === w).length;
+  const formOf = new Map<DictEntry, string>();
   for (const w of allWords) {
     if (w.length < 3 || STOP.has(w)) continue;
     const e = lookup(w);
-    if (e && ["noun", "verb", "adjective"].includes(e.pos)) known.set(w, e);
+    if (!e || !["noun", "verb", "adjective"].includes(e.pos)) continue;
+    const had = formOf.get(e);
+    if (!had || count(w) > count(had) || (count(w) === count(had) && w.length < had.length)) formOf.set(e, w);
   }
+  const known = new Map<string, DictEntry>([...formOf].map(([e, w]) => [w, e]));
   const nouns = [...known]
     .filter(([w, e]) => e.pos === "noun" && !looksLikeVerbForm(w))
     .map(([w]) => w)
