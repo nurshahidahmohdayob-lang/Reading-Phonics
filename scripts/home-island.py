@@ -1,5 +1,4 @@
-"""Turns the Blender renders of the home island (and its background pieces)
-into what the app uses:
+"""Turns the Blender render of the home island into what the app uses:
 public/images/home-island.webp (the picture) and src/app/homeIsland.ts
 (where each landmark's sign goes on it, in % of the picture).
 
@@ -29,12 +28,4 @@ with open(os.path.join(ROOT, "src", "app", "homeIsland.ts"), "w") as f:
     f.write("export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = ")
     f.write(json.dumps(data["spots"], indent=2))
     f.write(";\n")
-# The background pieces (blender/home_backdrop.py), if they've been rendered.
-bgdir = os.path.join(ROOT, "public", "images", "home-bg")
-os.makedirs(bgdir, exist_ok=True)
-for name in ("home-cloud-a", "home-cloud-b", "home-jungle"):
-    png = os.path.join(src, f"{name}.png")
-    if os.path.exists(png):
-        Image.open(png).convert("RGBA").save(os.path.join(bgdir, f"{name}.webp"), "WEBP", quality=85, method=6)
-
 print("webp", os.path.getsize(os.path.join(ROOT, "public", "images", "home-island.webp")) // 1024, "KB")

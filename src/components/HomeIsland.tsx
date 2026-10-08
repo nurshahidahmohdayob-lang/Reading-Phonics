@@ -1,7 +1,8 @@
 "use client";
 
-/* The home screen as a living island: one Blender-rendered island floating
-   on the page's own sky (blender/home_island.py), with a landmark for every
+/* The home screen as a living island floating in the Galaxy of Words: one
+   Blender-rendered island (blender/home_island.py) in space, with cartoon
+   planets and a rocket orbiting it, with a landmark for every
    section and a sign on each. Polly the parrot flies to the sign a child
    points at and says its name, and a path of light runs from the lagoon to
    that landmark; tapping a sign sends a ring of light round it and a glow
@@ -91,12 +92,15 @@ export default function HomeIsland({
           className="island-float relative w-full"
           style={{ aspectRatio: `${ISLAND_SIZE.w} / ${ISLAND_SIZE.h}`, maxHeight: "100%", maxWidth: `calc((100cqh - 3rem) * ${ISLAND_SIZE.w / ISLAND_SIZE.h})`, containerType: "inline-size" }}
         >
+          {/* the glow under the island, as it floats in space */}
+          <span aria-hidden className="island-glow pointer-events-none absolute left-1/2 top-[64%] h-[34%] w-[84%] -translate-x-1/2 rounded-[50%]" />
+          <Orbit />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ISLAND_IMAGE} alt="" draggable={false} className="absolute inset-0 h-full w-full select-none" />
+          <img src={ISLAND_IMAGE} alt="" draggable={false} className="absolute inset-0 z-[1] h-full w-full select-none" />
 
           {/* life on the island: notes from the microphone, stars round the
               tower, bubbles in the lagoon */}
-          <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div aria-hidden className="pointer-events-none absolute inset-0 z-[2]">
             {at("guided", "foot") &&
               ["♪", "♫", "♪"].map((n, i) => (
                 <span
@@ -126,7 +130,7 @@ export default function HomeIsland({
 
           {/* the path of light from the lagoon to the place being pointed at */}
           {trail && (
-            <svg aria-hidden className="island-trail pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 100 ${100 * PATH_Y}`} preserveAspectRatio="none">
+            <svg aria-hidden className="island-trail pointer-events-none absolute inset-0 z-[2] h-full w-full overflow-visible" viewBox={`0 0 100 ${100 * PATH_Y}`} preserveAspectRatio="none">
               <path d={trail} />
             </svg>
           )}
@@ -151,7 +155,7 @@ export default function HomeIsland({
               <span
                 key={`halo-${s.id}`}
                 aria-hidden
-                className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] ${lit === s.id ? "island-halo-burst" : "island-halo"}`}
+                className={`pointer-events-none absolute z-[2] -translate-x-1/2 -translate-y-1/2 rounded-[50%] ${lit === s.id ? "island-halo-burst" : "island-halo"}`}
                 style={{ left: `${spot.foot[0]}%`, top: `${spot.foot[1]}%`, width: "11cqw", height: "5.5cqw", background: `radial-gradient(closest-side, ${s.glow}, transparent)` }}
               />
             );
@@ -191,11 +195,66 @@ export default function HomeIsland({
         </div>
       </div>
 
-      {/* birds passing over (the clouds are in the background, HomeBackdrop) */}
+      {/* a satellite and a sparkle passing over */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <span className="island-bird absolute top-[14%] text-2xl" style={{ animationDuration: "22s" }}>🕊️</span>
-        <span className="island-bird absolute top-[22%] text-xl" style={{ animationDuration: "26s", animationDelay: "-9s" }}>🕊️</span>
+        <span className="island-bird absolute top-[14%] text-2xl" style={{ animationDuration: "34s" }}>🛰️</span>
+        <span className="island-bird absolute top-[22%] text-xl" style={{ animationDuration: "40s", animationDelay: "-15s" }}>✨</span>
       </div>
     </div>
+  );
+}
+
+/** Cartoon planets and a rocket on an orbit round the island: behind it on
+    the far side of the orbit, in front of it on the near side. */
+const BODIES = [
+  { kind: "planet", size: 4.2, colour: "#ff6fb1", ring: false, offset: 0 },
+  { kind: "planet", size: 5.6, colour: "#4fc3ff", ring: true, offset: 2.1 },
+  { kind: "rocket", size: 3.4, colour: "", ring: false, offset: 3.4 },
+  { kind: "planet", size: 3.4, colour: "#ffc93c", ring: false, offset: 4.6 },
+] as const;
+
+function Orbit() {
+  const refs = useRef<(HTMLSpanElement | null)[]>([]);
+  useEffect(() => {
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const start = performance.now();
+    const place = (now: number) => {
+      const t = calm ? 0 : (now - start) / 1000;
+      BODIES.forEach((b, i) => {
+        const el = refs.current[i];
+        if (!el) return;
+        const a = t * 0.16 + b.offset;
+        const x = 50 + Math.cos(a) * 57;
+        const y = 60 + Math.sin(a) * 19;
+        el.style.left = `${x}%`;
+        el.style.top = `${y}%`;
+        // Far side of the orbit (top) is behind the island; near side in front.
+        el.style.zIndex = Math.sin(a) < 0 ? "0" : "3";
+        el.style.scale = String(0.8 + 0.25 * (Math.sin(a) + 1) / 2);
+        if (b.kind === "rocket") el.style.rotate = `${(Math.atan2(Math.cos(a) * 19, -Math.sin(a) * 57) * 180) / Math.PI + 45}deg`;
+      });
+      if (!calm) raf = requestAnimationFrame(place);
+    };
+    raf = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <>
+      <span aria-hidden className="island-orbit pointer-events-none absolute left-[-7%] top-[41%] z-0 h-[38%] w-[114%] rounded-[50%]" />
+      {BODIES.map((b, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          aria-hidden
+          className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 ${b.kind === "rocket" ? "island-rocket" : "island-planet"} ${b.ring ? "island-planet-ringed" : ""}`}
+          style={{ width: `${b.size}cqw`, height: `${b.size}cqw`, ["--c" as string]: b.colour, fontSize: `${b.size}cqw` }}
+        >
+          {b.kind === "rocket" ? "🚀" : null}
+        </span>
+      ))}
+    </>
   );
 }
