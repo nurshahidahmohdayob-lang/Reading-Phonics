@@ -1,10 +1,10 @@
 """
-The home screen's island: one tropical island in the sea with a landmark for
+The home screen's island: one tropical island with a landmark for
 every section of the app (giant letters for Phonics, a pencil for Letter
 Formation, a circus tent for Story Play...), round a lagoon, with mountains,
 palms and a sandy beach. Rendered whole, in perspective, on a transparent
-background: the app draws the moving sea, clouds and birds behind and over
-it, and puts a glowing sign on each landmark. The app needs to know where
+background: the app floats it on its own sky, with clouds and birds passing,
+and puts a glowing sign on each landmark. The app needs to know where
 each landmark lands on the picture: those points go to
 blender/out/home-island.json.
 
@@ -388,9 +388,8 @@ def build():
     bg.inputs[0].default_value = (0.55, 0.75, 1.0, 1)
     bg.inputs[1].default_value = 0.42
 
-    # Shallow water round the shore, the beach, a low cliff and the grass.
-    shallows = I.material("Shallows", (0.05, 0.72, 0.78), rough=0.15)
-    slab("Shallows", outline(6.55, 3.75, 1.0, 4), -0.22, -0.2, shallows)
+    # The beach, a low cliff and the grass (no water round it: the island
+    # floats on the app's own sky).
     sand = I.material("Sand", (1.0, 0.68, 0.28), rough=0.9, noise=0.1, noise_scale=20)
     slab("Beach", outline(6.15, 3.45, 1.0, 4), -0.2, -0.02, sand, bevel=0.06)
     cliff = I.material("Cliff", (0.55, 0.36, 0.2), rough=0.9, noise=0.2, noise_scale=10)
