@@ -55,6 +55,23 @@ ZONES = {
 
 LAGOON = (0.0, 0.3)
 
+# Each landmark's loop: how it moves while the app plays its frames.
+#   spin   turns all the way round       sway   turns side to side
+#   hop    bounces up and down            (amplitudes in degrees / units)
+FRAMES = 12
+MOTION = {
+    "tricky": dict(spin=True),
+    "tracker": dict(spin=True),
+    "storyplay": dict(spin=True),
+    "phonics": dict(sway=22, hop=0.12),
+    "spelling": dict(sway=14, hop=0.14),
+    "assignments": dict(sway=16, hop=0.08),
+    "interactive": dict(sway=10, hop=0.05),
+    "stories": dict(sway=12, hop=0.04),
+    "guided": dict(sway=18, hop=0.06),
+}
+DEFAULT_MOTION = dict(sway=16, hop=0.06)
+
 # How high above a landmark its sign floats, for the tall ones.
 SIGN_LIFT = {"stories": 1.75, "guided": 2.45, "interactive": 1.35}
 
@@ -362,6 +379,71 @@ LANDMARKS = {
 }
 
 
+def shine(objs):
+    """Glossy toy-like finish on a landmark: a clear coat over its colours."""
+    seen = set()
+    for obj in objs:
+        for slot in getattr(obj.data, "materials", []) or []:
+            if slot is None or slot.name in seen or not slot.use_nodes:
+                continue
+            seen.add(slot.name)
+            bsdf = next((n for n in slot.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if not bsdf:
+                continue
+            for key in ("Coat Weight", "Clearcoat"):
+                if key in bsdf.inputs:
+                    bsdf.inputs[key].default_value = 0.8
+                    break
+            bsdf.inputs["Roughness"].default_value = min(bsdf.inputs["Roughness"].default_value, 0.35)
+
+
+def build_landmark(scene, zone, x, y):
+    """Builds one landmark into its own collection. Its plaza (the two
+    plaza discs) goes back on the island."""
+    col = bpy.data.collections.new(f"LM_{zone}")
+    scene.collection.children.link(col)
+    layer = bpy.context.view_layer
+    layer.active_layer_collection = layer.layer_collection.children[col.name]
+    before = set(bpy.data.objects)
+    LANDMARKS[zone](x, y, COL[zone])
+    made = [o for o in bpy.data.objects if o not in before]
+    layer.active_layer_collection = layer.layer_collection
+    parts = []
+    for obj in made:
+        is_plaza = any(m and m.name.startswith("Plaza") for m in getattr(obj.data, "materials", []) or [])
+        for c in list(obj.users_collection):
+            c.objects.unlink(obj)
+        (scene.collection if is_plaza else col).objects.link(obj)
+        if not is_plaza:
+            parts.append(obj)
+    shine(parts)
+    # A pivot at the landmark's foot that the whole landmark turns and
+    # bounces on, for its animation loop.
+    pivot = bpy.data.objects.new(f"Pivot_{zone}", None)
+    pivot.location = (x, y, 0.12)
+    col.objects.link(pivot)
+    bpy.context.view_layer.update()
+    for obj in parts:
+        world = obj.matrix_world.copy()
+        obj.parent = pivot
+        obj.matrix_world = world
+    m = MOTION.get(zone, DEFAULT_MOTION)
+    for f in range(FRAMES + 1):
+        t = f / FRAMES
+        if m.get("spin"):
+            pivot.rotation_euler = (0, 0, t * math.tau)
+        else:
+            pivot.rotation_euler = (0, 0, math.radians(m.get("sway", 0)) * math.sin(t * math.tau))
+        pivot.location = (x, y, 0.12 + m.get("hop", 0) * abs(math.sin(t * math.tau)))
+        pivot.keyframe_insert("rotation_euler", frame=f + 1)
+        pivot.keyframe_insert("location", frame=f + 1)
+    if pivot.animation_data and pivot.animation_data.action:
+        for fc in getattr(pivot.animation_data.action, "fcurves", []):
+            for kp in fc.keyframe_points:
+                kp.interpolation = "LINEAR"
+    return col
+
+
 def clear_of_zones(x, y, gap=0.95):
     if math.hypot((x - LAGOON[0]) / 1.55, (y - LAGOON[1]) / 1.05) < 1.15:
         return False
@@ -442,8 +524,11 @@ def build():
         p = I.box("Path", (0.22, length, 0.03), ((ax + bx) / 2, (ay + by) / 2, 0.075), dirt, bevel=0.01)
         I.tilt(p, (0, 0, -math.atan2(bx - ax, by - ay)))
 
+    # Each landmark goes in its own collection, so it can be rendered on its
+    # own as a sprite the app animates; its stone plaza stays on the island.
+    groups = {}
     for zone, (zx, zy) in ZONES.items():
-        LANDMARKS[zone](zx, zy, COL[zone])
+        groups[zone] = build_landmark(scene, zone, zx, zy)
 
     # Mountains at the back corners, palms on the beach, trees and bushes.
     rockc = I.material("Mountain", (0.18, 0.13, 0.32), rough=0.85, noise=0.3, noise_scale=6)
@@ -485,7 +570,32 @@ def build():
     spots["lagoon"] = {"sign": [round(lag.x * 100, 2), round((1 - lag.y) * 100, 2)], "foot": [round(lag.x * 100, 2), round((1 - lag.y) * 100, 2)]}
     with open(os.path.join(I.OUT, "home-island.json"), "w") as f:
         json.dump({"w": W_PX, "h": H_PX, "spots": spots}, f, indent=1)
+
+    # Everything that isn't a landmark goes in one collection, so the island
+    # and the landmarks can each be rendered without the other.
+    base = bpy.data.collections.new("Base")
+    scene.collection.children.link(base)
+    for obj in list(scene.collection.objects):
+        if obj.type in {"CAMERA", "LIGHT"}:
+            continue
+        scene.collection.objects.unlink(obj)
+        base.objects.link(obj)
+
+    # The island with only the plazas where the landmarks stand.
+    for col in groups.values():
+        col.hide_render = True
     I.render("home-island")
+    # Each landmark alone, from the same camera so it lines up exactly, one
+    # picture per frame of its loop.
+    base.hide_render = True
+    scene.frame_set(1)
+    for zone, col in groups.items():
+        for other in groups.values():
+            other.hide_render = other is not col
+        for f in range(FRAMES):
+            scene.frame_set(f + 1)
+            I.render(f"lm-{zone}-{f:02d}")
+    scene.frame_set(1)
 
 
 if __name__ == "__main__":

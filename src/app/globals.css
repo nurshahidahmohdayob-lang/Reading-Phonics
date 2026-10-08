@@ -688,3 +688,13 @@ body {
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) { .section-panel::before { animation: none; } }
+
+/* The island's landmarks (components/HomeIsland): each plays its rendered
+   3D loop; pointed at, it jumps up and glows; tapped, it bounces. */
+.island-lm { transform-origin: 50% 92%; transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1), filter 0.25s; }
+.island-lm-strip { animation-name: island-lm-play; animation-iteration-count: infinite; }
+@keyframes island-lm-play { to { transform: translateX(-100%); } }
+.island-lm-on { transform: translateY(-6%) scale(1.14); filter: drop-shadow(0 0 0.6cqw #fff) drop-shadow(0 0 1.6cqw var(--glow)); z-index: 3 !important; }
+.island-lm-lit { animation: island-lm-bounce 0.65s ease-out; filter: drop-shadow(0 0 0.8cqw #fff) drop-shadow(0 0 2.4cqw var(--glow)); z-index: 3 !important; }
+@keyframes island-lm-bounce { 0% { transform: scale(1.14); } 30% { transform: translateY(-14%) scale(1.25, 1.1); } 55% { transform: translateY(0) scale(1.3, 0.85); } 75% { transform: translateY(-5%) scale(1.1); } 100% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .island-lm-strip, .island-lm-lit { animation: none; } .island-lm { transition: none; } }

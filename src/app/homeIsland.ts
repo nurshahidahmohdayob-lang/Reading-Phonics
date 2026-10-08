@@ -4,7 +4,7 @@
 export const ISLAND_SIZE = { w: 1920, h: 1080 };
 
 /** The picture, with its version so browsers fetch a new render. */
-export const ISLAND_IMAGE = "/images/home-island.webp?v=562fe5601c";
+export const ISLAND_IMAGE = "/images/home-island.webp?v=83b5806967";
 
 export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = {
   "tricky": {
@@ -156,5 +156,108 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
       50.0,
       43.78
     ]
+  }
+};
+
+/** Each landmark's animation strip: where it sits on the island (in % of
+    the picture) and how many frames it has, side by side. */
+export const ISLAND_LANDMARKS: Record<string, { x: number; y: number; w: number; h: number; frames: number }> = {
+  "assessment": {
+    "x": 74.271,
+    "y": 11.389,
+    "w": 6.823,
+    "h": 22.315,
+    "frames": 12
+  },
+  "assignments": {
+    "x": 63.49,
+    "y": 54.259,
+    "w": 8.438,
+    "h": 16.481,
+    "frames": 12
+  },
+  "flashcards": {
+    "x": 13.49,
+    "y": 51.852,
+    "w": 8.542,
+    "h": 12.963,
+    "frames": 12
+  },
+  "formation": {
+    "x": 45.521,
+    "y": 46.852,
+    "w": 10.156,
+    "h": 24.352,
+    "frames": 12
+  },
+  "guided": {
+    "x": 54.427,
+    "y": 3.241,
+    "w": 11.094,
+    "h": 31.019,
+    "frames": 12
+  },
+  "interactive": {
+    "x": 44.792,
+    "y": 25.926,
+    "w": 10.417,
+    "h": 20.741,
+    "frames": 12
+  },
+  "phonics": {
+    "x": 8.281,
+    "y": 32.13,
+    "w": 8.958,
+    "h": 13.704,
+    "frames": 12
+  },
+  "soundout": {
+    "x": 25.938,
+    "y": 30.926,
+    "w": 7.656,
+    "h": 14.259,
+    "frames": 12
+  },
+  "spelling": {
+    "x": 29.844,
+    "y": 57.87,
+    "w": 7.917,
+    "h": 10.926,
+    "frames": 12
+  },
+  "stories": {
+    "x": 33.229,
+    "y": 10.0,
+    "w": 15.156,
+    "h": 20.833,
+    "frames": 12
+  },
+  "storyplay": {
+    "x": 64.792,
+    "y": 29.259,
+    "w": 9.583,
+    "h": 20.833,
+    "frames": 12
+  },
+  "threed": {
+    "x": 84.583,
+    "y": 28.981,
+    "w": 8.125,
+    "h": 20.185,
+    "frames": 12
+  },
+  "tracker": {
+    "x": 77.604,
+    "y": 46.019,
+    "w": 10.26,
+    "h": 22.037,
+    "frames": 12
+  },
+  "tricky": {
+    "x": 18.385,
+    "y": 12.407,
+    "w": 7.083,
+    "h": 21.019,
+    "frames": 12
   }
 };

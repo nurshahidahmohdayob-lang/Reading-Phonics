@@ -12,7 +12,7 @@
    positions come from the render (app/homeIsland.ts). */
 
 import { useEffect, useRef, useState } from "react";
-import { ISLAND_IMAGE, ISLAND_SPOTS, ISLAND_SIZE } from "@/app/homeIsland";
+import { ISLAND_IMAGE, ISLAND_LANDMARKS, ISLAND_SPOTS, ISLAND_SIZE } from "@/app/homeIsland";
 import { speak } from "@/lib/speak";
 
 /** Where Polly waits when nobody is pointing at anything: by the lagoon. */
@@ -97,6 +97,48 @@ export default function HomeIsland({
           <Orbit />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ISLAND_IMAGE} alt="" draggable={false} className="absolute inset-0 z-[1] h-full w-full select-none" />
+
+          {/* The landmarks, each its own 3D animation loop (rendered in
+              Blender, frame by frame) standing on its plaza: they turn,
+              sway and bounce, and jump and glow when pointed at. Drawn back
+              to front so nearer ones overlap farther ones. */}
+          {Object.entries(ISLAND_LANDMARKS)
+            .sort(([a], [b]) => (ISLAND_SPOTS[a]?.foot[1] ?? 0) - (ISLAND_SPOTS[b]?.foot[1] ?? 0))
+            .map(([id, lm], i) => {
+              const sec = sections.find((x) => x.id === id);
+              const foot = ISLAND_SPOTS[id]?.foot;
+              const on = target === id;
+              return (
+                <div key={`lm-${id}`} className="contents">
+                  {foot && (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute z-[1] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-black/30 blur-[3px]"
+                      style={{ left: `${foot[0]}%`, top: `${foot[1]}%`, width: `${lm.w * 0.6}%`, height: `${lm.w * 0.2}%` }}
+                    />
+                  )}
+                  <div
+                    onPointerEnter={sec ? () => setHover(id) : undefined}
+                    onPointerLeave={sec ? () => setHover((h) => (h === id ? null : h)) : undefined}
+                    onClick={sec ? () => open(id) : undefined}
+                    aria-hidden
+                    className={`island-lm absolute z-[1] ${sec ? "cursor-pointer" : "pointer-events-none"} ${on ? (lit === id ? "island-lm-lit" : "island-lm-on") : ""}`}
+                    style={{ left: `${lm.x}%`, top: `${lm.y}%`, width: `${lm.w}%`, height: `${lm.h}%`, ["--glow" as string]: sec?.glow ?? "transparent", animationDelay: `${i * -0.37}s` }}
+                  >
+                    <div className="h-full w-full overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/images/home-landmarks/${id}.webp?v=${ISLAND_IMAGE.split("v=")[1] ?? ""}`}
+                        alt=""
+                        draggable={false}
+                        className="island-lm-strip block h-full max-w-none select-none"
+                        style={{ width: `${lm.frames * 100}%`, animationTimingFunction: `steps(${lm.frames})`, animationDuration: `${["tricky", "tracker", "storyplay"].includes(id) ? 3.2 : 2.2}s`, animationDelay: `${i * -0.29}s` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
 
           {/* life on the island: notes from the microphone, stars round the
               tower, bubbles in the lagoon */}
