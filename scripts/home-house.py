@@ -1,5 +1,6 @@
 """Turns the Blender render of the home house into what the app uses:
-public/images/home-house.webp (the picture) and src/app/homeHouse.ts (where
+public/images/home-house.webp (the picture), home-garden.webp (the garden
+alone, for the other pages) and src/app/homeHouse.ts (where
 each room's sign goes on it, in % of the picture, and the lawn colour the
 app fills the screen with round the picture).
 
@@ -34,4 +35,11 @@ with open(os.path.join(ROOT, "src", "app", "homeHouse.ts"), "w") as f:
     f.write("export const HOUSE_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = ")
     f.write(json.dumps(data["spots"], indent=2))
     f.write(";\n")
+# The garden alone, behind every other page.
+garden = os.path.join(ROOT, "public", "images", "home-garden.webp")
+Image.open(os.path.join(src, "home-garden.png")).convert("RGB").save(garden, "WEBP", quality=80, method=6)
+gversion = hashlib.sha1(open(garden, "rb").read()).hexdigest()[:10]
+with open(os.path.join(ROOT, "src", "app", "homeHouse.ts"), "a") as f:
+    f.write("\n/** The garden alone, the background behind every other page. */\n")
+    f.write(f'export const GARDEN_IMAGE = "/images/home-garden.webp?v={gversion}";\n')
 print("webp", os.path.getsize(webp) // 1024, "KB", "lawn", lawn)

@@ -12,7 +12,7 @@ import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import HomeHouse from "@/components/HomeHouse";
-import HomeBackdrop from "@/components/HomeBackdrop";
+import GardenBackdrop from "@/components/GardenBackdrop";
 import { Fredoka } from "next/font/google";
 
 // A rounded, chunky face for the header, in the cartoon-game style.
@@ -574,16 +574,15 @@ export default function Home() {
   return (
     <div
       className={`flex flex-1 flex-col items-center px-4 py-4 font-sans text-zinc-900 dark:text-zinc-50 ${
-        !section ? "h-[100dvh] overflow-hidden bg-[#0d0b38]" : "bg-[#0d0b38] py-8"
+        !section ? "h-[100dvh] overflow-hidden bg-[#4b8c34]" : "bg-[#4b8c34] py-8"
       }`}
     >
       <SoundPrimer />
-      {/* Every page floats in the same galaxy as the home screen. */}
-      <HomeBackdrop />
+      {/* Every page sits in the same garden as the home screen's house. */}
+      <GardenBackdrop />
       <header className="relative z-20 w-full max-w-5xl shrink-0">
-        {/* The header bar, in the home screen's cartoon-space style: a glassy
-            panel with a flowing rainbow border, the Zera badge, a chunky
-            outlined title and candy buttons. */}
+        {/* The header bar, a wooden garden signboard: the Zera badge, a chunky
+            outlined title and leafy buttons. */}
         <div className="game-header relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[1.6rem] px-3 py-2.5 sm:gap-3 sm:px-5">
           <div className="flex items-center gap-2 justify-self-start">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#0A4F29] ring-[3px] ring-[#FFD23A] shadow-[0_0_16px_rgba(255,210,58,0.65)] sm:h-[4.5rem] sm:w-[4.5rem]">
@@ -603,7 +602,7 @@ export default function Home() {
           </h1>
           <div className="justify-self-end">
             {!section ? (
-              <button onClick={() => go("guide")} className={`${gameFont.className} candy candy-purple`}>
+              <button onClick={() => go("guide")} className={`${gameFont.className} candy candy-green`}>
                 📖 How to use
               </button>
             ) : (
@@ -614,7 +613,7 @@ export default function Home() {
           </div>
         </div>
         {!section && (
-          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-white [text-shadow:0_2px_0_#0b3f73,0_3px_10px_rgba(0,30,80,0.45)] sm:text-2xl">
+          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-white [text-shadow:0_2px_0_#2b4a12,0_3px_10px_rgba(20,40,10,0.55)] sm:text-2xl">
             Learn to read,{" "}
             <span className="text-[#FFD43B]">
               one step at a time

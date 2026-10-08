@@ -20,6 +20,7 @@ import { Andika, Fraunces } from "next/font/google";
 import { sayWord } from "@/lib/sayWord";
 import { stopSpeech } from "@/lib/speak";
 import type { Actor, InteractiveStory as Story, Line, Scenery, Voice } from "@/app/interactiveStories";
+import { StoryArt } from "@/components/storyArt";
 
 const body = Andika({ subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 const display = Fraunces({ subsets: ["latin"], weight: ["700", "800"], display: "swap" });
@@ -224,13 +225,13 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
                       onClick={() => tapActor(i, a)}
                       aria-label={c ? c.name : "picture"}
                       className="absolute -translate-x-1/2 -translate-y-full select-none leading-none"
-                      style={{ left: `${a.x}%`, top: `${a.y}%`, fontSize: `${a.size}cqw` }}
+                      style={{ left: `${a.x}%`, top: `${a.y}%`, width: `${a.size}cqw` }}
                     >
                       <span
                         className={`block ${talking ? "act-talk" : run ? `act-${a.action ?? "hop"}` : a.action === "float" ? "act-idle-float" : ""}`}
                         style={{ transform: a.flip ? "scaleX(-1)" : undefined }}
                       >
-                        <span className="block drop-shadow-[0_0.6cqw_0.4cqw_rgba(0,0,0,0.25)]">{c ? c.emoji : a.emoji}</span>
+                        <StoryArt id={a.art ?? c?.art ?? "puff"} className="block w-full drop-shadow-[0_0.5cqw_0.3cqw_rgba(0,0,0,0.25)]" />
                       </span>
                     </button>
                   );
@@ -250,7 +251,7 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
                           style={{ background: c.colour }}
                           title={`Hear ${c.name}`}
                         >
-                          {c.emoji} {c.name}
+                          {c.name}
                         </button>
                       )}
                       <p className={`text-[1.45rem] leading-[1.7] sm:text-[1.6rem] ${c ? "font-bold" : ""}`} style={c ? { color: c.colour } : undefined}>
@@ -326,7 +327,9 @@ function Cover({ story, onStart }: { story: Story; onStart: () => void }) {
   return (
     <button onClick={onStart} className="relative block w-full text-left" aria-label={`Start ${story.title}`}>
       <Scene scenery={story.pages[0].scene}>
-        <span className="absolute left-1/2 top-[18%] -translate-x-1/2 text-[22cqw] leading-none drop-shadow-lg act-idle-float">{story.emoji}</span>
+        <span className="absolute left-1/2 top-[8%] w-[24cqw] -translate-x-1/2 drop-shadow-lg act-idle-float">
+          <StoryArt id={story.cover} className="block w-full" />
+        </span>
         <span className="absolute inset-x-0 bottom-[8%] flex flex-col items-center gap-[1.5cqw] px-4 text-center">
           <span className={`${display.className} rounded-[2cqw] bg-white/85 px-[3cqw] py-[1cqw] text-[6cqw] font-extrabold leading-tight text-[#0A4F29] shadow-lg`}>
             {story.title}
@@ -342,7 +345,9 @@ function TheEnd({ story, onAgain, onClose }: { story: Story; onAgain: () => void
   return (
     <Scene scenery={story.pages[story.pages.length - 1].scene}>
       <span className="absolute inset-0 flex flex-col items-center justify-center gap-[2cqw]">
-        <span className="text-[14cqw] leading-none act-idle-float">{story.emoji}</span>
+        <span className="w-[16cqw] act-idle-float">
+          <StoryArt id={story.cover} className="block w-full" />
+        </span>
         <span className={`${display.className} rounded-[2cqw] bg-white/85 px-[4cqw] py-[1cqw] text-[8cqw] font-extrabold italic text-[#0A4F29] shadow-lg`}>The End</span>
         <span className="flex gap-[2cqw]">
           <button onClick={onAgain} className="rounded-full bg-[#F7B917] px-[3cqw] py-[1cqw] text-[3cqw] font-bold text-[#0A4F29] shadow-lg active:scale-95">
@@ -376,45 +381,65 @@ function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactN
         <rect width="160" height="90" fill={`url(#sky-${scenery})`} />
         {night && [12, 30, 48, 70, 96, 118, 140, 22, 60, 104, 150].map((x, i) => <circle key={i} cx={x} cy={6 + ((i * 7) % 26)} r={0.5} fill="#fff8d6" />)}
         {scenery === "castle" && (
-          <g fill="#2b2b4a">
-            <rect x="52" y="34" width="56" height="40" />
-            <rect x="44" y="24" width="14" height="50" />
-            <rect x="102" y="24" width="14" height="50" />
-            {[44, 49, 54, 102, 107, 112].map((x) => <rect key={x} x={x} y="21" width="3" height="3" />)}
-            <rect x="74" y="54" width="12" height="20" rx="6" fill="#ffd27a" />
-            <rect x="50" y="34" width="3" height="5" fill="#ffd27a" />
-            <rect x="108" y="34" width="3" height="5" fill="#ffd27a" />
+          <g stroke="#14142a" strokeWidth={0.5} strokeLinejoin="round">
+            <rect x="52" y="34" width="56" height="40" fill="#3a3a62" />
+            <rect x="42" y="22" width="16" height="52" fill="#43436e" />
+            <rect x="102" y="22" width="16" height="52" fill="#43436e" />
+            {[42, 47.5, 53, 102, 107.5, 113].map((x) => <rect key={x} x={x} y="18.5" width="5" height="4" fill="#43436e" />)}
+            {[52, 60, 68, 76, 84, 92, 100].map((x) => <rect key={x} x={x} y="31" width="5" height="3.5" fill="#3a3a62" />)}
+            {[40, 46, 52, 58, 64, 70].map((y, i) => <path key={y} d={`M${52 + (i % 2) * 4} ${y} h50`} stroke="#2e2e52" strokeWidth={0.4} />)}
+            <path d="M74 74 V62 a6 6 0 0 1 12 0 V74 Z" fill="#ffd27a" />
+            <rect x="48" y="32" width="4" height="6" rx="2" fill="#ffd27a" />
+            <rect x="108" y="32" width="4" height="6" rx="2" fill="#ffd27a" />
+            <path d="M50 18.5 V8 M110 18.5 V8" stroke="#14142a" strokeWidth={0.6} />
+            <path d="M50 8 l7 2.5 l-7 2.5 Z" fill="#e8433a" />
+            <path d="M110 8 l7 2.5 l-7 2.5 Z" fill="#3a7be8" />
           </g>
         )}
         {(scenery === "snow" || scenery === "villageSnow") && (
-          <g>
+          <g stroke="#6f87a0" strokeWidth={0.4} strokeLinejoin="round">
             <path d="M0 60 L30 22 L58 60 Z" fill="#9fb8cf" />
             <path d="M22 32 L30 22 L38 32 L33 30 L30 34 L27 30 Z" fill="#fff" />
             <path d="M40 62 L82 14 L126 62 Z" fill="#8fa9c2" />
             <path d="M72 26 L82 14 L92 26 L86 24 L82 29 L78 24 Z" fill="#fff" />
             <path d="M100 62 L135 28 L170 62 Z" fill="#9fb8cf" />
+            <path d="M128 36 L135 28 L142 36 L138 35 L135 38 L132 35 Z" fill="#fff" />
+          </g>
+        )}
+        {scenery === "village" && (
+          /* the dragon's mountain, far off behind the village */
+          <g stroke="#6f87a0" strokeWidth={0.4} strokeLinejoin="round">
+            <path d="M104 56 L138 18 L172 56 Z" fill="#a9bfd4" />
+            <path d="M130 27 L138 18 L146 27 L142 26 L138 30 L134 26 Z" fill="#fff" />
           </g>
         )}
         {(scenery === "road" || scenery === "farm" || scenery === "village") && (
-          <g>
+          <g stroke="#5c9c42" strokeWidth={0.4}>
             <ellipse cx="30" cy="72" rx="60" ry="22" fill="#9fd77e" />
             <ellipse cx="130" cy="74" rx="62" ry="24" fill="#8ccd6a" />
           </g>
         )}
         {(scenery === "village" || scenery === "villageSnow") && (
-          <g>
+          <g stroke="#3b2a2f" strokeWidth={0.5} strokeLinejoin="round">
             {[
-              [18, 50, "#e8a87c"],
-              [52, 46, "#f2d06b"],
-              [110, 48, "#9ec7e8"],
-              [140, 52, "#e88a8a"],
-            ].map(([x, y, c], i) => (
-              <g key={i}>
-                <rect x={Number(x)} y={Number(y)} width="16" height="14" fill={String(c)} />
-                <path d={`M${Number(x) - 2} ${Number(y)} L${Number(x) + 8} ${Number(y) - 9} L${Number(x) + 18} ${Number(y)} Z`} fill={scenery === "villageSnow" ? "#ffffff" : "#b5523b"} />
-                <rect x={Number(x) + 6} y={Number(y) + 6} width="4" height="8" fill="#6b4226" />
-              </g>
-            ))}
+              [14, 52, "#e8a87c"],
+              [46, 48, "#f2d06b"],
+              [96, 50, "#9ec7e8"],
+              [128, 54, "#e88a8a"],
+            ].map(([x, y, c], i) => {
+              const X = Number(x);
+              const Y = Number(y);
+              return (
+                <g key={i}>
+                  <rect x={X + 11} y={Y - 10} width={3} height={6} fill="#a0522d" />
+                  <rect x={X} y={Y} width={18} height={15} fill={String(c)} />
+                  <path d={`M${X - 2.5} ${Y} L${X + 9} ${Y - 9} L${X + 20.5} ${Y} Z`} fill={scenery === "villageSnow" ? "#ffffff" : "#b5523b"} />
+                  <path d={`M${X + 7} ${Y + 15} V${Y + 9} a2 2 0 0 1 4 0 V${Y + 15} Z`} fill="#6b4226" />
+                  <rect x={X + 2} y={Y + 3.5} width={4} height={4} fill="#fff3b0" />
+                  <rect x={X + 12} y={Y + 3.5} width={4} height={4} fill="#fff3b0" />
+                </g>
+              );
+            })}
           </g>
         )}
         {scenery === "sea" && <rect y="56" width="160" height="34" fill="#3aa0d8" />}

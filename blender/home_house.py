@@ -8,7 +8,11 @@ and puts a sign on each room. The app needs to know where each room lands on
 the picture: those points go to blender/out/home-house.json.
 
     /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/home_house.py
-    python3 scripts/home-house.py      # → public/images/home-house.webp + src/app/homeHouse.ts
+    /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/home_house.py -- garden
+    python3 scripts/home-house.py      # → public/images/home-house.webp, home-garden.webp + src/app/homeHouse.ts
+
+With "-- garden" it renders the garden alone (home-garden.png): the
+background behind every other page.
 
 The helpers (island.py, worlds.py) come from LearnNest's island art.
 """
@@ -677,13 +681,16 @@ def podium(x, y):
     box((0.5, 0.02, 0.32), (x + 1.2, y + 0.1, 1.4), mat("Flag", (0.05, 0.6, 0.25), rough=0.6), bevel=0)
 
 
-def garden():
+def garden(full=True):
+    """The lawn and everything on it; with full=False, only the scenery (no
+    paths, puppet booth or podium), for the plain garden behind other pages."""
     grass = mat("Lawn", (0.06, 0.24, 0.02), rough=0.9, noise=0.3, scale=2.5)
     box((80, 80, 0.1), (0, 0, -0.06), grass, bevel=0)
     # paths: from the door out to the front gate, and round to the fountain and the booth
-    path([(DOOR_X, -HY - 1.1), (DOOR_X, -9.0)])
-    path([(DOOR_X, -6.9), (-4.6, -6.9)])
-    path([(DOOR_X, -6.9), (6.6, -6.9), (7.9, 0.4)], 0.7)
+    if full:
+        path([(DOOR_X, -HY - 1.1), (DOOR_X, -9.0)])
+        path([(DOOR_X, -6.9), (-4.6, -6.9)])
+        path([(DOOR_X, -6.9), (6.6, -6.9), (7.9, 0.4)], 0.7)
     # hedges and flower beds round the house
     hedge(HX + 0.7, -2.2, 0.5, 2.6)
     flowers(HX + 0.75, 3.2, 14, 0.45, 1)
@@ -693,8 +700,9 @@ def garden():
     flowers(3.6, -5.9, 10, 0.4, 5)
     fountain(*FOUNTAIN)
     bench(4.6, -7.6)
-    puppet_booth(*GARDEN["interactive"])
-    podium(*GARDEN["tracker"])
+    if full:
+        puppet_booth(*GARDEN["interactive"])
+        podium(*GARDEN["tracker"])
     # a white picket fence along the front, with a gap for the path
     fence(-9.5, -8.3, -2.6, -8.3)
     fence(0.0, -8.3, 12.5, -8.3)
@@ -711,7 +719,7 @@ def garden():
         W.rock(-8.5 + k * 0.4, -7.2 + (k % 2) * 0.3, (0.5, 0.48, 0.45), scale=2.5)
 
 
-def build():
+def build(only_garden=False):
     scene = W.reset()
     scene.render.resolution_x = W_PX
     scene.render.resolution_y = H_PX
@@ -755,7 +763,10 @@ def build():
     bg.inputs[0].default_value = (0.75, 0.85, 1.0, 1)
     bg.inputs[1].default_value = 0.45
 
-    garden()
+    garden(full=not only_garden)
+    if only_garden:
+        I.render("home-garden")
+        return
     house()
 
     # Where each room lands on the picture: its sign goes up above its middle.
@@ -778,4 +789,4 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    build(only_garden="garden" in sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else False)

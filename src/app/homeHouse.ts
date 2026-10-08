@@ -172,3 +172,6 @@ export const HOUSE_SPOTS: Record<string, { sign: [number, number]; foot: [number
     ]
   }
 };
+
+/** The garden alone, the background behind every other page. */
+export const GARDEN_IMAGE = "/images/home-garden.webp?v=bdb10999cb";
