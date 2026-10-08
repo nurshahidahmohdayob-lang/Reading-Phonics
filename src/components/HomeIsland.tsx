@@ -47,11 +47,11 @@ export default function HomeIsland({
       <div aria-hidden className="island-swell absolute inset-0" />
       <div aria-hidden className="island-sparkle absolute inset-0" />
 
-      {/* the island, as big as fits */}
-      <div className="absolute inset-0 flex items-center justify-center p-2" style={{ containerType: "size" }}>
+      {/* the island, as big as fits, with room above for the tallest signs */}
+      <div className="absolute inset-0 flex items-center justify-center px-2 pb-2 pt-10" style={{ containerType: "size" }}>
         <div
           className="island-float relative w-full"
-          style={{ aspectRatio: `${ISLAND_SIZE.w} / ${ISLAND_SIZE.h}`, maxHeight: "100%", maxWidth: `calc((100cqh - 1rem) * ${ISLAND_SIZE.w / ISLAND_SIZE.h})`, containerType: "inline-size" }}
+          style={{ aspectRatio: `${ISLAND_SIZE.w} / ${ISLAND_SIZE.h}`, maxHeight: "100%", maxWidth: `calc((100cqh - 3rem) * ${ISLAND_SIZE.w / ISLAND_SIZE.h})`, containerType: "inline-size" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/home-island.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none" />

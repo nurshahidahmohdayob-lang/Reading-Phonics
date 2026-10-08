@@ -16,8 +16,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "stories": {
     "sign": [
-      40.48,
-      19.16
+      40.14,
+      11.41
     ],
     "foot": [
       40.91,
@@ -26,8 +26,8 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
   },
   "guided": {
     "sign": [
-      59.52,
-      19.16
+      60.22,
+      3.08
     ],
     "foot": [
       59.09,

@@ -53,6 +53,9 @@ ZONES = {
 
 LAGOON = (0.0, 0.3)
 
+# How high above a landmark its sign floats, for the tall ones.
+SIGN_LIFT = {"stories": 1.75, "guided": 2.45}
+
 # Section colours, linear (a touch deeper than the app's pastels, for walls).
 COL = {
     "phonics": (0.95, 0.35, 0.6),
@@ -187,7 +190,7 @@ def lm_flashcards(x, y, c):
     cols = [(1.0, 0.35, 0.5), (0.35, 0.65, 1.0), (1.0, 0.85, 0.2), c]
     for k, col in enumerate(cols):
         card = I.box("Card", (0.4, 0.03, 0.54), (x - 0.2 + k * 0.13, y + 0.12 - k * 0.07, 0.42 + k * 0.015), I.material("Card", col, rough=0.5), bevel=0.02)
-        card.rotation_euler = (math.radians(-12), 0, math.radians(-20 + k * 13))
+        I.tilt(card, (math.radians(-12), 0, math.radians(-20 + k * 13)))
     I.box("Pic", (0.2, 0.02, 0.16), (x + 0.2, y - 0.1, 0.5), I.material("Pic", (1, 1, 1)), bevel=0.01)
 
 
@@ -220,20 +223,27 @@ def lm_tricky(x, y, c):
 
 
 def lm_stories(x, y, c):
-    pad(x, y, c, r=0.7)
+    pad(x, y, c, r=0.78)
     page = I.material("Page", (1.0, 0.98, 0.92), rough=0.6)
     cover = I.material("Cover", c, rough=0.5)
     ink = I.material("Ink", (0.35, 0.35, 0.45))
-    # A big storybook standing open, leaning back, like a sign.
+    # A giant storybook standing open, leaning back so its pages face the
+    # viewer, with lines of words and a picture.
+    tilt = math.radians(-32)
     for side in (-1, 1):
-        cv = I.box("Cover", (0.62, 0.05, 0.78), (x + side * 0.31, y + 0.06, 0.62), cover, bevel=0.02)
-        cv.rotation_euler = (math.radians(-18), 0, math.radians(side * 18))
-        pg = I.box("Pages", (0.56, 0.06, 0.7), (x + side * 0.29, y + 0.0, 0.63), page, bevel=0.02)
-        pg.rotation_euler = (math.radians(-18), 0, math.radians(side * 18))
-        for k in range(4):
-            ln = I.box("Line", (0.36, 0.02, 0.035), (x + side * 0.3, y - 0.045 + k * 0.03, 0.82 - k * 0.11), ink, bevel=0)
-            ln.rotation_euler = (math.radians(-18), 0, math.radians(side * 18))
-    W.cylinder(0.035, 0.78, (x, y + 0.08, 0.62), cover, vertices=8).rotation_euler = (math.radians(-18), 0, 0)
+        cv = I.box("Cover", (0.95, 0.07, 1.25), (x + side * 0.47, y + 0.1, 0.78), cover, bevel=0.03)
+        I.tilt(cv, (tilt, 0, math.radians(side * 16)))
+        pg = I.box("Pages", (0.86, 0.09, 1.12), (x + side * 0.44, y + 0.02, 0.8), page, bevel=0.03)
+        I.tilt(pg, (tilt, 0, math.radians(side * 16)))
+        for k in range(5):
+            if side == 1 and k < 2:
+                continue
+            ln = I.box("Line", (0.58, 0.02, 0.05), (x + side * 0.45, y - 0.08 + k * 0.06, 1.1 - k * 0.17), ink, bevel=0)
+            I.tilt(ln, (tilt, 0, math.radians(side * 16)))
+    pic = I.box("Picture", (0.5, 0.02, 0.32), (x + 0.45, y - 0.12, 1.08), I.material("BookPic", (0.4, 0.75, 1.0)), bevel=0.01)
+    I.tilt(pic, (tilt, 0, math.radians(16)))
+    sunpic = I.blob((x + 0.58, y - 0.16, 1.14), 0.07, I.material("BookSun", (1.0, 0.8, 0.15)))
+    W.cylinder(0.05, 1.2, (x, y + 0.12, 0.78), cover, vertices=8).rotation_euler = (tilt, 0, 0)
 
 
 def lm_storyplay(x, y, c):
@@ -246,13 +256,21 @@ def lm_storyplay(x, y, c):
 
 
 def lm_guided(x, y, c):
-    pad(x, y, c)
-    W.cylinder(0.45, 0.16, (x, y, 0.2), I.material("Stage", c, rough=0.5), vertices=32)
+    pad(x, y, c, r=0.72)
+    # A big stage with a giant microphone on a stand.
+    W.cylinder(0.6, 0.22, (x, y, 0.22), I.material("Stage", c, rough=0.5), vertices=32)
+    W.cylinder(0.62, 0.04, (x, y, 0.34), W.metal("StageRim", (1.0, 0.75, 0.25)), vertices=32)
     metal = W.metal("Mic", (0.8, 0.82, 0.88))
-    W.cylinder(0.025, 0.7, (x, y, 0.62), metal, vertices=8)
-    head = I.blob((x, y, 1.05), 0.17, I.material("MicHead", (0.35, 0.35, 0.4), rough=0.4))
-    head.scale = (1, 1, 1.3)
-    W.cone(0.06, 0.0, 0.12, (x + 0.3, y, 1.2), W.glow_material("Note", (1, 0.85, 0.2), 1.5), vertices=4)
+    W.cylinder(0.25, 0.05, (x, y, 0.38), metal, vertices=24)
+    W.cylinder(0.045, 1.1, (x, y, 0.95), metal, vertices=12)
+    W.cylinder(0.07, 0.35, (x, y, 1.55), I.material("Grip", (0.15, 0.15, 0.2), rough=0.4), vertices=16)
+    head = I.blob((x, y, 1.9), 0.3, I.material("MicHead", (0.4, 0.4, 0.48), rough=0.35))
+    head.scale = (1, 1, 1.25)
+    W.cylinder(0.31, 0.06, (x, y, 1.78), W.metal("MicBand", (1.0, 0.75, 0.25)), vertices=24)
+    note = W.glow_material("Note", (1, 0.85, 0.2), 1.5)
+    for (dx, dz, r) in ((0.5, 2.0, 0.09), (-0.48, 1.75, 0.07), (0.62, 1.6, 0.06)):
+        I.blob((x + dx, y - 0.05, dz), r, note)
+        W.cylinder(0.012, 0.22, (x + dx + r * 0.9, y - 0.05, dz + 0.11), note, vertices=6)
 
 
 def lm_assessment(x, y, c):
@@ -272,11 +290,11 @@ def lm_threed(x, y, c):
         leg = W.cylinder(0.03, 1.2, (x + dx, y + 0.05, 0.7), wood, vertices=8)
         leg.rotation_euler = (math.radians(-10), math.radians(dx * 30), 0)
     canvas = I.box("Canvas", (0.62, 0.04, 0.5), (x, y - 0.03, 0.85), I.material("Canvas", (1, 1, 1)), bevel=0.01)
-    canvas.rotation_euler = (math.radians(-10), 0, 0)
+    I.tilt(canvas, (math.radians(-10), 0, 0))
     for k, col in enumerate([(1.0, 0.35, 0.5), (0.35, 0.65, 1.0), (1.0, 0.8, 0.2)]):
         I.blob((x - 0.15 + k * 0.15, y - 0.07, 0.85 + (k % 2) * 0.08), 0.07, I.material("Paint", col, rough=0.4))
     cube = I.box("Cube3D", (0.22, 0.22, 0.22), (x + 0.42, y - 0.25, 0.28), W.glow_material("Cube", c, 0.4), bevel=0.02)
-    cube.rotation_euler = (math.radians(20), math.radians(30), math.radians(15))
+    I.tilt(cube, (math.radians(20), math.radians(30), math.radians(15)))
 
 
 def lm_assignments(x, y, c):
@@ -288,7 +306,7 @@ def lm_assignments(x, y, c):
     I.box("Slot", (0.24, 0.03, 0.04), (x, y - 0.24, 0.75), I.material("SlotDark", (0.1, 0.05, 0.05)), bevel=0)
     for k in range(3):
         env = I.box("Letter", (0.26, 0.02, 0.17), (x + 0.42, y - 0.15 + k * 0.05, 0.25 + k * 0.17), I.material("Envelope", (1, 0.97, 0.88)), bevel=0.01)
-        env.rotation_euler = (0, math.radians(-15 + k * 15), math.radians(10))
+        I.tilt(env, (0, math.radians(-15 + k * 15), math.radians(10)))
     I.box("Tick", (0.07, 0.025, 0.07), (x + 0.42, y - 0.17, 0.25), I.material("TickGreen", (0.2, 0.75, 0.35)), bevel=0.01)
 
 
@@ -406,7 +424,8 @@ def build():
     # Where each landmark lands on the picture: the sign goes above it.
     spots = {}
     for zone, (zx, zy) in ZONES.items():
-        top = world_to_camera_view(scene, cam, Vector((zx, zy, 1.05)))
+        lift = SIGN_LIFT.get(zone, 1.05)
+        top = world_to_camera_view(scene, cam, Vector((zx, zy, lift)))
         foot = world_to_camera_view(scene, cam, Vector((zx, zy, 0.1)))
         spots[zone] = {
             "sign": [round(top.x * 100, 2), round((1 - top.y) * 100, 2)],
