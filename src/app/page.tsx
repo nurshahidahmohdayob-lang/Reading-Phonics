@@ -11,7 +11,7 @@ import SoundItOut from "@/components/tabs/SoundItOut";
 import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
-import HomeIsland from "@/components/HomeIsland";
+import HomeHouse from "@/components/HomeHouse";
 import HomeBackdrop from "@/components/HomeBackdrop";
 import { Fredoka } from "next/font/google";
 
@@ -166,8 +166,8 @@ const SECTIONS: {
 
 /* A colourful illustrated picture per tool — filled multi-colour SVG scenes,
    each self-contained so they read as little pictures, not flat icons. */
-/** Each section's glow on the home island. */
-const ISLAND_GLOW: Record<string, string> = {
+/** Each section's glow in the home house. */
+const HOUSE_GLOW: Record<string, string> = {
   phonics: "rgba(255,105,170,0.95)", soundout: "rgba(120,135,255,0.95)", flashcards: "rgba(60,210,215,0.95)",
   formation: "rgba(255,160,70,0.95)", spelling: "rgba(80,220,140,0.95)", tricky: "rgba(255,215,40,0.95)",
   stories: "rgba(90,170,255,0.95)", storyplay: "rgba(60,210,200,0.95)", guided: "rgba(170,130,255,0.95)",
@@ -580,7 +580,7 @@ export default function Home() {
       <SoundPrimer />
       {/* Every page floats in the same galaxy as the home screen. */}
       <HomeBackdrop />
-      <header className="relative z-10 w-full max-w-5xl shrink-0">
+      <header className="relative z-20 w-full max-w-5xl shrink-0">
         {/* The header bar, in the home screen's cartoon-space style: a glassy
             panel with a flowing rainbow border, the Zera badge, a chunky
             outlined title and candy buttons. */}
@@ -627,13 +627,13 @@ export default function Home() {
       {/* Home menu — a clean, modern 2-column card grid */}
       {!section && (
         <main className="relative z-10 mt-3 hidden min-h-0 w-full max-w-6xl flex-1 md:block">
-          <HomeIsland
+          <HomeHouse
             sections={SECTIONS.filter((s) => s.id !== "tracker" || trackerOwner).map((s) => ({
               id: s.id,
               label: s.label.replace(" 🔒", ""),
               blurb: s.blurb,
               text: s.text,
-              glow: ISLAND_GLOW[s.id] ?? "rgba(255,230,120,0.9)",
+              glow: HOUSE_GLOW[s.id] ?? "rgba(255,230,120,0.9)",
             }))}
             icon={(id) => <ToolIcon id={id as SectionId} className="h-[85%] w-[85%]" />}
             onOpen={(id) =>
