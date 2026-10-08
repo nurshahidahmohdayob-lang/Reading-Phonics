@@ -515,3 +515,26 @@ body {
 }
 .tick-pop { animation: tick-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
 @media (prefers-reduced-motion: reduce) { .tick-pop { animation: none; } }
+
+/* Interactive stories (components/InteractiveStory): what characters and
+   props do when tapped, and the bounce while a character is talking. */
+@keyframes act-hop { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-35%); } 55% { transform: translateY(0); } 75% { transform: translateY(-12%); } }
+@keyframes act-wiggle { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(5deg); } }
+@keyframes act-spin { to { transform: rotate(360deg); } }
+@keyframes act-shake { 0%,100% { transform: translateX(0); } 15%,45%,75% { transform: translateX(-8%); } 30%,60%,90% { transform: translateX(8%); } }
+@keyframes act-drive { 0% { transform: translateX(0); } 45% { transform: translateX(60%); opacity: 1; } 50% { transform: translateX(60%); opacity: 0; } 55% { transform: translateX(-60%); opacity: 0; } 60% { opacity: 1; } 100% { transform: translateX(0); } }
+@keyframes act-grow { 0%,100% { transform: scale(1); } 40% { transform: scale(1.45); } 70% { transform: scale(0.9); } }
+@keyframes act-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-18%) translateX(6%); } }
+@keyframes act-talk { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-7%) scale(1.04, 0.97); } }
+.act-hop { animation: act-hop 0.7s ease-out; }
+.act-wiggle { animation: act-wiggle 0.8s ease-in-out; }
+.act-spin { animation: act-spin 0.9s ease-in-out; }
+.act-shake { animation: act-shake 0.6s ease-in-out; }
+.act-drive { animation: act-drive 1.6s ease-in-out; }
+.act-grow { animation: act-grow 0.8s ease-in-out; }
+.act-float { animation: act-float 1.2s ease-in-out 2; }
+.act-talk { animation: act-talk 0.32s ease-in-out infinite; }
+.act-idle-float { animation: act-float 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .act-hop, .act-wiggle, .act-spin, .act-shake, .act-drive, .act-grow, .act-float, .act-talk, .act-idle-float { animation: none; }
+}
