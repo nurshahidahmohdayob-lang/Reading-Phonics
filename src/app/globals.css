@@ -538,3 +538,33 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .act-hop, .act-wiggle, .act-spin, .act-shake, .act-drive, .act-grow, .act-float, .act-talk, .act-idle-float { animation: none; }
 }
+
+/* The home island (components/HomeIsland). */
+.island-sea { background: radial-gradient(ellipse at 50% 55%, #38c6e8 0%, #1f9bd6 40%, #1468b8 100%); }
+.island-swell { background: repeating-radial-gradient(ellipse at 50% 55%, rgba(255,255,255,0.10) 0 2px, transparent 2px 38px); animation: island-swell 6s ease-in-out infinite; }
+@keyframes island-swell { 0%,100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.04); opacity: 1; } }
+.island-sparkle { background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1.5px); background-size: 90px 70px; animation: island-sparkle 3s linear infinite; }
+@keyframes island-sparkle { 0%,100% { opacity: 0.25; } 50% { opacity: 0.7; } }
+.island-float { animation: island-float 7s ease-in-out infinite; }
+@keyframes island-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.island-sign-wrap { animation: island-bob 3.5s ease-in-out infinite; }
+@keyframes island-bob { 0%,100% { margin-top: 0; } 50% { margin-top: -4px; } }
+.island-sign { transition: transform 0.2s, box-shadow 0.2s; }
+.island-sign-wrap:hover .island-sign, .island-sign-wrap:focus-visible .island-sign { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px var(--glow), 0 0 22px 6px var(--glow); }
+.island-sign-lit { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--glow), 0 0 36px 14px var(--glow) !important; }
+.island-ring { border: 3px solid var(--glow); animation: island-ring 0.65s ease-out forwards; }
+@keyframes island-ring { from { transform: scale(1); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
+.island-halo { animation: island-halo 1.6s ease-in-out infinite; }
+@keyframes island-halo { 0%,100% { opacity: 0.55; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 0.95; transform: translate(-50%,-50%) scale(1.15); } }
+.island-halo-burst { animation: island-halo-burst 0.65s ease-out forwards; }
+@keyframes island-halo-burst { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(-50%,-50%) scale(2.4); } }
+.island-cloud { left: -12%; animation: island-drift linear infinite; }
+@keyframes island-drift { from { transform: translateX(0); } to { transform: translateX(120vw); } }
+.island-bird { left: -6%; animation: island-fly linear infinite; }
+@keyframes island-fly { 0% { transform: translate(0,0); } 50% { transform: translate(60vw,-18px); } 100% { transform: translate(120vw,0); } }
+.island-boat { left: -8%; animation: island-drift linear infinite; }
+.island-fish { animation: island-jump 5s ease-in-out infinite; }
+@keyframes island-jump { 0%,70%,100% { transform: translate(0,0) rotate(0); opacity: 0; } 78% { opacity: 1; transform: translate(10px,-24px) rotate(-20deg); } 88% { opacity: 1; transform: translate(24px,-6px) rotate(25deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .island-swell, .island-sparkle, .island-float, .island-sign-wrap, .island-cloud, .island-bird, .island-boat, .island-fish, .island-halo { animation: none; }
+}
