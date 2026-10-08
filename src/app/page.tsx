@@ -12,7 +12,7 @@ import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import HomeHouse from "@/components/HomeHouse";
-import GardenBackdrop from "@/components/GardenBackdrop";
+import ForestBackdrop from "@/components/ForestBackdrop";
 import { Fredoka } from "next/font/google";
 
 // A rounded, chunky face for the header, in the cartoon-game style.
@@ -578,8 +578,8 @@ export default function Home() {
       }`}
     >
       <SoundPrimer />
-      {/* Every page sits in the same garden as the home screen's house. */}
-      <GardenBackdrop />
+      {/* Every page sits in the same storybook forest glade. */}
+      <ForestBackdrop />
       <header className="relative z-20 w-full max-w-5xl shrink-0">
         {/* The header bar, a wooden garden signboard: the Zera badge, a chunky
             outlined title and leafy buttons. */}

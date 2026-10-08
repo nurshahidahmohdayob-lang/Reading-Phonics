@@ -1,17 +1,17 @@
 "use client";
 
 /* The home screen as a reading house: one Blender-rendered doll's house with
-   its roof off (blender/home_house.py), in a garden that fills the screen.
+   its roof off (blender/home_house.py), on a floating island in the forest.
    Every section has a room (or a spot in the garden) with a sign on it.
    Polly the parrot flies to the sign a child points at and says its name, and
    a path of light runs from the front door to that room; tapping a sign sends
    a ring of light round it and a glow over its floor, then opens the section.
    Music notes rise from the music room, stars twinkle in the observatory,
-   the fountain bubbles and butterflies flit over the lawn. Sign positions
+   and the fountain bubbles. Sign positions
    come from the render (app/homeHouse.ts). */
 
 import { useEffect, useRef, useState } from "react";
-import { HOUSE_IMAGE, HOUSE_LAWN, HOUSE_SIZE, HOUSE_SPOTS } from "@/app/homeHouse";
+import { HOUSE_IMAGE, HOUSE_SIZE, HOUSE_SPOTS } from "@/app/homeHouse";
 import { speak } from "@/lib/speak";
 
 const RATIO = HOUSE_SIZE.w / HOUSE_SIZE.h;
@@ -81,9 +81,10 @@ export default function HomeHouse({
   };
 
   return (
-    // The garden fills the whole screen behind the header: the picture covers
-    // it, cropping a little lawn off the sides or top if it must, never the house.
-    <div className="fixed inset-0 overflow-hidden" style={{ background: HOUSE_LAWN }}>
+    // The house's island floats over the forest glade (components/ForestBackdrop),
+    // as big as the screen allows, cropping a little island off the sides if
+    // it must, never the house.
+    <div className="fixed inset-0 overflow-hidden">
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
@@ -190,12 +191,6 @@ export default function HomeHouse({
             {target ? `Let's do ${label(target)}!` : "Hi! Pick a room!"}
           </span>
         </div>
-      </div>
-
-      {/* butterflies over the lawn */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <span className="house-butterfly absolute top-[30%] text-2xl" style={{ animationDuration: "30s" }}>🦋</span>
-        <span className="house-butterfly absolute top-[62%] text-xl" style={{ animationDuration: "38s", animationDelay: "-17s" }}>🦋</span>
       </div>
     </div>
   );

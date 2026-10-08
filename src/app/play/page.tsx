@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Fredoka } from "next/font/google";
-import GardenBackdrop from "@/components/GardenBackdrop";
+import ForestBackdrop from "@/components/ForestBackdrop";
 import InteractiveStory from "@/components/InteractiveStory";
 import { StoryArt } from "@/components/storyArt";
 import { INTERACTIVE_STORIES, findInteractiveStory } from "@/app/interactiveStories";
@@ -30,7 +30,7 @@ export default function PlayPage() {
 
   return (
     <main className="relative min-h-dvh bg-[#4b8c34] px-4 pb-10 pt-4">
-      <GardenBackdrop />
+      <ForestBackdrop />
       <div className="relative z-10 mx-auto max-w-4xl">
         {/* the wooden sign along the top, with the way home and back */}
         <header className="game-header relative mb-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[1.6rem] px-3 py-3 sm:px-5">

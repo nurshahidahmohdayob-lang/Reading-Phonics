@@ -1,18 +1,14 @@
 """
 The home screen: a cosy reading house seen from above with its roof off, like
-a doll's house, set in a garden that fills the whole screen. Every section of
+a doll's house, on a floating island of lawn and layered earth. Every section of
 the app has a room (a library for Sentences & Stories, a music room for Sound
 It Out, a little theatre for Story Play...) or a spot in the garden. Rendered
-once, in isometric view: the app lays the picture over the whole home screen
-and puts a sign on each room. The app needs to know where each room lands on
+once, in isometric view: the app floats the picture over the forest glade
+(blender/forest.py) and puts a sign on each room. The app needs to know where each room lands on
 the picture: those points go to blender/out/home-house.json.
 
     /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/home_house.py
-    /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/home_house.py -- garden
-    python3 scripts/home-house.py      # → public/images/home-house.webp, home-garden.webp + src/app/homeHouse.ts
-
-With "-- garden" it renders the garden alone (home-garden.png): the
-background behind every other page.
+    python3 scripts/home-house.py      # → public/images/home-house.webp + src/app/homeHouse.ts
 
 The helpers (island.py, worlds.py) come from LearnNest's island art.
 """
@@ -28,6 +24,7 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Euler, Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import forest as F  # noqa: E402
 import island as I  # noqa: E402
 import worlds as W  # noqa: E402
 
@@ -681,16 +678,44 @@ def podium(x, y):
     box((0.5, 0.02, 0.32), (x + 1.2, y + 0.1, 1.4), mat("Flag", (0.05, 0.6, 0.25), rough=0.6), bevel=0)
 
 
-def garden(full=True):
-    """The lawn and everything on it; with full=False, only the scenery (no
-    paths, puppet booth or podium), for the plain garden behind other pages."""
-    grass = mat("Lawn", (0.06, 0.24, 0.02), rough=0.9, noise=0.3, scale=2.5)
-    box((80, 80, 0.1), (0, 0, -0.06), grass, bevel=0)
-    # paths: from the door out to the front gate, and round to the fountain and the booth
-    if full:
-        path([(DOOR_X, -HY - 1.1), (DOOR_X, -9.0)])
-        path([(DOOR_X, -6.9), (-4.6, -6.9)])
-        path([(DOOR_X, -6.9), (6.6, -6.9), (7.9, 0.4)], 0.7)
+ISLAND = (1.0, -1.4, 9.8, 7.3)  # centre x, y and half-width, half-depth
+
+
+def on_island(x, y, margin=0.0):
+    cx, cy, rx, ry = ISLAND
+    return (abs(x - cx) / (rx - margin)) ** 4 + (abs(y - cy) / (ry - margin)) ** 4 < 1
+
+
+def island():
+    """The ground: a chunky floating island, a lawn on top of bands of cream
+    and earth, like the cliffs in the forest behind it."""
+    cx, cy, rx, ry = ISLAND
+    rnd = random.Random(9)
+    waves = [(rnd.uniform(0.01, 0.03), k, rnd.uniform(0, math.tau)) for k in (3, 5, 7)]
+    pts = []
+    for i in range(72):
+        a = i * math.tau / 72
+        c, s_ = math.cos(a), math.sin(a)
+        f = 1 + sum(w * math.sin(k * a + ph) for w, k, ph in waves)
+        pts.append((math.copysign(abs(c) ** 0.5, c) * rx * f, math.copysign(abs(s_) ** 0.5, s_) * ry * f))
+    F.slab(pts, cx, cy, -0.25, 0.0, mat("Lawn", (0.1, 0.36, 0.04), rough=0.9, noise=0.25, scale=2.5))
+    F.slab([(x * 1.012, y * 1.012) for x, y in pts], cx, cy, -0.36, -0.2, mat("LawnLip", (0.07, 0.28, 0.03), rough=0.9))
+    z, k = -0.36, 0
+    while z > -2.6:
+        h = 0.3 + (k % 3) * 0.08
+        sc = 1 - 0.02 * (k + 1)
+        F.slab([(x * sc, y * sc) for x, y in pts], cx, cy, z - h, z, mat(f"Strata{k % 4}", F.STRATA[k % 4], rough=0.9))
+        z -= h
+        k += 1
+
+
+def garden():
+    """The island and everything on it round the house."""
+    island()
+    # paths: from the door out to the front, and round to the fountain and the booth
+    path([(DOOR_X, -HY - 1.1), (DOOR_X, -6.9)])
+    path([(DOOR_X, -6.9), (-4.6, -6.9)])
+    path([(DOOR_X, -6.9), (6.6, -6.9), (7.9, 0.4)], 0.7)
     # hedges and flower beds round the house
     hedge(HX + 0.7, -2.2, 0.5, 2.6)
     flowers(HX + 0.75, 3.2, 14, 0.45, 1)
@@ -700,30 +725,22 @@ def garden(full=True):
     flowers(3.6, -5.9, 10, 0.4, 5)
     fountain(*FOUNTAIN)
     bench(4.6, -7.6)
-    if full:
-        puppet_booth(*GARDEN["interactive"])
-        podium(*GARDEN["tracker"])
-    # a white picket fence along the front, with a gap for the path
-    fence(-9.5, -8.3, -2.6, -8.3)
-    fence(0.0, -8.3, 12.5, -8.3)
-    # trees behind the house and down the sides
+    puppet_booth(*GARDEN["interactive"])
+    podium(*GARDEN["tracker"])
+    # trees round the edge of the island, behind and beside the house
     rnd = random.Random(14)
     fruit = [None, (0.9, 0.08, 0.08), None, (1.0, 0.55, 0.05)]
-    for x, y, s in ((-9.0, 6.5, 1.3), (-5.5, 7.4, 1.2), (-2.0, 6.8, 1.35), (1.5, 7.5, 1.2), (5.0, 6.9, 1.3), (8.5, 6.0, 1.2),
-                    (-10.0, 2.5, 1.2), (-9.4, -1.2, 1.1), (-10.6, -4.8, 1.25), (11.5, 3.6, 1.2), (12.4, -0.2, 1.1), (13.0, -5.0, 1.2),
-                    (-12.5, 6.0, 1.3), (12.0, 7.5, 1.3), (-13.0, 0.5, 1.2), (15.0, 2.0, 1.2)):
-        tree(x, y, s, fruit[rnd.randrange(4)])
-    for x, y in ((-7.5, 5.2), (3.5, 5.6), (10.0, 4.5), (-11.5, -2.5), (13.5, -2.8)):
-        hedge(x, y, 1.4, 0.6, 0.55)
-    for k in range(6):
-        W.rock(-8.5 + k * 0.4, -7.2 + (k % 2) * 0.3, (0.5, 0.48, 0.45), scale=2.5)
+    for x, y, s in ((-7.6, 4.6, 1.2), (-4.5, 5.0, 1.1), (-1.0, 5.1, 1.2), (2.5, 5.2, 1.1), (6.0, 4.9, 1.2), (8.8, 3.6, 1.1),
+                    (-7.8, 1.0, 1.1), (-7.9, -2.6, 1.0), (10.0, -3.6, 1.0), (-6.4, -6.4, 1.0)):
+        if on_island(x, y, 0.6):
+            tree(x, y, s, fruit[rnd.randrange(4)])
 
 
-def build(only_garden=False):
+def build():
     scene = W.reset()
     scene.render.resolution_x = W_PX
     scene.render.resolution_y = H_PX
-    scene.render.film_transparent = False
+    scene.render.film_transparent = True
     try:
         scene.eevee.use_gtao = True
         scene.eevee.gtao_distance = 0.6
@@ -763,10 +780,7 @@ def build(only_garden=False):
     bg.inputs[0].default_value = (0.75, 0.85, 1.0, 1)
     bg.inputs[1].default_value = 0.45
 
-    garden(full=not only_garden)
-    if only_garden:
-        I.render("home-garden")
-        return
+    garden()
     house()
 
     # Where each room lands on the picture: its sign goes up above its middle.
@@ -789,4 +803,4 @@ def build(only_garden=False):
 
 
 if __name__ == "__main__":
-    build(only_garden="garden" in sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else False)
+    build()

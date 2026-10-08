@@ -551,10 +551,8 @@ body {
 @keyframes house-halo { 0%,100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); } }
 .house-halo-burst { animation: house-halo-burst 0.65s ease-out forwards; }
 @keyframes house-halo-burst { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(-50%,-50%) scale(2.4); } }
-.house-butterfly { left: -6%; animation: house-flit linear infinite; }
-@keyframes house-flit { 0% { transform: translate(0,0); } 25% { transform: translate(30vw,-30px); } 50% { transform: translate(60vw,10px); } 75% { transform: translate(90vw,-24px); } 100% { transform: translate(120vw,0); } }
 @media (prefers-reduced-motion: reduce) {
-  .house-sign-wrap, .house-butterfly, .house-halo { animation: none; }
+  .house-sign-wrap, .house-halo { animation: none; }
 }
 
 /* Skills Quest: confetti burst on a correct answer. */
@@ -660,3 +658,25 @@ body {
   pointer-events: none;
 }
 
+
+/* The forest glade behind every page (components/ForestBackdrop): the
+   windmill's sails turn, the treetops sway, the fairy lights twinkle,
+   sunbeams shimmer, fireflies wander and leaves flutter down. */
+.forest-sails { animation: forest-turn 14s linear infinite; }
+@keyframes forest-turn { to { transform: rotate(360deg); } }
+.forest-sway { transform-origin: 50% 70%; animation: forest-sway 7s ease-in-out infinite; }
+@keyframes forest-sway { 0%,100% { transform: rotate(0deg) translateY(0); } 50% { transform: rotate(0.35deg) translateY(0.3%); } }
+.forest-sway-front { transform-origin: 50% 100%; animation: forest-sway-front 5s ease-in-out infinite; }
+@keyframes forest-sway-front { 0%,100% { transform: scale(1); } 50% { transform: scale(1.01, 0.995); } }
+.forest-bulb { width: 0.55%; aspect-ratio: 1; margin: -0.27% 0 0 -0.27%; border-radius: 50%; background: radial-gradient(circle, #fffbe0 0 25%, #ffc94a 45%, rgba(255, 170, 40, 0) 72%); animation: forest-twinkle 2.4s ease-in-out infinite; }
+@keyframes forest-twinkle { 0%,100% { opacity: 0.45; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.4); } }
+.forest-beam { transform: skewX(-18deg); background: linear-gradient(180deg, rgba(255, 236, 170, 0.55), rgba(255, 236, 170, 0)); filter: blur(6px); animation: forest-beam 7s ease-in-out infinite; }
+@keyframes forest-beam { 0%,100% { opacity: 0.25; } 50% { opacity: 0.7; } }
+.forest-firefly { width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle, #fffde0 0 30%, #e6ff6a 55%, rgba(200, 255, 80, 0) 75%); box-shadow: 0 0 10px 3px rgba(220, 255, 100, 0.55); animation: forest-firefly ease-in-out infinite; }
+@keyframes forest-firefly { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(40px, -60px); opacity: 0.6; } 85% { opacity: 1; } 100% { transform: translate(-20px, -120px); opacity: 0; } }
+.forest-leaf { animation: forest-leaf linear infinite; }
+@keyframes forest-leaf { 0% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 8% { opacity: 1; } 50% { transform: translate(60px, 55vh) rotate(260deg); } 92% { opacity: 1; } 100% { transform: translate(-30px, 108vh) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .forest-sails, .forest-sway, .forest-sway-front, .forest-bulb, .forest-beam, .forest-firefly, .forest-leaf { animation: none; }
+  .forest-firefly, .forest-leaf { display: none; }
+}

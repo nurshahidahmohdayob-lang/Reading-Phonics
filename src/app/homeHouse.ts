@@ -3,10 +3,7 @@
 export const HOUSE_SIZE = { w: 2400, h: 1350 };
 
 /** The picture, with its version so browsers fetch a new render. */
-export const HOUSE_IMAGE = "/images/home-house.webp?v=887796966b";
-
-/** The grass colour, to fill the screen round the picture. */
-export const HOUSE_LAWN = "#4b8c34";
+export const HOUSE_IMAGE = "/images/home-house.webp?v=7aa5608a49";
 
 /** Where each room is on the picture, in % across and down: its sign
     goes at `sign`, and `foot` is the middle of its floor. */
@@ -172,6 +169,3 @@ export const HOUSE_SPOTS: Record<string, { sign: [number, number]; foot: [number
     ]
   }
 };
-
-/** The garden alone, the background behind every other page. */
-export const GARDEN_IMAGE = "/images/home-garden.webp?v=bdb10999cb";
