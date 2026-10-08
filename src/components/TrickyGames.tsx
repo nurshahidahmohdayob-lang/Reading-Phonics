@@ -25,40 +25,40 @@ const GAMES: {
     title: "Missing Word",
     blurb: "Fill the gap in the sentence",
     emoji: "✏️",
-    color: "from-[#CFF5E1] to-[#A7E9C8]",
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
   },
   {
     id: "spell",
     title: "Spell It",
     blurb: "Hear the word, tap its letters",
     emoji: "🐝",
-    color: "from-[#FFE8C9] to-[#FFD3A1]",
-    text: "text-orange-700",
+    color: "from-[#FFC27A] to-[#FF9B3D]",
+    text: "text-orange-900",
   },
   {
     id: "train",
     title: "Word Train",
     blurb: "Tap the words in the order you heard",
     emoji: "🚂",
-    color: "from-[#D3EBFF] to-[#ABD9FF]",
-    text: "text-sky-700",
+    color: "from-[#8FD1FF] to-[#4DB2FF]",
+    text: "text-sky-900",
   },
   {
     id: "whack",
     title: "Whack-a-Word",
     blurb: "Bop the word when it pops up!",
     emoji: "🔨",
-    color: "from-[#FFD9EA] to-[#FFC0DB]",
-    text: "text-pink-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-pink-900",
   },
   {
     id: "same",
     title: "Same or Not?",
     blurb: "Does the voice match the card?",
     emoji: "🤔",
-    color: "from-[#E9DFFF] to-[#D2C0FF]",
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]",
+    text: "text-violet-900",
   },
 ];
 
@@ -612,7 +612,7 @@ function WhackWord({ set }: { set: TrickySet }) {
               onClick={() => popped && whack(active!.word)}
               className={`flex h-20 w-24 items-end justify-center rounded-b-[3rem] rounded-t-2xl pb-2 sm:h-24 sm:w-28 shadow-inner transition-colors ${
                 popped
-                  ? "bg-gradient-to-b from-[#CFF5E1] to-[#A7E9C8]"
+                  ? "bg-gradient-to-b from-[#7DEBB0] to-[#3DD68C]"
                   : "bg-gradient-to-b from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900"
               }`}
             >
@@ -725,13 +725,13 @@ function SameOrNot({ set }: { set: TrickySet }) {
       <div className="flex gap-4">
         <button
           onClick={() => answer(true)}
-          className="rounded-2xl bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] px-8 py-5 text-2xl font-black text-emerald-700 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
+          className="rounded-2xl bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] px-8 py-5 text-2xl font-black text-emerald-900 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
         >
           👍 Same
         </button>
         <button
           onClick={() => answer(false)}
-          className="rounded-2xl bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB] px-8 py-5 text-2xl font-black text-pink-700 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
+          className="rounded-2xl bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5] px-8 py-5 text-2xl font-black text-pink-900 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
         >
           👎 Different
         </button>

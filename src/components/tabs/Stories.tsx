@@ -13,12 +13,12 @@ const PER_PAGE = 10;
 
 /* Candy palette cycled across cards. */
 const CARD_STYLES = [
-  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
-  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
-  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
-  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
-  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
-  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+  { bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]", text: "text-pink-900" },
+  { bg: "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-900" },
+  { bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" },
+  { bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]", text: "text-amber-900" },
+  { bg: "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
+  { bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" },
 ];
 
 const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];

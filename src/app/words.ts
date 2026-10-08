@@ -40,12 +40,12 @@ function W(text: string, emoji: string, graphemes: string): WordCard {
 }
 
 const PASTELS: { color: string; text: string }[] = [
-  { color: "from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
-  { color: "from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
-  { color: "from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
-  { color: "from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
-  { color: "from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
-  { color: "from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+  { color: "from-[#FFA3CF] to-[#FF75B5]", text: "text-pink-900" },
+  { color: "from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-900" },
+  { color: "from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" },
+  { color: "from-[#FFEA70] to-[#FFD21F]", text: "text-amber-900" },
+  { color: "from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
+  { color: "from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" },
 ];
 
 const RAW: { family: string; words: WordCard[] }[] = [

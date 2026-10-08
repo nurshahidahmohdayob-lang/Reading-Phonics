@@ -8,12 +8,12 @@ import { shuffle } from "@/lib/random";
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 
 const TILE_COLORS = [
-  "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", // pink
-  "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", // peach
-  "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", // mint
-  "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", // lemon
-  "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", // sky
-  "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", // lilac
+  "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]", // pink
+  "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]", // peach
+  "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]", // mint
+  "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]", // lemon
+  "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", // sky
+  "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]", // lilac
 ];
 const POP_EMOJI = ["🌟", "🎉", "💖", "🌈", "✨", "🎈"];
 
@@ -118,7 +118,7 @@ export default function LetterHunt({
         🔍 Hunt for every{" "}
         <button
           onClick={() => playSoundClip(lesson.letter, lesson.sound)}
-          className="rounded-xl bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] px-3 py-1 text-2xl font-black text-violet-700 ring-2 ring-white/70 active:scale-95"
+          className="rounded-xl bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] px-3 py-1 text-2xl font-black text-violet-900 ring-2 ring-white/70 active:scale-95"
         >
           {target} {target.toUpperCase()}
         </button>{" "}
@@ -126,7 +126,7 @@ export default function LetterHunt({
       </p>
 
       {done && !onDone ? (
-        <div className="flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE07F] px-10 py-8 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
+        <div className="flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-10 py-8 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
           <div className="text-6xl">🏆</div>
           <h3 className="text-xl font-extrabold">You caught them all!</h3>
           <p className="text-sm font-semibold opacity-80">

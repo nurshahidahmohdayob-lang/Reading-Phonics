@@ -27,73 +27,73 @@ const ACTIVITIES: {
     title: "Listen & Find",
     blurb: "Hear a word, tap the picture",
     emoji: "👂",
-    color: "from-[#D3EBFF] to-[#ABD9FF]", // sky
-    text: "text-sky-700",
+    color: "from-[#8FD1FF] to-[#4DB2FF]", // sky
+    text: "text-sky-900",
   },
   {
     id: "hunt",
     title: "Letter Hunt",
     blurb: "Tap every hidden letter",
     emoji: "🔍",
-    color: "from-[#CFF5E1] to-[#A7E9C8]", // mint
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]", // mint
+    text: "text-emerald-900",
   },
   {
     id: "sort",
     title: "Sound Sort",
     blurb: "Pick the matching sounds",
     emoji: "🧺",
-    color: "from-[#FFE8C9] to-[#FFD3A1]", // peach
-    text: "text-orange-700",
+    color: "from-[#FFC27A] to-[#FF9B3D]", // peach
+    text: "text-orange-900",
   },
   {
     id: "match",
     title: "Match Pairs",
     blurb: "Flip cards to find pairs",
     emoji: "🃏",
-    color: "from-[#E9DFFF] to-[#D2C0FF]", // lilac
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]", // lilac
+    text: "text-violet-900",
   },
   {
     id: "first",
     title: "First Letter",
     blurb: "Which letter starts the word?",
     emoji: "🚀",
-    color: "from-[#FFD9EA] to-[#FFC0DB]", // pink
-    text: "text-pink-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]", // pink
+    text: "text-pink-900",
   },
   {
     id: "pop",
     title: "Balloon Pop",
     blurb: "Pop big & small letters",
     emoji: "🎈",
-    color: "from-[#FFF4BD] to-[#FFE88C]", // lemon
-    text: "text-amber-700",
+    color: "from-[#FFEA70] to-[#FFD21F]", // lemon
+    text: "text-amber-900",
   },
   {
     id: "rhyme",
     title: "Rhyme Time",
     blurb: "Tap two words that rhyme",
     emoji: "🎶",
-    color: "from-[#CFF5E1] to-[#A7E9C8]", // mint
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]", // mint
+    text: "text-emerald-900",
   },
   {
     id: "odd",
     title: "Odd Sound Out",
     blurb: "Hear the words, catch the odd one",
     emoji: "👂",
-    color: "from-[#E9DFFF] to-[#D2C0FF]", // lilac
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]", // lilac
+    text: "text-violet-900",
   },
 ];
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
 const MODE_CHIPS: Record<Difficulty, { emoji: string; chip: string }> = {
-  easy: { emoji: "🐢", chip: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700" },
-  medium: { emoji: "🐰", chip: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] text-amber-700" },
-  hard: { emoji: "🚀", chip: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB] text-pink-700" },
+  easy: { emoji: "🐢", chip: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] text-emerald-900" },
+  medium: { emoji: "🐰", chip: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] text-amber-900" },
+  hard: { emoji: "🚀", chip: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5] text-pink-900" },
 };
 
 const MODE_LABEL: Record<Difficulty, string> = {
@@ -322,7 +322,7 @@ export default function ActivityCenter({
           </>
         ) : won ? (
           /* ---- Mode beaten ---- */
-          <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE07F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
+          <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
             <div className="text-7xl">🏆</div>
             <h3 className="text-2xl font-extrabold">
               {MODE_LABEL[mode]} mode beaten!

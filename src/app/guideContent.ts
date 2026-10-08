@@ -26,8 +26,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Each sound has an action to help children remember it.",
       "Once they know a few sounds, blend them together into a word.",
     ],
-    color: "from-[#FFD9EA] to-[#FFC0DB]",
-    text: "text-pink-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-pink-900",
   },
   {
     id: "soundout",
@@ -39,8 +39,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Hear it sound-by-sound, then blended back together.",
       "Great for a tricky word that comes up during the day.",
     ],
-    color: "from-[#DCE3FF] to-[#BFCBFF]",
-    text: "text-indigo-700",
+    color: "from-[#A9B8FF] to-[#7F93FF]",
+    text: "text-indigo-900",
   },
   {
     id: "flashcards",
@@ -52,8 +52,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Blend Words deck: see the picture, blend the sounds into a word.",
       "Tap the picture or word to hear it. Print any deck for paper cards.",
     ],
-    color: "from-[#CDEFF0] to-[#A6E3E6]",
-    text: "text-teal-700",
+    color: "from-[#84EEF0] to-[#3FD8DE]",
+    text: "text-teal-900",
   },
   {
     id: "formation",
@@ -64,8 +64,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Pick a letter and watch the stroke animation.",
       "Trace along to build neat handwriting.",
     ],
-    color: "from-[#FFE8C9] to-[#FFD3A1]",
-    text: "text-orange-700",
+    color: "from-[#FFC27A] to-[#FF9B3D]",
+    text: "text-orange-900",
   },
   {
     id: "spelling",
@@ -76,8 +76,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Hear a word.",
       "Choose the letters for each sound to spell it.",
     ],
-    color: "from-[#CFF5E1] to-[#A7E9C8]",
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
   },
   {
     id: "tricky",
@@ -88,8 +88,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Words like ‘the’, ‘said’ and ‘was’.",
       "Read and remember them on sight, not by sounding out.",
     ],
-    color: "from-[#FFF4BD] to-[#FFE88C]",
-    text: "text-amber-700",
+    color: "from-[#FFEA70] to-[#FFD21F]",
+    text: "text-amber-900",
   },
   {
     id: "stories",
@@ -100,8 +100,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Choose a level, from Year 1 to Year 6.",
       "Open a story and read. Tap any word you’re unsure of to hear it.",
     ],
-    color: "from-[#D3EBFF] to-[#ABD9FF]",
-    text: "text-sky-700",
+    color: "from-[#8FD1FF] to-[#4DB2FF]",
+    text: "text-sky-900",
   },
   {
     id: "guided",
@@ -114,8 +114,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Practise tricky words with the Coach.",
       "Answer 10 optional comprehension questions — a mix, never scored.",
     ],
-    color: "from-[#E9DFFF] to-[#D2C0FF]",
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]",
+    text: "text-violet-900",
   },
   {
     id: "assessment",
@@ -130,8 +130,8 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Get a reading level, a “practise these” word list, and a printable one-page report (Reader Level, Year · Term and Lexile).",
       "Best in Google Chrome with the microphone allowed. Open the full step-by-step walkthrough below.",
     ],
-    color: "from-[#FFE3E0] to-[#FFC9C2]",
-    text: "text-rose-700",
+    color: "from-[#FFA699] to-[#FF7B6B]",
+    text: "text-rose-900",
   },
 ];
 

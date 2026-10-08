@@ -59,7 +59,7 @@ function WinScreen({
   onBack: () => void;
 }) {
   return (
-    <div className="mt-10 flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE07F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
+    <div className="mt-10 flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
       <div className="text-7xl">🏆</div>
       <h3 className="text-2xl font-extrabold">{title}</h3>
       {detail && <p className="font-bold opacity-80">{detail}</p>}
@@ -352,9 +352,9 @@ const GAMES: {
   color: string;
   text: string;
 }[] = [
-  { id: "find", title: "Read & Find", blurb: "Read the word, tap its picture", emoji: "🔎", color: "from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
-  { id: "read", title: "Picture & Read", blurb: "See a picture, tap its word", emoji: "🖼️", color: "from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
-  { id: "match", title: "Match Pairs", blurb: "Match each word to its picture", emoji: "🃏", color: "from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+  { id: "find", title: "Read & Find", blurb: "Read the word, tap its picture", emoji: "🔎", color: "from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
+  { id: "read", title: "Picture & Read", blurb: "See a picture, tap its word", emoji: "🖼️", color: "from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" },
+  { id: "match", title: "Match Pairs", blurb: "Match each word to its picture", emoji: "🃏", color: "from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" },
 ];
 
 export default function BlendingGames({

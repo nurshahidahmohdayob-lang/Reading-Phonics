@@ -5,7 +5,8 @@
    layers drift apart as the pointer moves, nearer ones further, so the glade
    has depth; the treetops sway, the windmill's sails turn, the fairy lights
    under the giant tree twinkle, sunbeams shimmer, fireflies wander and
-   leaves flutter down. The picture covers the screen. */
+   leaves flutter down. The picture covers the screen; on the home screen
+   it's softly blurred, like a camera focused on the tiles in front. */
 
 import { useEffect, useRef } from "react";
 import { FOREST_BULBS, FOREST_GROUND, FOREST_HUB, FOREST_LAYERS, FOREST_SIZE } from "@/app/forestScene";
@@ -28,7 +29,8 @@ const LEAVES = Array.from({ length: 7 }, (_, i) => ({
   hue: ["#6dbb3c", "#9bd34a", "#e8a23a", "#4f9d2f"][i % 4],
 }));
 
-export default function ForestBackdrop() {
+/** soft: blur and dim the glade a little, so what's on top stands out. */
+export default function ForestBackdrop({ soft = false }: { soft?: boolean }) {
   const root = useRef<HTMLDivElement>(null);
 
   // Parallax: ease the layers towards where the pointer is.
@@ -78,6 +80,8 @@ export default function ForestBackdrop() {
           width: `calc(max(100vw, 100dvh * ${RATIO}) * 1.06)`,
           aspectRatio: `${FOREST_SIZE.w} / ${FOREST_SIZE.h}`,
           transform: "translate(-50%, -50%)",
+          filter: soft ? "blur(3px) brightness(0.88) saturate(1.05)" : undefined,
+          transition: "filter 0.6s",
         }}
       >
         {layer(

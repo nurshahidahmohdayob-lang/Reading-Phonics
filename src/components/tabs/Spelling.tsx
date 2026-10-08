@@ -376,7 +376,7 @@ function PlayLevel({
   if (levelDone) {
     return (
       <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
-        <div className="mt-10 flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE07F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
+        <div className="mt-10 flex flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-12 py-10 text-center text-amber-900 shadow-lg ring-4 ring-white/60">
           <div className="text-7xl">🏆</div>
           <h2 className="text-2xl font-extrabold">Level {level} complete!</h2>
           <p className="font-semibold opacity-80">
@@ -435,7 +435,7 @@ function PlayLevel({
         </span>
       </div>
 
-      <div className="mt-4 flex w-full flex-col items-center gap-6 rounded-[2rem] bg-gradient-to-br from-[#CFF5E1] to-[#9FE7C3] px-6 py-8 text-emerald-900 shadow-lg ring-4 ring-white/60">
+      <div className="mt-4 flex w-full flex-col items-center gap-6 rounded-[2rem] bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] px-6 py-8 text-emerald-900 shadow-lg ring-4 ring-white/60">
         <div className="text-7xl">{word.emoji}</div>
 
         <div className="flex gap-2">

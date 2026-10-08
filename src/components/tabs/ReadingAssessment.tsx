@@ -219,7 +219,7 @@ export default function ReadingAssessment({
     const emerging = stopLexile === null;
     return (
       <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
-        <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-8 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
+        <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFA699] to-[#FF7B6B] px-6 py-8 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
           <div className="text-6xl">📚</div>
           <p className="text-sm font-bold uppercase tracking-wide opacity-70">
             Reading level from the word check
@@ -309,7 +309,7 @@ export default function ReadingAssessment({
   // Intro
   return (
     <div className="flex w-full max-w-3xl flex-1 flex-col items-center">
-      <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-9 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
+      <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#FFA699] to-[#FF7B6B] px-6 py-9 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
         <div className="text-7xl">📋</div>
         <h2 className="text-2xl font-extrabold">Reading Assessment</h2>
         <p className="max-w-md text-sm font-semibold opacity-80">
@@ -460,8 +460,8 @@ function WordRunner({
         word {idx + 1} · stops after 2 wrong
       </p>
 
-      <div className="mt-4 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFD0CB] px-6 py-10 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
-        <span className="text-sm font-bold uppercase tracking-wide text-rose-500/80">
+      <div className="mt-4 flex w-full max-w-xl flex-col items-center gap-4 rounded-[2rem] bg-gradient-to-br from-[#FFA699] to-[#FF7B6B] px-6 py-10 text-center text-rose-900 shadow-lg ring-4 ring-white/60">
+        <span className="text-sm font-bold uppercase tracking-wide text-rose-900/80">
           Read the word
         </span>
         <span className="text-6xl font-black lowercase text-zinc-800 sm:text-7xl">
@@ -1065,7 +1065,7 @@ const CATEGORIES = [
     label: "Independent Reader",
     emoji: "🦅",
     range: "90–100%",
-    tone: "from-[#CFF5E1] to-[#A7E9C8] text-emerald-800",
+    tone: "from-[#7DEBB0] to-[#3DD68C] text-emerald-900",
     note: "Reads this level alone with ease.",
     about:
       "Reads this level smoothly and on their own, with strong understanding. Ready for more challenging books.",
@@ -1075,7 +1075,7 @@ const CATEGORIES = [
     label: "Instructional Reader",
     emoji: "📘",
     range: "75–89%",
-    tone: "from-[#D3EBFF] to-[#ABD9FF] text-sky-800",
+    tone: "from-[#8FD1FF] to-[#4DB2FF] text-sky-900",
     note: "Reads well with a little teaching support.",
     about:
       "Reads well with a little teaching support. This is the ideal zone for guided reading and learning new skills.",
@@ -1085,7 +1085,7 @@ const CATEGORIES = [
     label: "Developing Reader",
     emoji: "🌿",
     range: "60–74%",
-    tone: "from-[#FFF4BD] to-[#FFE88C] text-amber-800",
+    tone: "from-[#FFEA70] to-[#FFD21F] text-amber-900",
     note: "Building skills — needs guided practice.",
     about:
       "Building decoding and fluency. Reads simple texts with guided practice and still meets many tricky words.",
@@ -1095,7 +1095,7 @@ const CATEGORIES = [
     label: "Emerging Reader",
     emoji: "🌱",
     range: "below 60%",
-    tone: "from-[#FFE3E0] to-[#FFC9C2] text-rose-800",
+    tone: "from-[#FFA699] to-[#FF7B6B] text-rose-900",
     note: "At an earlier stage — start with easier texts.",
     about:
       "Just beginning — learning letter sounds and first words. Needs lots of support and very easy, decodable books.",
@@ -1162,7 +1162,7 @@ export const ACCURACY_BANDS = [
     label: "Independent",
     range: "98–100%",
     emoji: "🦅",
-    tone: "from-[#CFF5E1] to-[#A7E9C8] text-emerald-800",
+    tone: "from-[#7DEBB0] to-[#3DD68C] text-emerald-900",
     about:
       "Reads this text accurately and on their own — it is comfortable, so they are ready for harder books.",
   },
@@ -1170,7 +1170,7 @@ export const ACCURACY_BANDS = [
     label: "Instructional",
     range: "95–97%",
     emoji: "📘",
-    tone: "from-[#D3EBFF] to-[#ABD9FF] text-sky-800",
+    tone: "from-[#8FD1FF] to-[#4DB2FF] text-sky-900",
     about:
       "Reads most words but needs a little teaching support — the ideal level for guided reading.",
   },
@@ -1178,7 +1178,7 @@ export const ACCURACY_BANDS = [
     label: "Developing",
     range: "below 95%",
     emoji: "🌱",
-    tone: "from-[#FFE3E0] to-[#FFC9C2] text-rose-800",
+    tone: "from-[#FFA699] to-[#FF7B6B] text-rose-900",
     about:
       "Too many words were missed — this text is too hard right now, so step down to an easier level.",
   },
@@ -1247,17 +1247,17 @@ const ACTION_STYLE: Record<
   up: {
     emoji: "🎉",
     title: "Ready to move up!",
-    tone: "from-[#CFF5E1] to-[#A7E9C8] text-emerald-900",
+    tone: "from-[#7DEBB0] to-[#3DD68C] text-emerald-900",
   },
   stay: {
     emoji: "💪",
     title: "Just right — stay here",
-    tone: "from-[#D3EBFF] to-[#ABD9FF] text-sky-900",
+    tone: "from-[#8FD1FF] to-[#4DB2FF] text-sky-900",
   },
   down: {
     emoji: "🌱",
     title: "Let's step back a level",
-    tone: "from-[#FFEAC2] to-[#FFD79E] text-amber-900",
+    tone: "from-[#FFC27A] to-[#FF9B3D] text-amber-900",
   },
 };
 
@@ -1403,7 +1403,7 @@ function AdaptivePlacement({
     const book = pickBook(settledIdx, bookSeed + 1);
     return (
       <div className="mt-3 w-full max-w-xl">
-        <div className="rounded-[1.5rem] bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] px-6 py-5 text-center text-emerald-900 shadow-lg ring-4 ring-white/60">
+        <div className="rounded-[1.5rem] bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] px-6 py-5 text-center text-emerald-900 shadow-lg ring-4 ring-white/60">
           <p className="text-xs font-bold uppercase tracking-wide opacity-70">
             Right reading level
           </p>

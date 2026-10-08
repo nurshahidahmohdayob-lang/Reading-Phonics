@@ -59,12 +59,12 @@ export default function Phonics() {
 
 /* Candy palette cycled across the group cards. */
 const GROUP_STYLES = [
-  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" },
-  { bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]", text: "text-orange-700" },
-  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" },
-  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]", text: "text-amber-700" },
-  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
-  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" },
+  { bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]", text: "text-pink-900" },
+  { bg: "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-900" },
+  { bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" },
+  { bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]", text: "text-amber-900" },
+  { bg: "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
+  { bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" },
 ];
 
 function Sounds() {
@@ -171,8 +171,8 @@ function Sounds() {
         </button>
       </div>
       {/* Detail card */}
-      <div className="flex w-full flex-col items-center gap-2 rounded-[2rem] bg-gradient-to-br from-[#E9DFFF] to-[#CDB6FF] px-6 py-8 text-violet-900 shadow-lg ring-4 ring-white/60">
-        <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+      <div className="flex w-full flex-col items-center gap-2 rounded-[2rem] bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] px-6 py-8 text-violet-900 shadow-lg ring-4 ring-white/60">
+        <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-900">
           Group {selected.group}
           {selected.note ? ` · ${selected.note}` : ""}
         </span>

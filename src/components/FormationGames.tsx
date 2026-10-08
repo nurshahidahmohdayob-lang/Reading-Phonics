@@ -29,32 +29,32 @@ const GAMES: {
     title: "Mirror Spot",
     blurb: "Tap the letters facing the right way",
     emoji: "🪞",
-    color: "from-[#D3EBFF] to-[#ABD9FF]",
-    text: "text-sky-700",
+    color: "from-[#8FD1FF] to-[#4DB2FF]",
+    text: "text-sky-900",
   },
   {
     id: "case",
     title: "Big & Small",
     blurb: "Sort letters into BIG and small bins",
     emoji: "🔠",
-    color: "from-[#CFF5E1] to-[#A7E9C8]",
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
   },
   {
     id: "order",
     title: "Alphabet Order",
     blurb: "Which letter comes next?",
     emoji: "🔤",
-    color: "from-[#FFD9EA] to-[#FFC0DB]",
-    text: "text-pink-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-pink-900",
   },
   {
     id: "simon",
     title: "Sound Simon",
     blurb: "Echo the growing chain of sounds",
     emoji: "🔔",
-    color: "from-[#FFF4BD] to-[#FFE88C]",
-    text: "text-amber-700",
+    color: "from-[#FFEA70] to-[#FFD21F]",
+    text: "text-amber-900",
   },
 ];
 
@@ -327,14 +327,14 @@ function CaseMatch() {
       <div className="flex gap-5">
         <button
           onClick={() => drop(true)}
-          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF] px-8 py-5 text-sky-700 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
+          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF] px-8 py-5 text-sky-900 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
         >
           <span className="text-3xl">🧺</span>
           <span className="text-xl font-black">BIG</span>
         </button>
         <button
           onClick={() => drop(false)}
-          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] px-8 py-5 text-emerald-700 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
+          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] px-8 py-5 text-emerald-900 shadow-md ring-4 ring-white/60 transition-all active:scale-90"
         >
           <span className="text-3xl">🧺</span>
           <span className="text-xl font-black">small</span>

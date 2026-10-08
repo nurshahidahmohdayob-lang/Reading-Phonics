@@ -120,7 +120,7 @@ export default function SoundItOut() {
 
       {/* The blender */}
       {parts.length > 0 && (
-        <div className="mt-6 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] px-6 py-8 text-violet-900 shadow-lg ring-4 ring-white/60">
+        <div className="mt-6 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] px-6 py-8 text-violet-900 shadow-lg ring-4 ring-white/60">
           {entry && <div className="text-7xl">{entry.emoji}</div>}
 
           {/* The whole word, tap to hear it */}

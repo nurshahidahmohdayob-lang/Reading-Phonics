@@ -55,118 +55,118 @@ const SECTIONS: {
     label: "Phonics",
     blurb: "Sounds, actions & blending",
     emoji: "🙆",
-    color: "from-[#FFD9EA] to-[#FFC0DB]", // bubblegum pink
-    text: "text-pink-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]", // bubblegum pink
+    text: "text-pink-900",
   },
   {
     id: "soundout",
     label: "Sound It Out",
     blurb: "Type any word and blend it",
     emoji: "🔤",
-    color: "from-[#DCE3FF] to-[#BFCBFF]", // periwinkle
-    text: "text-indigo-700",
+    color: "from-[#A9B8FF] to-[#7F93FF]", // periwinkle
+    text: "text-indigo-900",
   },
   {
     id: "flashcards",
     label: "Flashcards",
     blurb: "Flip cards: sounds then words",
     emoji: "🎴",
-    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
-    text: "text-teal-700",
+    color: "from-[#84EEF0] to-[#3FD8DE]", // aqua
+    text: "text-teal-900",
   },
   {
     id: "formation",
     label: "Letter Formation",
     blurb: "Trace and write letters",
     emoji: "✍️",
-    color: "from-[#FFE8C9] to-[#FFD3A1]", // peach
-    text: "text-orange-700",
+    color: "from-[#FFC27A] to-[#FF9B3D]", // peach
+    text: "text-orange-900",
   },
   {
     id: "spelling",
     label: "Spelling",
     blurb: "Segment words and spell",
     emoji: "🔡",
-    color: "from-[#CFF5E1] to-[#A7E9C8]", // mint
-    text: "text-emerald-700",
+    color: "from-[#7DEBB0] to-[#3DD68C]", // mint
+    text: "text-emerald-900",
   },
   {
     id: "tricky",
     label: "Tricky Words",
     blurb: "Sight words to memorise",
     emoji: "🌟",
-    color: "from-[#FFF4BD] to-[#FFE88C]", // lemon
-    text: "text-amber-700",
+    color: "from-[#FFEA70] to-[#FFD21F]", // lemon
+    text: "text-amber-900",
   },
   {
     id: "stories",
     label: "Sentences & Stories",
     blurb: "Read leveled stories",
     emoji: "📚",
-    color: "from-[#D3EBFF] to-[#ABD9FF]", // sky
-    text: "text-sky-700",
+    color: "from-[#8FD1FF] to-[#4DB2FF]", // sky
+    text: "text-sky-900",
   },
   {
     id: "storyplay",
     label: "Story Play",
     blurb: "Match pictures & order stories",
     emoji: "🧩",
-    color: "from-[#CDEFF0] to-[#A6E3E6]", // aqua
-    text: "text-teal-700",
+    color: "from-[#84EEF0] to-[#3FD8DE]", // aqua
+    text: "text-teal-900",
   },
   {
     id: "guided",
     label: "Guided Reading",
     blurb: "Read aloud with your coach",
     emoji: "🎤",
-    color: "from-[#E9DFFF] to-[#D2C0FF]", // lilac
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]", // lilac
+    text: "text-violet-900",
   },
   {
     id: "assessment",
     label: "Reading Assessment",
     blurb: "Read-aloud placement check",
     emoji: "📋",
-    color: "from-[#FFE3E0] to-[#FFC9C2]", // coral
-    text: "text-rose-700",
+    color: "from-[#FFA699] to-[#FF7B6B]", // coral
+    text: "text-rose-900",
   },
   {
     id: "threed",
     label: "3D Drawings",
     blurb: "Scan a drawing, watch it move",
     emoji: "🪄",
-    color: "from-[#E9DFFF] to-[#D2C0FF]", // soft violet
-    text: "text-violet-700",
+    color: "from-[#C9B3FF] to-[#A27DFF]", // soft violet
+    text: "text-violet-900",
   },
   {
     id: "interactive",
     label: "Interactive Stories",
     blurb: "Read-along plays: tap and listen",
     emoji: "🎭",
-    color: "from-[#FFE0E6] to-[#FFC2CF]", // rose
-    text: "text-rose-700",
+    color: "from-[#FFA3CF] to-[#FF75B5]", // rose
+    text: "text-rose-900",
   },
   {
     id: "assignments",
     label: "Assignments",
     blurb: "Set online lessons · see who's done them",
     emoji: "📮",
-    color: "from-[#FFE7C2] to-[#FFD08A]", // warm apricot
-    text: "text-amber-800",
+    color: "from-[#FFC27A] to-[#FF9B3D]", // warm apricot
+    text: "text-amber-900",
   },
   {
     id: "tracker",
     label: "Class Tracker 🔒",
     blurb: "Private · reading levels per term",
     emoji: "🗂️",
-    color: "from-[#CDEAD9] to-[#A7D8BE]", // Zera green tint
-    text: "text-emerald-800",
+    color: "from-[#7DEBB0] to-[#3DD68C]", // Zera green tint
+    text: "text-emerald-900",
   },
 ];
 
 /* A colourful illustrated picture per tool — filled multi-colour SVG scenes,
    each self-contained so they read as little pictures, not flat icons. */
-/** Each section's glow on its home-screen sign. */
+/** Each section's glow round its home-screen tile. */
 const SIGN_GLOW: Record<string, string> = {
   phonics: "rgba(255,105,170,0.95)", soundout: "rgba(120,135,255,0.95)", flashcards: "rgba(60,210,215,0.95)",
   formation: "rgba(255,160,70,0.95)", spelling: "rgba(80,220,140,0.95)", tricky: "rgba(255,215,40,0.95)",
@@ -579,7 +579,7 @@ export default function Home() {
     >
       <SoundPrimer />
       {/* Every page sits in the same storybook forest glade. */}
-      <ForestBackdrop />
+      <ForestBackdrop soft={!section} />
       <header className="relative z-20 w-full max-w-5xl shrink-0">
         {/* The header bar, a wooden garden signboard: the Zera badge, a chunky
             outlined title and leafy buttons. */}
@@ -613,12 +613,11 @@ export default function Home() {
           </div>
         </div>
         {!section && (
-          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-white [text-shadow:0_2px_0_#2b4a12,0_3px_10px_rgba(20,40,10,0.55)] sm:text-2xl">
-            Learn to read,{" "}
-            <span className="text-[#FFD43B]">
-              one step at a time
-            </span>{" "}
-            🌱
+          <p className="mt-3 text-center">
+            {/* the tagline on a little cream ribbon, so it reads over the forest */}
+            <span className="home-ribbon inline-block px-7 py-1.5 text-base font-extrabold tracking-tight text-[#4a2a10] sm:text-xl">
+              Learn to read, <span className="text-[#d9530f]">one step at a time</span> 🌱
+            </span>
           </p>
         )}
       </header>
@@ -631,6 +630,7 @@ export default function Home() {
               id: s.id,
               label: s.label.replace(" 🔒", ""),
               blurb: s.blurb,
+              bg: s.color,
               text: s.text,
               glow: SIGN_GLOW[s.id] ?? "rgba(255,230,120,0.9)",
             }))}

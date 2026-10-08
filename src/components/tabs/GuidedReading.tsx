@@ -45,25 +45,25 @@ type Step = "choose" | "read" | "report" | "coach";
 /* Candy palette cycled across cards. */
 const CARD_STYLES = [
   {
-    bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]",
-    text: "text-pink-700",
+    bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-pink-900",
   },
   {
-    bg: "bg-gradient-to-br from-[#FFE8C9] to-[#FFD3A1]",
-    text: "text-orange-700",
+    bg: "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]",
+    text: "text-orange-900",
   },
   {
-    bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]",
-    text: "text-emerald-700",
+    bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
   },
   {
-    bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C]",
-    text: "text-amber-700",
+    bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]",
+    text: "text-amber-900",
   },
-  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF]", text: "text-sky-700" },
+  { bg: "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
   {
-    bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]",
-    text: "text-violet-700",
+    bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]",
+    text: "text-violet-900",
   },
 ];
 
@@ -386,8 +386,8 @@ function Choose({
           ➕ Add my own story
         </button>
       ) : (
-        <div className="mt-3 flex w-full flex-col gap-3 rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] p-5 shadow-lg ring-4 ring-white/60">
-          <p className="font-extrabold text-amber-800">📝 My own story</p>
+        <div className="mt-3 flex w-full flex-col gap-3 rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] p-5 shadow-lg ring-4 ring-white/60">
+          <p className="font-extrabold text-amber-900">📝 My own story</p>
           <input
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
@@ -1081,21 +1081,21 @@ function Report({
           value={`${report.accuracy}%`}
           goal={`goal ≥${level.accuracyGoal}%`}
           met={accuracyMet}
-          color="bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700"
+          color="bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] text-emerald-900"
         />
         <Stat
           label="Words correct"
           value={`${report.correct}/${report.total}`}
           goal="of the whole story"
           met={report.correct === report.total}
-          color="bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF] text-sky-700"
+          color="bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF] text-sky-900"
         />
         <Stat
           label="Words / min"
           value={`${report.wcpm}`}
           goal={`goal ${level.wpmLow}–${level.wpmHigh}`}
           met={wpmMet}
-          color="bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] text-violet-700"
+          color="bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] text-violet-900"
         />
       </div>
 
@@ -1187,7 +1187,7 @@ function StoryQuestions({ passage }: { passage: Passage }) {
     <div className="mt-6 w-full">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] px-5 py-3.5 text-left font-extrabold text-amber-800 shadow-sm active:scale-[.99]"
+        className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-5 py-3.5 text-left font-extrabold text-amber-900 shadow-sm active:scale-[.99]"
       >
         <span>💬 Talk about the story · 10 questions</span>
         <span className="text-sm font-bold opacity-70">
@@ -1477,8 +1477,8 @@ function Coach({ words, onDone }: { words: string[]; onDone: () => void }) {
         Let&apos;s practice this word
       </h2>
 
-      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#D3EBFF] to-[#A4D6FF] px-6 py-10 text-sky-900 shadow-lg ring-4 ring-white/60">
-        <span className="text-6xl font-black lowercase tracking-wide text-sky-700 drop-shadow-sm">
+      <div className="mt-4 flex w-full flex-col items-center gap-5 rounded-[2rem] bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF] px-6 py-10 text-sky-900 shadow-lg ring-4 ring-white/60">
+        <span className="text-6xl font-black lowercase tracking-wide text-sky-900 drop-shadow-sm">
           {word}
         </span>
 

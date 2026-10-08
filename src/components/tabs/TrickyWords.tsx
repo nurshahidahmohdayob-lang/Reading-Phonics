@@ -14,11 +14,11 @@ function sayWord(word: string) {
 /* Each set's cards are tinted with the set's own colour (index = set - 1). */
 const SET_STYLES = [
   { bg: "bg-gradient-to-br from-[#FFF8E7] to-[#FFECC2]", text: "text-amber-800" }, // Cream
-  { bg: "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB]", text: "text-pink-700" }, // Pink
-  { bg: "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8]", text: "text-emerald-700" }, // Green
-  { bg: "bg-gradient-to-br from-[#FFF4BD] to-[#FFE470]", text: "text-yellow-700" }, // Yellow
-  { bg: "bg-gradient-to-br from-[#D3EBFF] to-[#A4D6FF]", text: "text-sky-700" }, // Blue
-  { bg: "bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF]", text: "text-violet-700" }, // Purple
+  { bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]", text: "text-pink-900" }, // Pink
+  { bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" }, // Green
+  { bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]", text: "text-yellow-900" }, // Yellow
+  { bg: "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" }, // Blue
+  { bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" }, // Purple
 ];
 
 export default function TrickyWords() {

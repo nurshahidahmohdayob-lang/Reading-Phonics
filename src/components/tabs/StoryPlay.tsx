@@ -183,9 +183,9 @@ function MatchGame({ onBack }: { onBack: () => void }) {
     return (
       <div className="flex w-full max-w-2xl flex-1 flex-col items-center">
         <GameBar onBack={onBack} title="Match the Picture" />
-        <div className="mt-10 flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF] px-10 py-10 text-center shadow-lg ring-4 ring-white/60">
+        <div className="mt-10 flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF] px-10 py-10 text-center shadow-lg ring-4 ring-white/60">
           <div className="text-5xl">{"⭐".repeat(stars)}</div>
-          <h2 className="text-2xl font-extrabold text-sky-800">Great reading!</h2>
+          <h2 className="text-2xl font-extrabold text-sky-900">Great reading!</h2>
           <p className="font-bold text-sky-700">
             You matched {score} of {questions.length} on the first try.
           </p>

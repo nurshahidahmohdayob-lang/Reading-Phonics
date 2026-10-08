@@ -539,23 +539,34 @@ body {
   .act-hop, .act-wiggle, .act-spin, .act-shake, .act-drive, .act-grow, .act-float, .act-talk, .act-idle-float { animation: none; }
 }
 
-/* The home screen's signs (components/HomeSigns), each bobbing gently, and
-   Polly the parrot flying to the one being pointed at. */
-.home-sign-wrap { animation: home-bob 3.5s ease-in-out infinite; }
-@keyframes home-bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -5px; } }
-.home-sign { transition: transform 0.2s, box-shadow 0.2s; }
-.home-sign-wrap:hover .home-sign, .home-sign-wrap:focus-visible .home-sign { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px var(--glow), 0 0 26px 8px var(--glow); }
-.home-sign-lit { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--glow), 0 0 36px 14px var(--glow) !important; }
+/* The home screen's board of tiles (components/HomeSigns): a frosted cream
+   board in a wooden frame, bright tiles that lift and glow when pointed at,
+   and the tagline's ribbon (app/page.tsx). */
+.home-board {
+  background: rgba(255, 250, 236, 0.5);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55), 0 0 0 4px #8f5a2a, 0 0 0 7px #f2d9a6, 0 22px 44px -18px rgba(20, 40, 10, 0.7);
+}
+.home-tile {
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), inset 0 -5px 0 rgba(0, 0, 0, 0.12), 0 5px 12px -4px rgba(20, 40, 10, 0.45);
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.2s;
+}
+.home-tile:hover, .home-tile:focus-visible { transform: translateY(-4px) scale(1.04); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.6), inset 0 -5px 0 rgba(0, 0, 0, 0.12), 0 0 0 3px #fff, 0 0 24px 6px var(--glow); }
+.home-tile-lit { transform: scale(1.08); box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--glow), 0 0 36px 14px var(--glow) !important; }
 .home-ring { border: 3px solid var(--glow); animation: home-ring 0.65s ease-out forwards; }
-@keyframes home-ring { from { transform: scale(1); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
-.home-polly { transition: left 0.85s cubic-bezier(0.45, 0.05, 0.3, 1), top 0.85s cubic-bezier(0.45, 0.05, 0.3, 1); }
+@keyframes home-ring { from { transform: scale(1); opacity: 1; } to { transform: scale(1.15); opacity: 0; } }
+.home-ribbon {
+  background: linear-gradient(180deg, #fff8e6, #f6e3b8);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 50%, 100% 100%, 0 100%, 14px 50%);
+  filter: drop-shadow(0 3px 0 #8f5a2a);
+}
 .home-polly-flap { animation: polly-flap 0.3s ease-in-out 3; }
 .home-polly-idle { animation: polly-idle 2.4s ease-in-out infinite; }
 @keyframes polly-flap { 50% { transform: translateY(-18%) rotate(-8deg) scale(1.05); } }
 @keyframes polly-idle { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .home-sign-wrap, .home-polly-flap, .home-polly-idle { animation: none; }
-  .home-polly { transition: none; }
+  .home-polly-flap, .home-polly-idle { animation: none; }
+  .home-tile { transition: none; }
 }
 
 /* Skills Quest: confetti burst on a correct answer. */

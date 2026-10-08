@@ -228,7 +228,7 @@ export default function ThreeD() {
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
-      <div className="mt-2 w-full rounded-[2rem] bg-gradient-to-br from-[#E9DFFF] to-[#D2C0FF] px-6 py-6 text-center text-violet-800 shadow-lg ring-4 ring-white/60">
+      <div className="mt-2 w-full rounded-[2rem] bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] px-6 py-6 text-center text-violet-900 shadow-lg ring-4 ring-white/60">
         <div className="text-5xl">🪄</div>
         <h2 className="mt-1 text-2xl font-extrabold">3D Drawings</h2>
         <p className="mx-auto mt-1 max-w-lg text-sm font-semibold opacity-80">

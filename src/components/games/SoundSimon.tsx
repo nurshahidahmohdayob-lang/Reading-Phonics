@@ -6,10 +6,10 @@ import { sample } from "@/lib/random";
 
 const WIN_LENGTH = 6;
 const PAD_COLORS = [
-  "bg-gradient-to-br from-[#FFD9EA] to-[#FFC0DB] text-pink-700",
-  "bg-gradient-to-br from-[#CFF5E1] to-[#A7E9C8] text-emerald-700",
-  "bg-gradient-to-br from-[#FFF4BD] to-[#FFE88C] text-amber-700",
-  "bg-gradient-to-br from-[#D3EBFF] to-[#ABD9FF] text-sky-700",
+  "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5] text-pink-900",
+  "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C] text-emerald-900",
+  "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] text-amber-900",
+  "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF] text-sky-900",
 ];
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 

@@ -88,7 +88,7 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
           </div>
 
           {/* What the app is for */}
-          <div className="mt-3 w-full rounded-[2rem] bg-gradient-to-br from-[#FFF4BD] to-[#FFE1A6] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
+          <div className="mt-3 w-full rounded-[2rem] bg-gradient-to-br from-[#FFEA70] to-[#FFD21F] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
             <div className="text-5xl">📖</div>
             <h2 className="mt-2 text-2xl font-extrabold text-amber-900">
               How to use this app
@@ -180,7 +180,7 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
           </div>
 
           {/* What the assessment is for */}
-          <div className="mt-3 w-full rounded-[2rem] bg-gradient-to-br from-[#FFE3E0] to-[#FFC9C2] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
+          <div className="mt-3 w-full rounded-[2rem] bg-gradient-to-br from-[#FFA699] to-[#FF7B6B] px-6 py-7 text-center shadow-lg ring-4 ring-white/60">
             <div className="text-5xl">📋</div>
             <h2 className="mt-2 text-2xl font-extrabold text-rose-900">
               Reading Assessment — step by step
