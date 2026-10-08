@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
+import ForestBackdrop from "@/components/ForestBackdrop";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
 import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
@@ -144,23 +145,21 @@ export default function ClassPage() {
     }
   }
 
-  const shell = "min-h-dvh bg-gradient-to-b from-[#D8EEFF] via-[#EEF8FF] to-[#E6F6E0] px-4 pb-10 pt-6";
-
   if (error && !data) {
     return (
-      <main className={shell}>
-        <div className="mx-auto max-w-md pt-20 text-center">
+      <Shell width="max-w-md">
+        <div className="py-10 text-center">
           <div className="text-6xl">🔎</div>
           <p className="mt-3 text-xl font-extrabold text-zinc-700">{error}</p>
         </div>
-      </main>
+      </Shell>
     );
   }
   if (!data) {
     return (
-      <main className={shell}>
-        <p className="pt-24 text-center text-lg font-bold text-zinc-400">One moment…</p>
-      </main>
+      <Shell width="max-w-md">
+        <p className="py-10 text-center text-lg font-bold text-zinc-500">One moment…</p>
+      </Shell>
     );
   }
 
@@ -265,8 +264,9 @@ export default function ClassPage() {
   if (me && onStory) {
     const others = mine(me).filter((it) => !isDone(it.id, me)).length;
     return (
-      <main className="min-h-dvh bg-gradient-to-b from-[#D8EEFF] via-[#EEF8FF] to-[#E6F6E0]">
-        <div className="sticky top-0 z-10 flex items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white shadow">
+      <main className="relative min-h-dvh bg-[#4b7f2e]">
+        <ForestBackdrop soft />
+        <div className="sticky top-0 z-20 flex items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white shadow">
           <button
             onClick={() => {
               setMe(null);
@@ -286,11 +286,13 @@ export default function ClassPage() {
             </button>
           )}
         </div>
-        {reading === "loading" || reading === null ? (
-          <p className="pt-24 text-center text-lg font-bold text-zinc-400">Finding your story… 📚</p>
-        ) : reading === "none" ? null : (
-          <OnlineWorksheet key={reading.input.passage.id} input={reading.input} childName={me} onSubmit={sendReading} />
-        )}
+        <div className="relative z-10">
+          {reading === "loading" || reading === null ? (
+            <p className="mx-auto mt-16 w-fit rounded-full bg-white/90 px-6 py-3 text-center text-lg font-bold text-zinc-600 shadow">Finding your story… 📚</p>
+          ) : reading === "none" ? null : (
+            <OnlineWorksheet key={reading.input.passage.id} input={reading.input} childName={me} onSubmit={sendReading} />
+          )}
+        </div>
       </main>
     );
   }
@@ -300,8 +302,8 @@ export default function ClassPage() {
     const list = mine(me);
     const story = reading && typeof reading === "object" ? reading : null;
     return (
-      <main className={shell}>
-        <div className="mx-auto max-w-2xl">
+      <Shell width="max-w-2xl">
+        <div>
           <button
             onClick={() => {
               setMe(null);
@@ -363,14 +365,14 @@ export default function ClassPage() {
             })}
           </div>
         </div>
-      </main>
+      </Shell>
     );
   }
 
   /* ---- choose your name ---- */
   return (
-    <main className={shell}>
-      <div className="mx-auto max-w-3xl">
+    <Shell>
+      <div>
         <h1 className="text-center text-3xl font-extrabold text-[#0A4F29]">{data.className} · Activities</h1>
         <p className="mt-1 text-center text-lg font-semibold text-zinc-500">Tap your name 👇</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -396,6 +398,17 @@ export default function ClassPage() {
           })}
         </div>
       </div>
+    </Shell>
+  );
+}
+
+/** Every screen but the activity itself sits in the app's forest glade,
+    softly blurred, on a cream panel. */
+function Shell({ children, width = "max-w-3xl" }: { children: React.ReactNode; width?: string }) {
+  return (
+    <main className="relative min-h-dvh bg-[#4b7f2e] px-4 pb-10 pt-6">
+      <ForestBackdrop soft />
+      <div className={`section-panel relative z-10 mx-auto ${width} rounded-[2rem] px-4 py-6 sm:px-8`}>{children}</div>
     </main>
   );
 }

@@ -327,8 +327,8 @@ function Cover({ story, onStart }: { story: Story; onStart: () => void }) {
   return (
     <button onClick={onStart} className="relative block w-full text-left" aria-label={`Start ${story.title}`}>
       <Scene scenery={story.pages[0].scene}>
-        <span className="absolute left-1/2 top-[8%] w-[24cqw] -translate-x-1/2 drop-shadow-lg act-idle-float">
-          <StoryArt id={story.cover} className="block w-full" />
+        <span className="absolute left-1/2 top-[6%] h-[22cqw] -translate-x-1/2 drop-shadow-lg act-idle-float">
+          <StoryArt id={story.cover} className="block h-full w-auto" />
         </span>
         <span className="absolute inset-x-0 bottom-[8%] flex flex-col items-center gap-[1.5cqw] px-4 text-center">
           <span className={`${display.className} rounded-[2cqw] bg-white/85 px-[3cqw] py-[1cqw] text-[6cqw] font-extrabold leading-tight text-[#0A4F29] shadow-lg`}>
@@ -345,8 +345,8 @@ function TheEnd({ story, onAgain, onClose }: { story: Story; onAgain: () => void
   return (
     <Scene scenery={story.pages[story.pages.length - 1].scene}>
       <span className="absolute inset-0 flex flex-col items-center justify-center gap-[2cqw]">
-        <span className="w-[16cqw] act-idle-float">
-          <StoryArt id={story.cover} className="block w-full" />
+        <span className="h-[16cqw] act-idle-float">
+          <StoryArt id={story.cover} className="block h-full w-auto" />
         </span>
         <span className={`${display.className} rounded-[2cqw] bg-white/85 px-[4cqw] py-[1cqw] text-[8cqw] font-extrabold italic text-[#0A4F29] shadow-lg`}>The End</span>
         <span className="flex gap-[2cqw]">
@@ -366,9 +366,9 @@ function TheEnd({ story, onAgain, onClose }: { story: Story; onAgain: () => void
 
 /** A painted background: sky, distant shapes and ground, drawn in SVG. */
 function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactNode }) {
-  const night = scenery === "castle";
+  const night = scenery === "castle" || scenery === "night";
   const snowy = scenery === "snow" || scenery === "villageSnow";
-  const sky = night ? ["#1e2a5a", "#4b3d8f"] : snowy ? ["#cfe6f7", "#eef6fc"] : scenery === "sea" ? ["#7cc6f2", "#d6f0ff"] : ["#86cdf6", "#dff3ff"];
+  const sky = scenery === "night" ? ["#0f1640", "#3a3480"] : night ? ["#1e2a5a", "#4b3d8f"] : snowy ? ["#cfe6f7", "#eef6fc"] : scenery === "sea" ? ["#7cc6f2", "#d6f0ff"] : ["#86cdf6", "#dff3ff"];
   return (
     <div className="relative aspect-[16/9] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
       <svg viewBox="0 0 160 90" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden>
@@ -442,9 +442,41 @@ function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactN
             })}
           </g>
         )}
-        {scenery === "sea" && <rect y="56" width="160" height="34" fill="#3aa0d8" />}
+        {scenery === "night" && (
+          <g stroke="#0c1a10" strokeWidth={0.4}>
+            <ellipse cx="40" cy="76" rx="70" ry="18" fill="#2c5a34" />
+            <ellipse cx="128" cy="74" rx="56" ry="24" fill="#244d2c" />
+            {[[30, 64], [62, 60], [100, 58], [136, 56]].map(([x, y]) => (
+              <circle key={x} cx={x} cy={y} r={0.9} fill="#d8ff7a" stroke="none" />
+            ))}
+          </g>
+        )}
+        {scenery === "farm" && (
+          /* a red barn and a fence across the field */
+          <g stroke="#3b2a2f" strokeWidth={0.5} strokeLinejoin="round">
+            <rect x="112" y="40" width="30" height="26" fill="#c8402e" />
+            <path d="M108 41 L127 27 L146 41 Z" fill="#8a2a1e" />
+            <rect x="121" y="50" width="12" height="16" fill="#f4efe6" />
+            <path d="M121 50 L133 66 M133 50 L121 66" stroke="#c8402e" strokeWidth={1} />
+            <rect x="122" y="33" width="10" height="6" fill="#f4efe6" />
+            {[4, 14, 24, 34, 44, 54, 64, 74, 84, 94].map((x) => <rect key={x} x={x} y="62" width="2.2" height="9" fill="#f4efe6" />)}
+            <path d="M3 64 H97 M3 68 H97" stroke="#f4efe6" strokeWidth={1.4} />
+          </g>
+        )}
+        {scenery === "sea" && (
+          <g>
+            <rect y="50" width="160" height="40" fill="#3aa0d8" />
+            {[[14, 56], [52, 60], [96, 55], [132, 61], [30, 66], [112, 68]].map(([x, y]) => (
+              <path key={x} d={`M${x} ${y} q3 -2 6 0 q3 -2 6 0`} fill="none" stroke="#e8f7ff" strokeWidth={0.8} strokeLinecap="round" />
+            ))}
+          </g>
+        )}
         {/* the ground */}
-        <rect y="70" width="160" height="20" fill={night ? "#3b4a3a" : snowy ? "#f4f8fb" : "#6dbb4f"} />
+        {scenery === "sea" ? (
+          <path d="M0 76 Q40 72 80 76 T160 75 V90 H0 Z" fill="#f2d79b" stroke="#d9b56a" strokeWidth={0.5} />
+        ) : (
+          <rect y="70" width="160" height="20" fill={scenery === "night" ? "#1f3d24" : night ? "#3b4a3a" : snowy ? "#f4f8fb" : "#6dbb4f"} />
+        )}
         {scenery === "road" && <rect y="76" width="160" height="9" fill="#8a8f98" />}
         {scenery === "road" && [8, 34, 60, 86, 112, 138].map((x) => <rect key={x} x={x} y="80" width="12" height="1.2" fill="#f5f5f5" />)}
         {snowy && <path d="M0 70 Q40 66 80 70 T160 70 V72 H0 Z" fill="#ffffff" />}
