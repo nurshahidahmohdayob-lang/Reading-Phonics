@@ -567,12 +567,19 @@ export default function Home() {
             Phonics Pals &amp; Guided Reading
           </h1>
           <div className="justify-self-end">
-            {!section && (
+            {!section ? (
               <button
                 onClick={() => go("guide")}
                 className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/25 active:scale-95 sm:text-sm"
               >
                 📖 How to use
+              </button>
+            ) : (
+              <button
+                onClick={() => go(null)}
+                className="flex items-center gap-1 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#0A4F29] shadow-sm transition-all hover:bg-white/90 active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                🏠 Home
               </button>
             )}
           </div>
@@ -625,17 +632,8 @@ export default function Home() {
         </main>
       ) : (
         <div className="relative z-10 mt-6 flex w-full max-w-4xl flex-1 flex-col items-center">
-          {/* Back to home */}
-          <div className="flex w-full">
-            <button
-              onClick={() => go(null)}
-              className="flex items-center gap-1 rounded-full bg-white px-5 py-2.5 font-bold text-zinc-600 shadow-sm transition-all hover:shadow active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-            >
-              🏠 Home
-            </button>
-          </div>
-
-          <div className="mt-6 flex w-full flex-1 flex-col items-center">
+          {/* Home is in the header bar. */}
+          <div className="flex w-full flex-1 flex-col items-center">
             {section === "phonics" && <Phonics />}
             {section === "soundout" && <SoundItOut />}
             {section === "flashcards" && <Flashcards />}
