@@ -3,6 +3,9 @@
 /** Where each landmark is on the island picture, in % across and down. */
 export const ISLAND_SIZE = { w: 1920, h: 1080 };
 
+/** The picture, with its version so browsers fetch a new render. */
+export const ISLAND_IMAGE = "/images/home-island.webp?v=ba6907d218";
+
 export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = {
   "tricky": {
     "sign": [
@@ -132,6 +135,16 @@ export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [numbe
     "foot": [
       81.53,
       62.74
+    ]
+  },
+  "interactive": {
+    "sign": [
+      50.0,
+      30.42
+    ],
+    "foot": [
+      50.0,
+      43.6
     ]
   },
   "lagoon": {

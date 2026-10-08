@@ -35,6 +35,7 @@ type SectionId =
   | "threed"
   | "tracker"
   | "assignments"
+  | "interactive"
   | "guide";
 
 const SECTIONS: {
@@ -134,6 +135,14 @@ const SECTIONS: {
     text: "text-violet-700",
   },
   {
+    id: "interactive",
+    label: "Interactive Stories",
+    blurb: "Read-along plays: tap and listen",
+    emoji: "🎭",
+    color: "from-[#FFE0E6] to-[#FFC2CF]", // rose
+    text: "text-rose-700",
+  },
+  {
     id: "assignments",
     label: "Assignments",
     blurb: "Set online lessons · see who's done them",
@@ -160,11 +169,25 @@ const ISLAND_GLOW: Record<string, string> = {
   stories: "rgba(90,170,255,0.95)", storyplay: "rgba(60,210,200,0.95)", guided: "rgba(170,130,255,0.95)",
   assessment: "rgba(255,120,110,0.95)", threed: "rgba(190,130,255,0.95)", assignments: "rgba(255,180,60,0.95)",
   tracker: "rgba(60,190,120,0.95)",
+  interactive: "rgba(255,90,120,0.95)",
 };
 
 function ToolIcon({ id, className }: { id: SectionId; className?: string }) {
   const p = { viewBox: "0 0 48 48", className, "aria-hidden": true } as const;
   switch (id) {
+    case "interactive": // a puppet theatre with a star
+      return (
+        <svg {...p}>
+          <rect x="6" y="10" width="36" height="30" rx="3" fill="#7C3AED" />
+          <rect x="10" y="16" width="28" height="18" rx="2" fill="#1E3A8A" />
+          <path d="M10 16h8c0 6-3 14-8 18z" fill="#E11D48" />
+          <path d="M38 16h-8c0 6 3 14 8 18z" fill="#E11D48" />
+          <circle cx="20" cy="27" r="3.5" fill="#FDE68A" />
+          <circle cx="28" cy="27" r="3.5" fill="#93C5FD" />
+          <rect x="6" y="34" width="36" height="6" rx="2" fill="#F472B6" />
+          <path d="M24 2l2 4 4.5.6-3.3 3 .8 4.4L24 12l-4 2 .8-4.4-3.3-3L22 6z" fill="#FBBF24" />
+        </svg>
+      );
     case "phonics": // speech bubble saying "Aa"
       return (
         <svg {...p}>
@@ -618,7 +641,15 @@ export default function Home() {
             }))}
             icon={(id) => <ToolIcon id={id as SectionId} className="h-[85%] w-[85%]" />}
             onOpen={(id) =>
-              id === "assessment" ? openAssessment() : id === "guided" ? openGuided() : id === "tracker" ? openTracker() : go(id as SectionId)
+              id === "interactive"
+                ? (window.location.href = "/play")
+                : id === "assessment"
+                  ? openAssessment()
+                  : id === "guided"
+                    ? openGuided()
+                    : id === "tracker"
+                      ? openTracker()
+                      : go(id as SectionId)
             }
           />
         </main>
@@ -630,7 +661,9 @@ export default function Home() {
               <button
                 key={s.id}
                 onClick={() =>
-                  s.id === "assessment"
+                  s.id === "interactive"
+                    ? (window.location.href = "/play")
+                    : s.id === "assessment"
                     ? openAssessment()
                     : s.id === "guided"
                       ? openGuided()

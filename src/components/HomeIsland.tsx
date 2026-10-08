@@ -1,14 +1,13 @@
 "use client";
 
-/* The home screen as an island: one Blender-rendered island in a moving sea
-   (blender/home_island.py), with a landmark for every section and a sign on
-   each. Signs bob gently; hovering lifts one and lights its landmark; tapping
+/* The home screen as an island: one Blender-rendered island floating on the
+   page's own sky (blender/home_island.py), with a landmark for every section
+   and a sign on each. Signs bob gently; hovering lifts one and lights its landmark; tapping
    one sends a ring of light round it and a glow under its landmark, then
-   opens the section. Clouds and birds drift over, the sea shimmers and the
-   island floats. Sign positions come from the render (app/homeIsland.ts). */
+   opens the section. Clouds and birds drift over, and the island floats. Sign positions come from the render (app/homeIsland.ts). */
 
 import { useState } from "react";
-import { ISLAND_SPOTS, ISLAND_SIZE } from "@/app/homeIsland";
+import { ISLAND_IMAGE, ISLAND_SPOTS, ISLAND_SIZE } from "@/app/homeIsland";
 
 export type IslandSection = {
   id: string;
@@ -42,10 +41,7 @@ export default function HomeIsland({
   };
 
   return (
-    <div className="island-sea absolute inset-0 overflow-hidden rounded-[2rem] shadow-[inset_0_0_60px_rgba(0,40,90,0.35)] ring-4 ring-white/60">
-      {/* sea sparkle and swell */}
-      <div aria-hidden className="island-swell absolute inset-0" />
-      <div aria-hidden className="island-sparkle absolute inset-0" />
+    <div className="absolute inset-0">
 
       {/* the island, as big as fits, with room above for the tallest signs */}
       <div className="absolute inset-0 flex items-center justify-center px-2 pb-2 pt-10" style={{ containerType: "size" }}>
@@ -54,7 +50,7 @@ export default function HomeIsland({
           style={{ aspectRatio: `${ISLAND_SIZE.w} / ${ISLAND_SIZE.h}`, maxHeight: "100%", maxWidth: `calc((100cqh - 3rem) * ${ISLAND_SIZE.w / ISLAND_SIZE.h})`, containerType: "inline-size" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/home-island.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none" />
+          <img src={ISLAND_IMAGE} alt="" draggable={false} className="absolute inset-0 h-full w-full select-none" />
 
           {/* light under the landmark being pointed at or opened */}
           {sections.map((s) => {
@@ -111,8 +107,6 @@ export default function HomeIsland({
         <span className="island-cloud absolute top-[38%] text-4xl opacity-70" style={{ animationDuration: "56s", animationDelay: "-12s" }}>☁️</span>
         <span className="island-bird absolute top-[14%] text-2xl" style={{ animationDuration: "22s" }}>🕊️</span>
         <span className="island-bird absolute top-[22%] text-xl" style={{ animationDuration: "26s", animationDelay: "-9s" }}>🕊️</span>
-        <span className="island-boat absolute bottom-[6%] text-4xl" style={{ animationDuration: "40s" }}>⛵</span>
-        <span className="island-fish absolute bottom-[14%] left-[8%] text-2xl">🐬</span>
       </div>
     </div>
   );

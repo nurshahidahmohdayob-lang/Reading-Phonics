@@ -49,12 +49,14 @@ ZONES = {
     "formation": (0.0, -2.05),
     "assignments": (1.85, -1.95),
     "tracker": (3.75, -1.55),
+    # on the little island in the lagoon
+    "interactive": (0.0, 0.32),
 }
 
 LAGOON = (0.0, 0.3)
 
 # How high above a landmark its sign floats, for the tall ones.
-SIGN_LIFT = {"stories": 1.75, "guided": 2.45}
+SIGN_LIFT = {"stories": 1.75, "guided": 2.45, "interactive": 1.35}
 
 # Section colours, linear (a touch deeper than the app's pastels, for walls).
 COL = {
@@ -71,6 +73,7 @@ COL = {
     "threed": (0.7, 0.45, 1.0),
     "assignments": (1.0, 0.65, 0.2),
     "tracker": (0.15, 0.55, 0.35),
+    "interactive": (0.95, 0.3, 0.45),
 }
 
 
@@ -319,7 +322,30 @@ def lm_tracker(x, y, c):
     scope.rotation_euler = (math.radians(35), math.radians(-25), 0)
 
 
+def lm_interactive(x, y, c):
+    """A puppet theatre on the lagoon's island: a stage with red curtains
+    and two puppets, a gold arch and a star on top."""
+    red = I.material("Curtain", (0.85, 0.08, 0.15), rough=0.6)
+    gold = W.metal("TheatreGold", (1.0, 0.72, 0.18))
+    wood = I.material("TheatreWood", c, rough=0.5)
+    I.box("Stage", (0.95, 0.5, 0.3), (x, y, 0.25), wood, bevel=0.03)
+    I.box("Back", (0.95, 0.08, 0.95), (x, y + 0.22, 0.85), I.material("Backdrop", (0.15, 0.2, 0.55), rough=0.7), bevel=0.02)
+    for side in (-1, 1):
+        I.box("Curtain", (0.22, 0.1, 0.9), (x + side * 0.38, y - 0.12, 0.85), red, bevel=0.05)
+        W.cylinder(0.035, 1.0, (x + side * 0.5, y - 0.2, 0.85), gold, vertices=12)
+    I.box("Valance", (1.05, 0.12, 0.16), (x, y - 0.2, 1.32), red, bevel=0.04)
+    I.box("Arch", (1.1, 0.1, 0.06), (x, y - 0.22, 1.42), gold, bevel=0.02)
+    star_mesh(x, y - 0.24, 1.62, 0.16, W.glow_material("TheatreStar", (1.0, 0.8, 0.15), 1.2), depth=0.05)
+    # two puppets on the stage
+    for (dx, col) in ((-0.15, (1.0, 0.75, 0.2)), (0.17, (0.35, 0.7, 1.0))):
+        I.blob((x + dx, y - 0.05, 0.6), 0.12, I.material("PuppetBody", col, rough=0.5))
+        I.blob((x + dx, y - 0.05, 0.8), 0.1, I.material("PuppetHead", (1.0, 0.85, 0.7), rough=0.5))
+        for ex in (-0.035, 0.035):
+            I.blob((x + dx + ex, y - 0.14, 0.82), 0.018, I.material("Eye", (0.05, 0.05, 0.08)))
+
+
 LANDMARKS = {
+    "interactive": lm_interactive,
     "phonics": lm_phonics,
     "soundout": lm_soundout,
     "flashcards": lm_flashcards,
@@ -379,13 +405,16 @@ def build():
     slab("LagoonRim", rim, 0.0, 0.075, I.material("Rim", (1.0, 0.7, 0.3), rough=0.9))
     pool = [(lx + px, ly + py) for px, py in outline(1.38, 0.86, 1.4, 9, n=64)]
     slab("Lagoon", pool, 0.0, 0.085, W.glow_material("LagoonWater", (0.0, 0.5, 0.9), 0.2))
-    islet = [(lx + 0.35 + px, ly + 0.1 + py) for px, py in outline(0.32, 0.22, 1.0, 2, n=32)]
+    isle_sand = [(lx + px, ly + py) for px, py in outline(0.82, 0.5, 0.8, 2, n=48)]
+    slab("IsletSand", isle_sand, 0.0, 0.1, I.material("IsletSand", (1.0, 0.7, 0.3), rough=0.9))
+    islet = [(lx + px, ly + 0.02 + py) for px, py in outline(0.7, 0.42, 0.8, 2, n=48)]
     slab("Islet", islet, 0.0, 0.12, grass)
-    W.palm(lx + 0.35, ly + 0.12, scale=0.8)
 
     # Paths from the lagoon out to every landmark.
     dirt = I.material("Path", (0.85, 0.6, 0.3), rough=0.9)
-    for zx, zy in ZONES.values():
+    for zone, (zx, zy) in ZONES.items():
+        if zone == "interactive":
+            continue
         ax, ay = lx + (zx - lx) * 0.33, ly + (zy - ly) * 0.33
         bx, by = zx - (zx - lx) * 0.12, zy - (zy - ly) * 0.12
         length = math.hypot(bx - ax, by - ay)

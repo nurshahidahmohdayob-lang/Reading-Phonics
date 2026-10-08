@@ -6,6 +6,7 @@ public/images/home-island.webp (the picture) and src/app/homeIsland.ts
     python3 scripts/home-island.py
 """
 
+import hashlib
 import json
 import os
 
@@ -16,10 +17,14 @@ src = os.path.join(ROOT, "blender", "out")
 im = Image.open(os.path.join(src, "home-island.png")).convert("RGBA")
 im.save(os.path.join(ROOT, "public", "images", "home-island.webp"), "WEBP", quality=82, method=6)
 data = json.load(open(os.path.join(src, "home-island.json")))
+webp = os.path.join(ROOT, "public", "images", "home-island.webp")
+version = hashlib.sha1(open(webp, "rb").read()).hexdigest()[:10]
 with open(os.path.join(ROOT, "src", "app", "homeIsland.ts"), "w") as f:
     f.write("// Made by scripts/home-island.py from the Blender render (blender/home_island.py). Don't edit by hand.\n\n")
     f.write("/** Where each landmark is on the island picture, in % across and down. */\n")
     f.write(f"export const ISLAND_SIZE = {{ w: {data['w']}, h: {data['h']} }};\n\n")
+    f.write("/** The picture, with its version so browsers fetch a new render. */\n")
+    f.write(f'export const ISLAND_IMAGE = "/images/home-island.webp?v={version}";\n\n')
     f.write("export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = ")
     f.write(json.dumps(data["spots"], indent=2))
     f.write(";\n")
