@@ -1,13 +1,24 @@
 "use client";
 
-/* The home screen as an island: one Blender-rendered island floating on the
-   page's own sky (blender/home_island.py), with a landmark for every section
-   and a sign on each. Signs bob gently; hovering lifts one and lights its landmark; tapping
-   one sends a ring of light round it and a glow under its landmark, then
-   opens the section. Clouds and birds drift over, and the island floats. Sign positions come from the render (app/homeIsland.ts). */
+/* The home screen as a living island: one Blender-rendered island floating
+   on the page's own sky (blender/home_island.py), with a landmark for every
+   section and a sign on each. Polly the parrot flies to the sign a child
+   points at and says its name, and a path of light runs from the lagoon to
+   that landmark; tapping a sign sends a ring of light round it and a glow
+   under its landmark, then opens the section. Music notes rise from the
+   microphone, stars twinkle round the Tricky Words tower, bubbles rise from
+   the lagoon, clouds and birds drift over, and the island floats. Sign
+   positions come from the render (app/homeIsland.ts). */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ISLAND_IMAGE, ISLAND_SPOTS, ISLAND_SIZE } from "@/app/homeIsland";
+import { speak } from "@/lib/speak";
+
+/** Where Polly waits when nobody is pointing at anything: by the lagoon. */
+const PERCH: [number, number] = [57, 40];
+
+/** The picture is 16:9; the light path is drawn in a 100 × 56.25 box. */
+const PATH_Y = ISLAND_SIZE.h / ISLAND_SIZE.w;
 
 export type IslandSection = {
   id: string;
@@ -30,10 +41,41 @@ export default function HomeIsland({
 }) {
   const [hover, setHover] = useState<string | null>(null);
   const [lit, setLit] = useState<string | null>(null);
+  const said = useRef<string | null>(null);
+  const sayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const target = lit ?? hover;
+  const label = (id: string) => sections.find((s) => s.id === id)?.label ?? "";
+
+  // Polly says the name of the place being pointed at, once it's been
+  // pointed at for a moment (so sweeping across the island stays quiet).
+  useEffect(() => {
+    clearTimeout(sayTimer.current);
+    if (!hover || hover === said.current) return;
+    sayTimer.current = setTimeout(() => {
+      said.current = hover;
+      speak(label(hover), 0.95);
+    }, 450);
+    return () => clearTimeout(sayTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hover]);
+  useEffect(() => {
+    if (!hover) said.current = null;
+  }, [hover]);
+
+  const spotOf = (id: string | null) => (id ? ISLAND_SPOTS[id] : undefined);
+  const aim = spotOf(target);
+  // Polly perches just above and to the right of the sign, clear of its words.
+  const polly: [number, number] = aim ? [aim.sign[0] + 6, Math.max(aim.sign[1] - 6.5, 3)] : PERCH;
+  const lagoon = ISLAND_SPOTS.lagoon?.foot ?? [50, 44];
+  const trail = aim && target !== "interactive"
+    ? `M${lagoon[0]} ${lagoon[1] * PATH_Y} Q ${(lagoon[0] + aim.foot[0]) / 2} ${Math.min(lagoon[1], aim.foot[1]) * PATH_Y - 4} ${aim.foot[0]} ${aim.foot[1] * PATH_Y}`
+    : null;
+  const at = (id: string, k: "sign" | "foot") => ISLAND_SPOTS[id]?.[k];
 
   const open = (id: string) => {
     if (lit) return;
     setLit(id);
+    if (said.current !== id) speak(label(id), 0.95);
     setTimeout(() => {
       onOpen(id);
       setLit(null);
@@ -51,6 +93,55 @@ export default function HomeIsland({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ISLAND_IMAGE} alt="" draggable={false} className="absolute inset-0 h-full w-full select-none" />
+
+          {/* life on the island: notes from the microphone, stars round the
+              tower, bubbles in the lagoon */}
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            {at("guided", "foot") &&
+              ["♪", "♫", "♪"].map((n, i) => (
+                <span
+                  key={`n${i}`}
+                  className="island-note absolute"
+                  style={{ left: `${at("guided", "foot")![0] + (i - 1) * 2.4}%`, top: `${at("guided", "foot")![1] - 10}%`, animationDelay: `${i * -1.05}s` }}
+                >
+                  {n}
+                </span>
+              ))}
+            {at("tricky", "sign") &&
+              [[-3, 6], [3.5, 2], [0, -3], [-4.5, 0], [4.5, 9]].map(([dx, dy], i) => (
+                <span
+                  key={`t${i}`}
+                  className="island-twinkle absolute"
+                  style={{ left: `${at("tricky", "sign")![0] + dx}%`, top: `${at("tricky", "sign")![1] + dy}%`, animationDelay: `${i * -0.35}s` }}
+                />
+              ))}
+            {[[-7, 3], [6, 4], [-3, 7], [8, 0]].map(([dx, dy], i) => (
+              <span
+                key={`b${i}`}
+                className="island-bubble absolute"
+                style={{ left: `${lagoon[0] + dx}%`, top: `${lagoon[1] + dy}%`, animationDelay: `${i * -0.65}s` }}
+              />
+            ))}
+          </div>
+
+          {/* the path of light from the lagoon to the place being pointed at */}
+          {trail && (
+            <svg aria-hidden className="island-trail pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 100 ${100 * PATH_Y}`} preserveAspectRatio="none">
+              <path d={trail} />
+            </svg>
+          )}
+
+          {/* Polly the parrot, the island's guide */}
+          <div
+            aria-hidden
+            className="island-polly pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full"
+            style={{ left: `${polly[0]}%`, top: `${polly[1]}%` }}
+          >
+            <span className={`block text-[max(26px,3.6cqw)] leading-none ${target ? "island-polly-flap" : "island-polly-idle"}`}>🦜</span>
+            <span className="absolute bottom-[85%] left-[70%] whitespace-nowrap rounded-[1cqw] bg-white px-[0.9cqw] py-[0.5cqw] text-[max(11px,1.1cqw)] font-extrabold text-zinc-700 shadow-md">
+              {target ? `Let's do ${label(target)}!` : "Hi! Pick a place!"}
+            </span>
+          </div>
 
           {/* light under the landmark being pointed at or opened */}
           {sections.map((s) => {

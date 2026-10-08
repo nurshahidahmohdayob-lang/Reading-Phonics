@@ -60,20 +60,20 @@ SIGN_LIFT = {"stories": 1.75, "guided": 2.45, "interactive": 1.35}
 
 # Section colours, linear (a touch deeper than the app's pastels, for walls).
 COL = {
-    "phonics": (0.95, 0.35, 0.6),
-    "soundout": (0.45, 0.5, 1.0),
-    "flashcards": (0.2, 0.75, 0.78),
-    "formation": (1.0, 0.6, 0.25),
-    "spelling": (0.3, 0.8, 0.5),
-    "tricky": (1.0, 0.8, 0.15),
-    "stories": (0.3, 0.6, 1.0),
-    "storyplay": (0.2, 0.75, 0.75),
-    "guided": (0.6, 0.45, 1.0),
-    "assessment": (1.0, 0.45, 0.4),
-    "threed": (0.7, 0.45, 1.0),
-    "assignments": (1.0, 0.65, 0.2),
-    "tracker": (0.15, 0.55, 0.35),
-    "interactive": (0.95, 0.3, 0.45),
+    "phonics": (0.9, 0.08, 0.38),
+    "soundout": (0.2, 0.25, 0.95),
+    "flashcards": (0.0, 0.62, 0.68),
+    "formation": (1.0, 0.38, 0.04),
+    "spelling": (0.05, 0.68, 0.28),
+    "tricky": (1.0, 0.68, 0.0),
+    "stories": (0.05, 0.4, 0.95),
+    "storyplay": (0.0, 0.62, 0.6),
+    "guided": (0.45, 0.2, 0.95),
+    "assessment": (0.95, 0.15, 0.12),
+    "threed": (0.6, 0.18, 0.95),
+    "assignments": (1.0, 0.5, 0.0),
+    "tracker": (0.02, 0.45, 0.22),
+    "interactive": (0.9, 0.1, 0.3),
 }
 
 
@@ -139,8 +139,8 @@ def hut(x, y, colour, w=0.55, h=0.42, roof_colour=(0.75, 0.22, 0.15)):
 
 def pad(x, y, colour, r=0.62):
     """A round stone plaza under each landmark."""
-    p = W.cylinder(r, 0.08, (x, y, 0.08), I.material("Plaza", (0.85, 0.75, 0.6), rough=0.8), vertices=40)
-    W.cylinder(r * 0.97, 0.02, (x, y, 0.125), I.material("PlazaTop", tuple(min(1, c * 0.75 + 0.18) for c in colour), rough=0.6), vertices=40)
+    p = W.cylinder(r, 0.08, (x, y, 0.08), I.material("Plaza", (0.55, 0.4, 0.28), rough=0.8), vertices=40)
+    W.cylinder(r * 0.97, 0.02, (x, y, 0.125), I.material("PlazaTop", tuple(min(1, c * 0.55 + 0.12) for c in colour), rough=0.5), vertices=40)
     return p
 
 
@@ -383,34 +383,41 @@ def build():
     scene.camera = cam
     I.sun(scene)
     sun = bpy.data.objects["Sun"]
-    sun.data.energy = 4.2
+    sun.data.energy = 3.6
     bg = next(n for n in scene.world.node_tree.nodes if n.type == "BACKGROUND")
-    bg.inputs[0].default_value = (0.55, 0.75, 1.0, 1)
-    bg.inputs[1].default_value = 0.42
+    bg.inputs[0].default_value = (0.45, 0.62, 1.0, 1)
+    bg.inputs[1].default_value = 0.24
+    # Punchier contrast for deep, vibrant colour.
+    for look in ("AgX - High Contrast", "High Contrast", "Medium High Contrast"):
+        try:
+            scene.view_settings.look = look
+            break
+        except TypeError:
+            continue
 
     # The beach, a low cliff and the grass (no water round it: the island
     # floats on the app's own sky).
-    sand = I.material("Sand", (1.0, 0.68, 0.28), rough=0.9, noise=0.1, noise_scale=20)
+    sand = I.material("Sand", (0.8, 0.38, 0.06), rough=0.9, noise=0.12, noise_scale=20)
     slab("Beach", outline(6.15, 3.45, 1.0, 4), -0.2, -0.02, sand, bevel=0.06)
-    cliff = I.material("Cliff", (0.55, 0.36, 0.2), rough=0.9, noise=0.2, noise_scale=10)
+    cliff = I.material("Cliff", (0.4, 0.2, 0.08), rough=0.9, noise=0.2, noise_scale=10)
     land = outline(5.7, 3.1, 1.1, 4)
     slab("Cliff", land, -0.05, 0.02, cliff)
-    grass = I.material("Grass", (0.1, 0.5, 0.04), rough=0.9, noise=0.2, noise_scale=7)
+    grass = I.material("Grass", (0.012, 0.17, 0.008), rough=0.9, noise=0.3, noise_scale=7)
     slab("Grass", land, 0.0, 0.06, grass, bevel=0.05)
 
     # The lagoon in the middle, with a sandy rim and a little island.
     lx, ly = LAGOON
     rim = [(lx + px * 1.0, ly + py) for px, py in outline(1.55, 1.0, 1.4, 9, n=64)]
-    slab("LagoonRim", rim, 0.0, 0.075, I.material("Rim", (1.0, 0.7, 0.3), rough=0.9))
+    slab("LagoonRim", rim, 0.0, 0.075, I.material("Rim", (0.8, 0.38, 0.06), rough=0.9))
     pool = [(lx + px, ly + py) for px, py in outline(1.38, 0.86, 1.4, 9, n=64)]
-    slab("Lagoon", pool, 0.0, 0.085, W.glow_material("LagoonWater", (0.0, 0.5, 0.9), 0.2))
+    slab("Lagoon", pool, 0.0, 0.085, W.glow_material("LagoonWater", (0.0, 0.32, 0.85), 0.25))
     isle_sand = [(lx + px, ly + py) for px, py in outline(0.82, 0.5, 0.8, 2, n=48)]
-    slab("IsletSand", isle_sand, 0.0, 0.1, I.material("IsletSand", (1.0, 0.7, 0.3), rough=0.9))
+    slab("IsletSand", isle_sand, 0.0, 0.1, I.material("IsletSand", (0.8, 0.38, 0.06), rough=0.9))
     islet = [(lx + px, ly + 0.02 + py) for px, py in outline(0.7, 0.42, 0.8, 2, n=48)]
     slab("Islet", islet, 0.0, 0.12, grass)
 
     # Paths from the lagoon out to every landmark.
-    dirt = I.material("Path", (0.85, 0.6, 0.3), rough=0.9)
+    dirt = I.material("Path", (0.55, 0.28, 0.08), rough=0.9)
     for zone, (zx, zy) in ZONES.items():
         if zone == "interactive":
             continue
@@ -424,7 +431,7 @@ def build():
         LANDMARKS[zone](zx, zy, COL[zone])
 
     # Mountains at the back corners, palms on the beach, trees and bushes.
-    rockc = I.material("Mountain", (0.3, 0.33, 0.45), rough=0.85, noise=0.25, noise_scale=6)
+    rockc = I.material("Mountain", (0.08, 0.09, 0.2), rough=0.85, noise=0.3, noise_scale=6)
     snow = I.material("Snowcap", (0.96, 0.97, 1.0), rough=0.6)
     for (mx, my, mh, mr) in ((-5.0, 2.2, 1.5, 0.9), (-4.3, 2.75, 1.1, 0.7), (5.0, 2.25, 1.4, 0.85), (4.35, 2.75, 1.0, 0.65), (0.0, 2.95, 0.9, 0.7)):
         W.cone(mr, 0.0, mh, (mx, my, mh / 2), rockc, vertices=7)
@@ -435,7 +442,7 @@ def build():
         x, y = math.cos(a) * 5.65, math.sin(a) * 3.15
         if clear_of_zones(x, y, 0.8):
             W.palm(x, y, scale=rnd.uniform(1.0, 1.35))
-    palette = dict(tree=(0.1, 0.48, 0.08))
+    palette = dict(tree=(0.008, 0.15, 0.015))
     for k in range(80):
         x, y = rnd.uniform(-5.2, 5.2), rnd.uniform(-2.6, 2.7)
         if (x / 5.3) ** 2 + (y / 2.85) ** 2 > 0.85 or not clear_of_zones(x, y):
@@ -443,11 +450,11 @@ def build():
         if rnd.random() < 0.55:
             W.tree(x, y, palette, "pine" if rnd.random() < 0.3 else "round", scale=rnd.uniform(1.1, 1.5))
         else:
-            I.blob((x, y, 0.12), rnd.uniform(0.1, 0.16), I.material("Bush", (0.08, 0.45, 0.1), rough=0.8))
+            I.blob((x, y, 0.12), rnd.uniform(0.1, 0.16), I.material("Bush", (0.008, 0.14, 0.02), rough=0.8))
             I.blob((x + 0.05, y - 0.06, 0.22), 0.045, I.material("Bloom", rnd.choice([(1, 0.3, 0.5), (1, 0.85, 0.2), (0.75, 0.45, 1), (1, 1, 1)])))
     for k in range(10):
         a = k * math.tau / 10 + 0.3
-        W.rock(math.cos(a) * 6.1, math.sin(a) * 3.4, (0.5, 0.48, 0.45), scale=rnd.uniform(0.8, 1.3))
+        W.rock(math.cos(a) * 6.1, math.sin(a) * 3.4, (0.18, 0.17, 0.2), scale=rnd.uniform(0.8, 1.3))
 
     # Where each landmark lands on the picture: the sign goes above it.
     spots = {}
