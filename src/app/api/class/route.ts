@@ -20,7 +20,7 @@ import {
   isItemId,
   readingFor,
   readingMarks,
-  readToday,
+  doneThisSession,
   submitReading,
   MAX_SUBMISSION_CHARS,
   nameKey,
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
     if (!r) return bad("No stories for this level yet.", 404);
     return NextResponse.json({
       ok: true,
-      reading: { storyId: r.storyId, levelId: r.levelId, tier: r.tier, done: readToday(r) },
+      reading: { storyId: r.storyId, levelId: r.levelId, tier: r.tier, done: doneThisSession(r, cls.yearKey), session: r.session },
     });
   }
 
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
     items: items.map((a) => ({ id: a.id, title: a.title, kind: a.kind, for: assignedNames(a, cls) })),
     // Only who's done what — never their answers.
     done: Object.fromEntries(Object.entries(done).map(([id, m]) => [id, Object.keys(m)])),
-    read: cls.names.filter((n) => readToday(reads[n])),
+    read: cls.names.filter((n) => doneThisSession(reads[n], cls.yearKey)),
   });
 }
 

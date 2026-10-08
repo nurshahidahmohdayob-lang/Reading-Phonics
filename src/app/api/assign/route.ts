@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifyToken } from "@/lib/session";
+import { sessionsFrom } from "@/lib/librarySchedule";
 import {
   assignmentsReady,
   assignedNames,
@@ -39,7 +40,8 @@ import {
   MAX_HTML_CHARS,
   openClass,
   readingMarks,
-  readToday,
+  doneThisSession,
+  planFor,
   storyTitle,
 } from "@/lib/assignments";
 
@@ -78,9 +80,12 @@ export async function POST(req: Request) {
     const done = await doneMarks(items, cls);
     const reads = await readingMarks(code, cls.names);
     const reading = Object.fromEntries(
-      Object.entries(reads).map(([n, r]) => [n, { story: storyTitle(r), done: readToday(r) ? r.done : undefined }]),
+      Object.entries(reads).map(([n, r]) => [n, { story: storyTitle(r), done: doneThisSession(r, yearKey) ? r.done : undefined }]),
     );
-    return NextResponse.json({ ok: true, code, names: cls.names, items, done, reading });
+    // The next five library sessions and each child's story for them.
+    const plan = Object.fromEntries(cls.names.map((n) => [n, planFor(cls, n, reads[n], 5)]));
+    const sessions = sessionsFrom(yearKey, 5);
+    return NextResponse.json({ ok: true, code, names: cls.names, items, done, reading, sessions, plan });
   }
 
   if (body.op === "create") {

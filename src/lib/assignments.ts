@@ -26,6 +26,7 @@ import { randomBytes } from "crypto";
 import { passageLevels, levelForReader } from "@/app/passages";
 import { assignmentStories, findAssignmentStory } from "@/app/assignmentStories";
 import { worksheetTier, type Tier } from "./worksheet";
+import { schoolDateOf, sessionOn, sessionsBetween, sessionsFrom } from "./librarySchedule";
 import { kvConfigured, kvDel, kvGetJson, kvMGetJson, kvSetJson } from "./kv";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -250,15 +251,18 @@ export async function clearSubmission(id: string, name: string): Promise<void> {
 
 /* ---------- each child's own reading ---------- */
 
-/** A child's reading activity: one short story at their level, with its
-    questions. It stays until they submit it; the day after, the next story
-    at their level takes its place. */
+/** A child's reading activity: one story at their level, with its
+    questions, for one library session. On their class's next library day,
+    the next story at their level takes its place (lib/librarySchedule). */
 export type Reading = {
   storyId: string;
   levelId: string;
   tier: Tier;
   lexile: number | null;
   setAt: string;
+  /** The library session (YYYY-MM-DD) it's for. Missing on stories set
+      before sessions existed. */
+  session?: string;
   done?: DoneMark;
 };
 
@@ -275,33 +279,74 @@ function startFor(name: string, len: number): number {
   return (h >>> 0) % len;
 }
 
-/** The child's reading for today, choosing the next story at their level
-    when there isn't one yet or yesterday's is finished. */
-export async function readingFor(code: string, cls: ClassLink, name: string): Promise<Reading | null> {
+/** The stories a child reads from, in order: those written for their
+    reading level (or the level's Guided Reading passages if it has none). */
+function storiesFor(cls: ClassLink, name: string) {
   const lexile = cls.levels?.[nameKey(name)] ?? null;
   const level = levelForReader(lexile, cls.yearKey);
-  // The storybook tales written for assignments; the level's Guided Reading
-  // passages only if a level has none.
   const stories = assignmentStories(level.id).length ? assignmentStories(level.id) : level.passages;
+  return { lexile, level, stories };
+}
+
+/** Which session a story belongs to. A story set before sessions existed
+    counts for the session it was submitted in (or, if not yet submitted,
+    the one it was set in), so this week's ✅s stay. */
+const sessionOf = (r: Reading, yearKey: string) => r.session ?? sessionOn(yearKey, schoolDateOf(r.done?.at ?? r.setAt));
+
+/** Where the child is in their level's stories in a given session: carry
+    on from their current story, one story per session since it was set; a
+    child new to the level starts at a place of their own, so children at
+    the same level don't all read the same story. */
+function positionIn(stories: { id: string }[], cur: Reading | null, name: string, yearKey: string, session: string) {
+  const len = stories.length;
+  const at = cur ? stories.findIndex((p) => p.id === cur.storyId) : -1;
+  if (at < 0 || !cur) return startFor(name, len);
+  const steps = Math.max(0, sessionsBetween(yearKey, sessionOf(cur, yearKey), session));
+  return (at + steps) % len;
+}
+
+/** The child's story for this library session, choosing it when the
+    session changes (or their reading level does). */
+export async function readingFor(code: string, cls: ClassLink, name: string): Promise<Reading | null> {
+  const { lexile, level, stories } = storiesFor(cls, name);
   if (!stories.length) return null;
-  const now = new Date().toISOString();
+  const session = sessionOn(cls.yearKey);
   const cur = await kvGetJson<Reading>(readKey(code, name));
   const sameLevel = cur?.levelId === level.id && stories.some((p) => p.id === cur.storyId);
-  if (cur && sameLevel && (!cur.done || schoolDay(cur.done.at) === schoolDay(now))) return cur;
-  // Next story along at this level. A child new to the level starts at a
-  // place of their own, so children reading at the same level don't all get
-  // the same story.
-  const len = stories.length;
-  const at = sameLevel ? stories.findIndex((p) => p.id === cur!.storyId) : startFor(name, len) - 1;
-  const story = stories[(((at + 1) % len) + len) % len];
-  const next: Reading = { storyId: story.id, levelId: level.id, tier: worksheetTier(lexile, level), lexile, setAt: now };
+  if (cur && sameLevel && sessionOf(cur, cls.yearKey) === session) {
+    if (!cur.session) await kvSetJson(readKey(code, name), { ...cur, session });
+    return { ...cur, session };
+  }
+  const story = stories[positionIn(stories, sameLevel ? cur : null, name, cls.yearKey, session)];
+  const next: Reading = {
+    storyId: story.id,
+    levelId: level.id,
+    tier: worksheetTier(lexile, level),
+    lexile,
+    setAt: new Date().toISOString(),
+    session,
+  };
   await kvSetJson(readKey(code, name), next);
   return next;
 }
 
-/** Submitted today — yesterday's ✅ doesn't count for today. */
-export const readToday = (r: Reading | undefined) =>
-  !!r?.done && schoolDay(r.done.at) === schoolDay(new Date().toISOString());
+/** Submitted for the current library session. */
+export const doneThisSession = (r: Reading | undefined, yearKey: string) =>
+  !!r?.done && sessionOf(r, yearKey) === sessionOn(yearKey);
+
+/** The next `count` library sessions for a child, this one first, and the
+    story each will bring, so the teacher can see what's coming. */
+export function planFor(cls: ClassLink, name: string, cur: Reading | undefined, count: number) {
+  const { level, stories } = storiesFor(cls, name);
+  const dates = sessionsFrom(cls.yearKey, count);
+  if (!stories.length) return dates.map((date) => ({ date, storyId: "", title: "" }));
+  const sameLevel = cur && cur.levelId === level.id && stories.some((p) => p.id === cur.storyId) ? cur : null;
+  const first = positionIn(stories, sameLevel, name, cls.yearKey, dates[0]);
+  return dates.map((date, i) => {
+    const p = stories[(first + i) % stories.length];
+    return { date, storyId: p.id, title: `${p.emoji} ${p.title}` };
+  });
+}
 
 /** Whose reading is submitted, for the class list and the teacher. */
 export async function readingMarks(code: string, names: string[]): Promise<Record<string, Reading>> {

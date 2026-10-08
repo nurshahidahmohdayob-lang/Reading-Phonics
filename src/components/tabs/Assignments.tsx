@@ -39,9 +39,17 @@ type ClassState = {
   names: string[];
   items: Item[];
   done: Record<string, Record<string, Done>>;
-  /** Each child's own reading: the story they're on, and today's submission. */
+  /** Each child's own reading: the story they're on, and this session's submission. */
   reading: Record<string, { story: string; done?: Done }>;
+  /** The next five library sessions (YYYY-MM-DD), this one first. */
+  sessions: string[];
+  /** Each child's story for each of those sessions. */
+  plan: Record<string, { date: string; storyId: string; title: string }[]>;
 };
+
+/** "Thu 8 Oct" for a school date. */
+const sessionLabel = (d: string) =>
+  new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 /** The child's own reading, standing in for an assignment in SubmissionView. */
 const READING: Item = { id: "reading", title: "📖 Reading at their level", kind: "html", assignees: "all", createdAt: "" };
 
@@ -112,6 +120,8 @@ export default function Assignments() {
         items: d.items as Item[],
         done: d.done as ClassState["done"],
         reading: (d.reading ?? {}) as ClassState["reading"],
+        sessions: (d.sessions ?? []) as string[],
+        plan: (d.plan ?? {}) as ClassState["plan"],
       });
     },
     [yearKey],
@@ -177,7 +187,9 @@ export default function Assignments() {
             onPick={setDoing}
             onView={(n) => setViewing({ item: READING, name: n })}
             onHistory={setHistory}
+            session={cls.sessions[0]}
           />
+          {cls.sessions.length > 0 && <SessionPlan names={cls.names} sessions={cls.sessions} plan={cls.plan} />}
 
           <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
             <summary className="cursor-pointer text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
@@ -324,6 +336,7 @@ function StudentPicker({
   onPick,
   onView,
   onHistory,
+  session,
 }: {
   names: string[];
   reading: ClassState["reading"];
@@ -331,13 +344,16 @@ function StudentPicker({
   onPick: (name: string) => void;
   onView: (name: string) => void;
   onHistory: (name: string) => void;
+  /** The current library session's date. */
+  session?: string;
 }) {
   const count = names.filter((n) => reading[n]?.done).length;
   if (!names.length) return <p className="mt-10 font-semibold text-zinc-400">No children on this class list yet.</p>;
   return (
     <div className="mt-6 w-full">
       <p className="text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
-        {count} of {names.length} submitted today
+        {count} of {names.length} submitted
+        {session ? ` for the library session on ${sessionLabel(session)}` : ""}
       </p>
       <p className="text-center text-xs font-semibold text-zinc-400">
         Tap a name to see their answers and what to help with. ▶ Start opens their story.
@@ -465,6 +481,51 @@ function ChildAssignment({
       )}
     </div>,
     document.body,
+  );
+}
+
+/** The next five library sessions and the story each child will get, so the
+    teacher can see what's coming. Stories follow on from each child's
+    current one, at their reading level; if a level changes, so do theirs. */
+function SessionPlan({ names, sessions, plan }: { names: string[]; sessions: string[]; plan: ClassState["plan"] }) {
+  return (
+    <details className="mt-6 w-full rounded-[1.6rem] bg-white/80 p-4 shadow-sm dark:bg-zinc-900/80">
+      <summary className="cursor-pointer text-center text-sm font-extrabold text-[#0A4F29] dark:text-emerald-300">
+        📅 Next {sessions.length} library sessions: who reads what
+      </summary>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[44rem] border-separate border-spacing-0 text-left text-xs">
+          <thead>
+            <tr>
+              <th className="sticky left-0 bg-white px-2 py-2 font-extrabold text-zinc-500 dark:bg-zinc-900">Child</th>
+              {sessions.map((d, i) => (
+                <th key={d} className="px-2 py-2 font-extrabold text-zinc-500">
+                  {sessionLabel(d)}
+                  {i === 0 && <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">this week</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {names.map((n) => (
+              <tr key={n} className="align-top">
+                <td className="sticky left-0 max-w-[9rem] truncate border-t border-zinc-100 bg-white px-2 py-1.5 font-bold text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                  {n}
+                </td>
+                {(plan[n] ?? []).map((p, i) => (
+                  <td
+                    key={p.date}
+                    className={`border-t border-zinc-100 px-2 py-1.5 dark:border-zinc-800 ${i === 0 ? "font-bold text-zinc-800 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400"}`}
+                  >
+                    {p.title}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }
 
