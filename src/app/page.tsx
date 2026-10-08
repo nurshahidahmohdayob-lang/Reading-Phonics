@@ -13,6 +13,10 @@ import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import HomeIsland from "@/components/HomeIsland";
 import HomeBackdrop from "@/components/HomeBackdrop";
+import { Fredoka } from "next/font/google";
+
+// A rounded, chunky face for the header, in the cartoon-game style.
+const gameFont = Fredoka({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
 import ClassTracker, { type TrackerStart } from "@/components/tabs/ClassTracker";
 import ThreeD from "@/components/tabs/ThreeD";
 import Assignments from "@/components/tabs/Assignments";
@@ -579,40 +583,33 @@ export default function Home() {
       <SoundPrimer />
       {section ? <Backdrop /> : <HomeBackdrop />}
       <header className="relative z-10 w-full max-w-5xl shrink-0">
-        {/* Full-width brand header bar — Zera green */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[#0A4F29] px-3 py-3 shadow-md sm:gap-3 sm:px-6">
+        {/* The header bar, in the home screen's cartoon-space style: a glassy
+            panel with a flowing rainbow border, the Zera badge, a chunky
+            outlined title and candy buttons. */}
+        <div className="game-header relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[1.6rem] px-3 py-2.5 sm:gap-3 sm:px-5">
           <div className="flex items-center gap-2 justify-self-start">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/zera-mark-white.png"
-              alt="Zera International School"
-              className="h-9 w-auto shrink-0 object-contain sm:h-11"
-            />
-            <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-xs font-extrabold text-white">
-                Zera
-              </span>
-              <span className="block text-[10px] font-semibold uppercase tracking-wide text-white/70">
-                International School
-              </span>
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0A4F29] ring-[3px] ring-[#FFD23A] shadow-[0_0_14px_rgba(255,210,58,0.6)] sm:h-13 sm:w-13">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/zera-mark-white.png" alt="Zera International School" className="h-7 w-auto object-contain sm:h-8" />
+            </span>
+            <span className="hidden text-left leading-tight lg:block">
+              <span className={`${gameFont.className} block text-sm font-bold text-white`}>Zera</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#BFE9FF]/80">International School</span>
             </span>
           </div>
-          <h1 className="justify-self-center whitespace-nowrap text-center text-sm font-black tracking-tight text-[#F7B917] sm:text-xl md:text-2xl">
-            Phonics Pals &amp; Guided Reading
+          <h1 className={`${gameFont.className} flex flex-col items-center justify-self-center whitespace-nowrap text-center leading-none`}>
+            <span className="game-title">
+              <span aria-hidden className="game-star">★</span> Phonics Pals <span aria-hidden className="game-star">★</span>
+            </span>
+            <span className="game-sub mt-1">&amp; Guided Reading</span>
           </h1>
           <div className="justify-self-end">
             {!section ? (
-              <button
-                onClick={() => go("guide")}
-                className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/25 active:scale-95 sm:text-sm"
-              >
+              <button onClick={() => go("guide")} className={`${gameFont.className} candy candy-purple`}>
                 📖 How to use
               </button>
             ) : (
-              <button
-                onClick={() => go(null)}
-                className="flex items-center gap-1 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#0A4F29] shadow-sm transition-all hover:bg-white/90 active:scale-95 sm:px-4 sm:py-2 sm:text-sm"
-              >
+              <button onClick={() => go(null)} className={`${gameFont.className} candy candy-gold`}>
                 🏠 Home
               </button>
             )}
