@@ -178,13 +178,13 @@ export default function HomeIsland({
                 style={{ left: `${spot.sign[0]}%`, top: `${spot.sign[1]}%`, animationDelay: `${(i % 5) * -0.7}s` }}
               >
                 <span
-                  className={`island-sign relative flex items-center gap-[0.5cqw] whitespace-nowrap rounded-full bg-white/95 py-[0.35cqw] pl-[0.35cqw] pr-[0.9cqw] shadow-[0_0.4cqw_1cqw_rgba(0,0,0,0.25)] ring-2 ring-white ${isLit ? "island-sign-lit" : ""}`}
+                  className={`island-sign relative flex items-center gap-[0.6cqw] whitespace-nowrap rounded-full bg-white/95 py-[0.4cqw] pl-[0.4cqw] pr-[1.1cqw] shadow-[0_0.4cqw_1cqw_rgba(0,0,0,0.25)] ring-2 ring-white ${isLit ? "island-sign-lit" : ""}`}
                   style={{ ["--glow" as string]: s.glow }}
                 >
-                  <span className="grid h-[2.6cqw] w-[2.6cqw] min-h-7 min-w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-inner">
+                  <span className="grid h-[3.4cqw] w-[3.4cqw] min-h-8 min-w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-inner">
                     {icon(s.id)}
                   </span>
-                  <span className={`text-[max(11px,1.05cqw)] font-extrabold leading-none ${s.text}`}>{s.label}</span>
+                  <span className={`text-[max(13px,1.5cqw)] font-extrabold leading-none ${s.text}`}>{s.label}</span>
                   {isLit && <span aria-hidden className="island-ring pointer-events-none absolute -inset-1 rounded-full" />}
                 </span>
                 {/* the post down to the landmark */}

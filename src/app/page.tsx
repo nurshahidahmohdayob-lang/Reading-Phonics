@@ -588,13 +588,13 @@ export default function Home() {
             outlined title and candy buttons. */}
         <div className="game-header relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[1.6rem] px-3 py-2.5 sm:gap-3 sm:px-5">
           <div className="flex items-center gap-2 justify-self-start">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0A4F29] ring-[3px] ring-[#FFD23A] shadow-[0_0_14px_rgba(255,210,58,0.6)] sm:h-13 sm:w-13">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#0A4F29] ring-[3px] ring-[#FFD23A] shadow-[0_0_16px_rgba(255,210,58,0.65)] sm:h-[4.5rem] sm:w-[4.5rem]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/zera-mark-white.png" alt="Zera International School" className="h-7 w-auto object-contain sm:h-8" />
+              <img src="/images/zera-mark-white.png" alt="Zera International School" className="h-9 w-auto object-contain sm:h-12" />
             </span>
             <span className="hidden text-left leading-tight lg:block">
-              <span className={`${gameFont.className} block text-sm font-bold text-white`}>Zera</span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#BFE9FF]/80">International School</span>
+              <span className={`${gameFont.className} block text-lg font-bold text-white`}>Zera</span>
+              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#BFE9FF]/80">International School</span>
             </span>
           </div>
           <h1 className={`${gameFont.className} flex flex-col items-center justify-self-center whitespace-nowrap text-center leading-none`}>
