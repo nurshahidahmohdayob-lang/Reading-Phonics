@@ -401,7 +401,7 @@ def palm(x, y, scale=1.0):
     trunk = I.material("Palm", (0.45, 0.28, 0.12), rough=0.9)
     t = cylinder(0.035 * scale, 0.6 * scale, (x, y, 0.3 * scale), trunk, vertices=8)
     I.tilt(t, (math.radians(6), 0, 0))
-    leaf = I.material("Frond", (0.01, 0.2, 0.015), rough=0.7)
+    leaf = I.material("Frond", (0.04, 0.34, 0.0), rough=0.7)
     for k in range(7):
         a = k * math.tau / 7
         l = I.box("Frond", (0.36 * scale, 0.08 * scale, 0.015), (x + math.cos(a) * 0.16 * scale, y + math.sin(a) * 0.16 * scale, 0.6 * scale), leaf, bevel=0)

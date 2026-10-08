@@ -4,7 +4,7 @@
 export const ISLAND_SIZE = { w: 1920, h: 1080 };
 
 /** The picture, with its version so browsers fetch a new render. */
-export const ISLAND_IMAGE = "/images/home-island.webp?v=0e7ba470c1";
+export const ISLAND_IMAGE = "/images/home-island.webp?v=562fe5601c";
 
 export const ISLAND_SPOTS: Record<string, { sign: [number, number]; foot: [number, number] }> = {
   "tricky": {
