@@ -22,7 +22,6 @@ import ThreeD from "@/components/tabs/ThreeD";
 import Assignments from "@/components/tabs/Assignments";
 import Guide from "@/components/tabs/Guide";
 import SoundPrimer from "@/components/SoundPrimer";
-import Backdrop from "@/components/Backdrop";
 import { stopSpeech } from "@/lib/speak";
 import type { TermNo } from "@/lib/tracker";
 
@@ -575,13 +574,12 @@ export default function Home() {
   return (
     <div
       className={`flex flex-1 flex-col items-center px-4 py-4 font-sans text-zinc-900 dark:text-zinc-50 ${
-        !section
-          ? "h-[100dvh] overflow-hidden bg-gradient-to-b from-[#E6F1FD] via-[#F5FAFF] to-[#E1EDFB] dark:from-[#0C1322] dark:via-[#111A2C] dark:to-black"
-          : "bg-gradient-to-b from-[#A6D9FF] via-[#D8EEFF] to-[#F4FBFF] py-8 dark:from-zinc-900 dark:via-[#1c1726] dark:to-black"
+        !section ? "h-[100dvh] overflow-hidden bg-[#0d0b38]" : "bg-[#0d0b38] py-8"
       }`}
     >
       <SoundPrimer />
-      {section ? <Backdrop /> : <HomeBackdrop />}
+      {/* Every page floats in the same galaxy as the home screen. */}
+      <HomeBackdrop />
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* The header bar, in the home screen's cartoon-space style: a glassy
             panel with a flowing rainbow border, the Zera badge, a chunky
@@ -689,9 +687,11 @@ export default function Home() {
           )}
         </main>
       ) : (
-        <div className="relative z-10 mt-6 flex w-full max-w-4xl flex-1 flex-col items-center">
-          {/* Home is in the header bar. */}
-          <div className="flex w-full flex-1 flex-col items-center">
+        <div className="relative z-10 mt-6 flex w-full max-w-5xl flex-1 flex-col items-center">
+          {/* Home is in the header bar. Each section sits on a bright,
+              glowing panel over the galaxy, so its own colours and text
+              stay as easy to read as before. */}
+          <div className="section-panel relative flex w-full flex-1 flex-col items-center rounded-[2rem] px-3 py-6 sm:px-6 sm:py-8">
             {section === "phonics" && <Phonics />}
             {section === "soundout" && <SoundItOut />}
             {section === "flashcards" && <Flashcards />}

@@ -666,3 +666,25 @@ body {
 .candy-gold { background: linear-gradient(#ffe56a, #ffb300); color: #4a2500; --candy-glow: rgba(255, 190, 40, 0.55); }
 .candy-purple { background: linear-gradient(#b99bff, #7c5cff); color: #fff; --candy-glow: rgba(124, 92, 255, 0.6); text-shadow: 0 1px 0 rgba(26, 16, 64, 0.6); }
 @media (prefers-reduced-motion: reduce) { .game-header::before, .game-star { animation: none; } }
+
+/* Each section's page sits on this bright panel over the galaxy (app/page.tsx),
+   with the header's flowing rainbow border round it. */
+.section-panel {
+  background: linear-gradient(180deg, rgba(244, 249, 255, 0.97), rgba(232, 242, 255, 0.95));
+  box-shadow: 0 0 34px rgba(124, 92, 255, 0.45), 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+}
+.section-panel::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  padding: 4px;
+  background: linear-gradient(90deg, #ff5fd2, #7c5cff, #3ad7ff, #ffd23a, #ff5fd2);
+  background-size: 300% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: game-border 8s linear infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .section-panel::before { animation: none; } }
