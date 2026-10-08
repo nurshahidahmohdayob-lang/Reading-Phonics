@@ -42,7 +42,7 @@ export default function HomeIsland({
   };
 
   return (
-    <div className="island-sea relative h-full w-full overflow-hidden rounded-[2rem] shadow-[inset_0_0_60px_rgba(0,40,90,0.35)] ring-4 ring-white/60">
+    <div className="island-sea absolute inset-0 overflow-hidden rounded-[2rem] shadow-[inset_0_0_60px_rgba(0,40,90,0.35)] ring-4 ring-white/60">
       {/* sea sparkle and swell */}
       <div aria-hidden className="island-swell absolute inset-0" />
       <div aria-hidden className="island-sparkle absolute inset-0" />
