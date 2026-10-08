@@ -191,11 +191,8 @@ export default function HomeIsland({
         </div>
       </div>
 
-      {/* clouds and birds passing over */}
+      {/* birds passing over (the clouds are in the background, HomeBackdrop) */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <span className="island-cloud absolute top-[6%] text-5xl opacity-90" style={{ animationDuration: "48s" }}>☁️</span>
-        <span className="island-cloud absolute top-[70%] text-6xl opacity-80" style={{ animationDuration: "64s", animationDelay: "-30s" }}>☁️</span>
-        <span className="island-cloud absolute top-[38%] text-4xl opacity-70" style={{ animationDuration: "56s", animationDelay: "-12s" }}>☁️</span>
         <span className="island-bird absolute top-[14%] text-2xl" style={{ animationDuration: "22s" }}>🕊️</span>
         <span className="island-bird absolute top-[22%] text-xl" style={{ animationDuration: "26s", animationDelay: "-9s" }}>🕊️</span>
       </div>

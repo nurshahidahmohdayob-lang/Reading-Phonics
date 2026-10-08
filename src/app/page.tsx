@@ -12,6 +12,7 @@ import Flashcards from "@/components/tabs/Flashcards";
 import ReadingAssessment from "@/components/tabs/ReadingAssessment";
 import StoryPlay from "@/components/tabs/StoryPlay";
 import HomeIsland from "@/components/HomeIsland";
+import HomeBackdrop from "@/components/HomeBackdrop";
 import ClassTracker, { type TrackerStart } from "@/components/tabs/ClassTracker";
 import ThreeD from "@/components/tabs/ThreeD";
 import Assignments from "@/components/tabs/Assignments";
@@ -576,7 +577,7 @@ export default function Home() {
       }`}
     >
       <SoundPrimer />
-      <Backdrop playful={!section} />
+      {section ? <Backdrop /> : <HomeBackdrop />}
       <header className="relative z-10 w-full max-w-5xl shrink-0">
         {/* Full-width brand header bar — Zera green */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[#0A4F29] px-3 py-3 shadow-md sm:gap-3 sm:px-6">
@@ -618,9 +619,9 @@ export default function Home() {
           </div>
         </div>
         {!section && (
-          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-zinc-700 dark:text-zinc-100 sm:text-2xl">
+          <p className="mt-3 text-center text-lg font-extrabold tracking-tight text-white [text-shadow:0_2px_0_#0b3f73,0_3px_10px_rgba(0,30,80,0.45)] sm:text-2xl">
             Learn to read,{" "}
-            <span className="text-[#0A4F29] dark:text-[#F7B917]">
+            <span className="text-[#FFD43B]">
               one step at a time
             </span>{" "}
             🌱

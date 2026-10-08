@@ -587,3 +587,18 @@ body {
   .island-polly { transition: none; }
   .island-polly-flap, .island-polly-idle, .island-trail path, .island-note, .island-twinkle, .island-bubble { animation: none; }
 }
+
+/* The home screen's cartoon sky (components/HomeBackdrop). */
+.home-sky { background: linear-gradient(180deg, #0f63c9 0%, #1f8ff0 38%, #5cc4ff 72%, #b6ecff 100%); }
+.home-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 244, 170, 0.22) 0deg 9deg, rgba(255, 244, 170, 0) 9deg 22deg); border-radius: 50%; -webkit-mask: radial-gradient(circle, #000 0 30%, transparent 70%); mask: radial-gradient(circle, #000 0 30%, transparent 70%); animation: home-rays 80s linear infinite; }
+@keyframes home-rays { to { transform: rotate(360deg); } }
+.home-sun { background: radial-gradient(circle, #fff7c2 0 30%, #ffe04a 52%, #ffc21a 66%, rgba(255, 194, 26, 0) 70%); filter: drop-shadow(0 0 30px rgba(255, 210, 60, 0.8)); }
+.home-cloud { animation: home-cloud linear infinite; }
+@keyframes home-cloud { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
+.home-jungle { height: min(52vh, 46vw); width: auto; animation: home-sway 6s ease-in-out infinite; }
+.home-jungle-left { transform-origin: 0% 100%; }
+.home-jungle-right { transform-origin: 50% 100%; scale: -1 1; animation-delay: -3s; } /* mirrored in place, so it stays in its corner */
+@keyframes home-sway { 0%,100% { rotate: 0deg; } 50% { rotate: 1.6deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .home-rays, .home-cloud, .home-jungle { animation: none; }
+}
