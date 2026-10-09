@@ -60,7 +60,7 @@ export default function PlayPage() {
                   className="flex items-center gap-4 rounded-[1.6rem] bg-white p-4 shadow-md ring-2 ring-[#f2d9a6] transition-all hover:-translate-y-0.5 active:scale-[.98]"
                 >
                   <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#bfe8a8] to-[#7cc86a] p-2.5 ring-2 ring-[#3a9e3a]">
-                    <StoryArt id={s.cover} className="block max-h-full w-full" />
+                    <StoryArt id={s.cover} className="block h-[3.75rem] w-[3.75rem]" />
                   </span>
                   <span>
                     <span className={`${gameFont.className} block text-xl font-bold text-[#3a2410]`}>{s.title}</span>

@@ -31,7 +31,7 @@ export type Actor = {
 
 export type Line = { who?: string; text: string };
 
-export type Scenery = "road" | "castle" | "snow" | "village" | "villageSnow" | "farm" | "sea" | "night";
+export type Scenery = "road" | "castle" | "snow" | "village" | "villageSnow" | "farm" | "sea" | "night" | "storm" | "space";
 
 export type Page = { scene: Scenery; actors: Actor[]; lines: Line[] };
 
@@ -377,6 +377,68 @@ export const INTERACTIVE_STORIES: InteractiveStory[] = [
     ],
   },
   {
+    id: "kitty-up-a-tree",
+    title: "Kitty Up a Tree",
+    cover: "kitten",
+    level: "Year 2",
+    cast: {
+      maya: { name: "Maya", art: "maya", voice: "small", colour: "#b45309", tap: "We can help!" },
+      tomas: { name: "Tomas", art: "tomas", voice: "small", colour: "#3a7be8", tap: "I've got a ladder!" },
+      gran: { name: "Gran", art: "gran", voice: "normal", colour: "#db2777", tap: "Oh my!" },
+      kitten: { name: "Kitten", art: "kitten", voice: "small", colour: "#ea580c", tap: "Mew!" },
+    },
+    pages: [
+      {
+        scene: "village",
+        actors: [sun(14, 24), { art: "tree", x: 72, y: 94, size: 26 }, { cast: "kitten", x: 70, y: 52, size: 8, action: "wiggle" }, { cast: "maya", x: 30, y: 95, size: 11, action: "shake" }],
+        lines: [
+          { text: "One sunny morning, Maya heard a tiny sound coming from the big oak tree." },
+          { who: "kitten", text: "Mew! Mew!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(14, 24), { art: "tree", x: 72, y: 94, size: 26 }, { cast: "kitten", x: 70, y: 52, size: 8, action: "shake" }, { cast: "maya", x: 40, y: 95, size: 11, action: "hop" }],
+        lines: [
+          { text: "High up on a branch sat a fluffy kitten, too frightened to climb down." },
+          { who: "maya", text: "Don't worry, little one. We'll help you!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { cast: "maya", x: 28, y: 95, size: 11, action: "hop" }, { cast: "tomas", x: 46, y: 95, size: 11, action: "hop" }, { art: "ladder", x: 62, y: 95, size: 7, action: "wiggle" }],
+        lines: [
+          { text: "Maya ran to fetch her friend Tomas, who had a long wooden ladder." },
+          { who: "tomas", text: "Let's go!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(14, 24), { art: "tree", x: 72, y: 94, size: 26 }, { art: "ladder", x: 62, y: 95, size: 8 }, { cast: "maya", x: 62, y: 74, size: 9, action: "hop" }, { cast: "kitten", x: 70, y: 52, size: 8, action: "wiggle" }, { cast: "tomas", x: 46, y: 95, size: 11, action: "shake" }],
+        lines: [
+          { text: "Tomas held the ladder steady while Maya climbed up, one rung at a time." },
+          { who: "maya", text: "Nearly there..." },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { art: "tree", x: 82, y: 94, size: 22 }, { cast: "tomas", x: 28, y: 95, size: 11, action: "hop" }, { cast: "maya", x: 48, y: 95, size: 11, action: "hop" }, { cast: "kitten", x: 52, y: 79, size: 6, action: "wiggle" }],
+        lines: [
+          { text: "Very gently, Maya scooped up the kitten and carried it safely down." },
+          { who: "kitten", text: "Purr..." },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { cast: "gran", x: 28, y: 95, size: 12, action: "hop" }, { cast: "kitten", x: 40, y: 95, size: 7, action: "wiggle" }, { cast: "maya", x: 56, y: 95, size: 11, action: "hop" }, { cast: "tomas", x: 72, y: 95, size: 11, action: "hop" }],
+        lines: [
+          { text: "The kitten belonged to Gran, who gave them both a big hug and a slice of cake." },
+          { who: "gran", text: "Thank you, my brave helpers!" },
+        ],
+      },
+    ],
+  },
+  {
     id: "robot-dance",
     title: "The Robot Who Could Not Dance",
     cover: "robot",
@@ -439,6 +501,67 @@ export const INTERACTIVE_STORIES: InteractiveStory[] = [
     ],
   },
   {
+    id: "rex-goes-to-school",
+    title: "Rex Goes to School",
+    cover: "dino",
+    level: "Year 3",
+    cast: {
+      rex: { name: "Rex", art: "dino", voice: "big", colour: "#15803d", tap: "Rarr! Hello!" },
+      maya: { name: "Maya", art: "maya", voice: "small", colour: "#b45309", tap: "Hi, Rex!" },
+      tomas: { name: "Tomas", art: "tomas", voice: "small", colour: "#3a7be8", tap: "Kick it to me!" },
+    },
+    pages: [
+      {
+        scene: "village",
+        actors: [sun(), { cast: "maya", x: 24, y: 95, size: 11, action: "shake" }, { cast: "rex", x: 60, y: 95, size: 28, flip: true, action: "hop" }],
+        lines: [
+          { text: "On the first day of term, a dinosaur called Rex marched through the school gates." },
+          { who: "rex", text: "Good morning! Is this the right school?" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(14, 24), { cast: "rex", x: 46, y: 95, size: 28, action: "shake" }, { art: "puff", x: 18, y: 92, size: 10, action: "float" }, { art: "puff", x: 72, y: 70, size: 8, action: "float" }],
+        lines: [
+          { text: "Rex was so tall that he bumped his head on the doorway, and his tail knocked over three chairs." },
+          { who: "rex", text: "Oops! Sorry, everyone!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { cast: "tomas", x: 24, y: 95, size: 11, action: "shake" }, { cast: "maya", x: 38, y: 95, size: 11, action: "wiggle" }, { cast: "rex", x: 76, y: 95, size: 24, flip: true, action: "wiggle" }],
+        lines: [
+          { text: "At lunchtime, the other children whispered to each other and kept their distance." },
+          { who: "tomas", text: "He's far too big to play with us." },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(14, 24), { art: "ball", x: 60, y: 42, size: 4, action: "spin" }, { cast: "tomas", x: 30, y: 95, size: 11, action: "shake" }, { cast: "maya", x: 46, y: 95, size: 11, action: "shake" }],
+        lines: [
+          { text: "Then, during a game of football, the ball flew high into the air and landed on the school roof." },
+          { who: "maya", text: "Oh no! That was our only ball!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { cast: "rex", x: 62, y: 95, size: 28, flip: true, action: "hop" }, { art: "ball", x: 42, y: 95, size: 4, action: "hop" }, { cast: "tomas", x: 24, y: 95, size: 11, action: "hop" }],
+        lines: [
+          { text: "Rex stretched his long neck, plucked the ball off the roof and dropped it at their feet." },
+          { who: "rex", text: "Here you are!" },
+        ],
+      },
+      {
+        scene: "village",
+        actors: [sun(), { art: "bunting", x: 50, y: 34, size: 62 }, { cast: "tomas", x: 20, y: 95, size: 11, action: "hop" }, { cast: "maya", x: 34, y: 95, size: 11, action: "hop" }, { art: "ball", x: 48, y: 95, size: 4, action: "hop" }, { cast: "rex", x: 72, y: 95, size: 26, flip: true, action: "wiggle" }],
+        lines: [
+          { text: "From that day on, everybody wanted Rex on their team." },
+          { who: "tomas", text: "Rex, you're the best goalkeeper ever!" },
+        ],
+      },
+    ],
+  },
+  {
     id: "night-stars-fell",
     title: "The Night the Stars Fell",
     cover: "star",
@@ -495,6 +618,125 @@ export const INTERACTIVE_STORIES: InteractiveStory[] = [
         lines: [
           { text: "As the sun rose, Leo spotted one extra twinkle winking at him from the sky." },
           { who: "leo", text: "Goodnight, little star." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "lighthouse-storm",
+    title: "The Lighthouse in the Storm",
+    cover: "lighthouse",
+    level: "Year 5",
+    cast: {
+      ned: { name: "Grandpa Ned", art: "keeper", voice: "big", colour: "#b45309", tap: "Steady as she goes!" },
+      isla: { name: "Isla", art: "maya", voice: "small", colour: "#0e7490", tap: "I'm not scared!" },
+    },
+    pages: [
+      {
+        scene: "storm",
+        actors: [{ art: "lighthouse", x: 80, y: 95, size: 12 }, { cast: "ned", x: 28, y: 95, size: 12, action: "hop" }, { cast: "isla", x: 42, y: 95, size: 10, action: "shake" }],
+        lines: [
+          { text: "Grandpa Ned had kept the lighthouse on Gull Rock for forty years, but Isla had never seen the sea so angry." },
+          { who: "ned", text: "Hold on to your hat, Isla. It's going to be a wild night." },
+        ],
+      },
+      {
+        scene: "storm",
+        actors: [{ art: "lighthouseDark", x: 80, y: 95, size: 12, action: "shake" }, { cast: "ned", x: 28, y: 95, size: 12, action: "shake" }, { cast: "isla", x: 42, y: 95, size: 10, action: "shake" }],
+        lines: [
+          { text: "Suddenly, the great lamp at the top of the tower flickered, fizzed and went dark." },
+          { who: "isla", text: "Grandpa, the light's gone out!" },
+        ],
+      },
+      {
+        scene: "storm",
+        actors: [{ art: "waves", x: 40, y: 82, size: 36, action: "wiggle" }, { art: "boat", x: 40, y: 72, size: 20, action: "wiggle" }, { art: "lighthouseDark", x: 84, y: 95, size: 12 }],
+        lines: [
+          { text: "Far out on the black water, a small fishing boat was tossing on the waves, searching for the harbour." },
+        ],
+      },
+      {
+        scene: "storm",
+        actors: [{ art: "lighthouseDark", x: 66, y: 95, size: 14 }, { cast: "ned", x: 30, y: 95, size: 12, action: "hop" }, { cast: "isla", x: 44, y: 95, size: 10, action: "hop" }],
+        lines: [
+          { text: "Ned and Isla climbed all one hundred and twelve steps, their torches trembling in the wind." },
+          { who: "ned", text: "It's a loose wire. Pass me the spanner, quick!" },
+        ],
+      },
+      {
+        scene: "storm",
+        actors: [{ art: "beam", x: 52, y: 75, size: 56, action: "grow" }, { art: "lighthouse", x: 80, y: 95, size: 12 }, { art: "boat", x: 26, y: 76, size: 18, action: "wiggle" }, { cast: "isla", x: 62, y: 95, size: 10, action: "hop" }],
+        lines: [
+          { text: "With one twist of the spanner, the lamp blazed back to life, and a golden beam swept across the sea." },
+          { who: "isla", text: "It's working!" },
+        ],
+      },
+      {
+        scene: "sea",
+        actors: [sun(14, 26), { art: "boat", x: 46, y: 78, size: 20, action: "hop" }, { art: "lighthouse", x: 84, y: 95, size: 11 }, { cast: "ned", x: 62, y: 95, size: 11, action: "hop" }, { cast: "isla", x: 72, y: 95, size: 9, action: "hop" }],
+        lines: [
+          { text: "The little boat followed the light safely into the harbour, and its grateful crew waved up at the tower." },
+          { who: "ned", text: "That, my girl, is what a lighthouse is for." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "captain-nova",
+    title: "Captain Nova and the Lost Alien",
+    cover: "astronaut",
+    level: "Year 6",
+    cast: {
+      nova: { name: "Captain Nova", art: "astronaut", voice: "normal", colour: "#4338ca", tap: "Mission control, all is well!" },
+      zib: { name: "Zib", art: "alien", voice: "small", colour: "#15803d", tap: "Zib-zab!" },
+    },
+    pages: [
+      {
+        scene: "space",
+        actors: [{ art: "planet", x: 20, y: 34, size: 12, action: "spin" }, { art: "rocket", x: 72, y: 94, size: 12, action: "hop" }, { cast: "nova", x: 42, y: 95, size: 11, action: "hop" }],
+        lines: [
+          { text: "Captain Nova had travelled further than any astronaut before her, past the rings of Saturn and beyond the edge of every map." },
+          { who: "nova", text: "Mission log, day ninety: still no sign of life." },
+        ],
+      },
+      {
+        scene: "space",
+        actors: [{ art: "planet", x: 84, y: 30, size: 10 }, { cast: "nova", x: 34, y: 95, size: 11, action: "wiggle" }, { cast: "zib", x: 76, y: 96, size: 7, action: "hop" }],
+        lines: [
+          { text: "As she stepped onto the silver dust of an unknown moon, something small and green ducked behind a crater." },
+          { who: "nova", text: "Hello? I come in peace." },
+        ],
+      },
+      {
+        scene: "space",
+        actors: [{ cast: "nova", x: 32, y: 95, size: 11, action: "hop" }, { cast: "zib", x: 60, y: 95, size: 10, action: "wiggle" }],
+        lines: [
+          { text: "Slowly, a curious creature with three blinking eyes peeped out." },
+          { who: "zib", text: "Zib-zab! You are very big and very shiny." },
+        ],
+      },
+      {
+        scene: "space",
+        actors: [{ art: "meteor", x: 70, y: 30, size: 12, action: "float" }, { art: "meteor", x: 86, y: 18, size: 8, action: "float" }, { art: "meteor", x: 52, y: 14, size: 6, action: "float" }, { cast: "nova", x: 30, y: 95, size: 11, action: "wiggle" }, { cast: "zib", x: 54, y: 95, size: 10, action: "shake" }],
+        lines: [
+          { text: "Zib explained that a meteor shower had scrambled its star charts, and now it could not find the way home." },
+          { who: "zib", text: "My planet is out there somewhere, but I cannot remember where." },
+        ],
+      },
+      {
+        scene: "space",
+        actors: [{ art: "bluePlanet", x: 76, y: 34, size: 12, action: "spin" }, { art: "starMap", x: 46, y: 70, size: 14, action: "grow" }, { cast: "nova", x: 28, y: 95, size: 11, action: "hop" }, { cast: "zib", x: 62, y: 95, size: 10, action: "hop" }],
+        lines: [
+          { text: "Captain Nova unfolded her own map of the galaxy, and together they traced a glowing path to a small blue planet." },
+          { who: "nova", text: "There it is, just three jumps past the comet!" },
+        ],
+      },
+      {
+        scene: "space",
+        actors: [{ art: "saucer", x: 68, y: 40, size: 18, action: "float" }, { art: "bluePlanet", x: 86, y: 22, size: 8 }, { art: "rocket", x: 82, y: 94, size: 10 }, { cast: "nova", x: 36, y: 95, size: 11, action: "hop" }],
+        lines: [
+          { text: "As Zib's ship zoomed away, it flashed its lights three times: the sign for friendship in every corner of the universe." },
+          { who: "nova", text: "Safe travels, Zib!" },
         ],
       },
     ],

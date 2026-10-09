@@ -9,8 +9,9 @@
    turn the page.
 
    Speech comes from the app's /api/tts audio. Word highlighting follows the
-   audio's clock, sharing the line's length out over its words by their
-   length, with a little extra for punctuation pauses. Voices are the same
+   audio's clock, with each word's start measured from the recording itself
+   (lib/speechTiming: where the speech and its pauses are); if that can't be
+   worked out, the line's length is shared out over its words. Voices are the same
    recording played faster and higher (small characters) or slower and
    deeper (big ones). If the audio can't play, the browser's own voice reads
    the line instead and its word events drive the highlight. */
@@ -21,6 +22,7 @@ import { sayWord } from "@/lib/sayWord";
 import { stopSpeech } from "@/lib/speak";
 import type { Actor, InteractiveStory as Story, Line, Scenery, Voice } from "@/app/interactiveStories";
 import { StoryArt } from "@/components/storyArt";
+import { timeWords } from "@/lib/speechTiming";
 
 const body = Andika({ subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 const display = Fraunces({ subsets: ["latin"], weight: ["700", "800"], display: "swap" });
@@ -49,6 +51,10 @@ function wordStarts(text: string): number[] {
 }
 
 type Playing = { line: number; word: number } | null;
+
+/** One audio context, only for decoding the voice recordings to time their words. */
+let decoderCtx: AudioContext | null = null;
+const decoder = () => (decoderCtx ??= new AudioContext());
 
 export default function InteractiveStory({ story, onClose }: { story: Story; onClose?: () => void }) {
   const [page, setPage] = useState(-1); // -1 is the cover
@@ -106,16 +112,25 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
         synth.speak(u);
       };
 
-      const a = new Audio(`/api/tts?tl=en&q=${encodeURIComponent(text.slice(0, 200))}`);
+      const a = new Audio();
       audio.current = a;
       a.playbackRate = v.rate;
       (a as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = v.keepPitch;
+      // When each word starts, in seconds of the recording, measured from the
+      // sound itself (lib/speechTiming); until that's known, or if it can't
+      // be, an estimate from the words' lengths.
+      let times: number[] | null = null;
       const tick = () => {
         if (my !== token.current) return;
         if (a.duration > 0) {
-          const f = a.currentTime / a.duration;
           let i = 0;
-          while (i + 1 < starts.length && starts[i + 1] <= f) i++;
+          if (times) {
+            const now = a.currentTime + 0.05; // a hair early feels in time
+            while (i + 1 < times.length && times[i + 1] <= now) i++;
+          } else {
+            const f = a.currentTime / a.duration;
+            while (i + 1 < starts.length && starts[i + 1] <= f) i++;
+          }
           onWord(i);
         }
         raf.current = requestAnimationFrame(tick);
@@ -132,10 +147,27 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
         cancelAnimationFrame(raf.current);
         browserVoice();
       };
-      a.play().catch(() => {
-        cancelAnimationFrame(raf.current);
-        browserVoice();
-      });
+      fetch(`/api/tts?tl=en&q=${encodeURIComponent(text.slice(0, 200))}`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error("tts"))))
+        .then(async (buf) => {
+          if (my !== token.current) return resolve(false);
+          const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
+          a.addEventListener("ended", () => URL.revokeObjectURL(url), { once: true });
+          a.src = url;
+          try {
+            const sound = await decoder().decodeAudioData(buf.slice(0));
+            times = timeWords(sound.getChannelData(0), sound.sampleRate, text);
+          } catch {
+            times = null;
+          }
+          if (my !== token.current) return resolve(false);
+          await a.play();
+        })
+        .catch(() => {
+          cancelAnimationFrame(raf.current);
+          if (my === token.current) browserVoice();
+          else resolve(false);
+        });
     });
   }, []);
 
@@ -366,9 +398,9 @@ function TheEnd({ story, onAgain, onClose }: { story: Story; onAgain: () => void
 
 /** A painted background: sky, distant shapes and ground, drawn in SVG. */
 function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactNode }) {
-  const night = scenery === "castle" || scenery === "night";
+  const night = scenery === "castle" || scenery === "night" || scenery === "space";
   const snowy = scenery === "snow" || scenery === "villageSnow";
-  const sky = scenery === "night" ? ["#0f1640", "#3a3480"] : night ? ["#1e2a5a", "#4b3d8f"] : snowy ? ["#cfe6f7", "#eef6fc"] : scenery === "sea" ? ["#7cc6f2", "#d6f0ff"] : ["#86cdf6", "#dff3ff"];
+  const sky = scenery === "space" ? ["#05051a", "#2a1a5a"] : scenery === "storm" ? ["#2a3448", "#5a6478"] : scenery === "night" ? ["#0f1640", "#3a3480"] : night ? ["#1e2a5a", "#4b3d8f"] : snowy ? ["#cfe6f7", "#eef6fc"] : scenery === "sea" ? ["#7cc6f2", "#d6f0ff"] : ["#86cdf6", "#dff3ff"];
   return (
     <div className="relative aspect-[16/9] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
       <svg viewBox="0 0 160 90" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden>
@@ -463,6 +495,25 @@ function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactN
             <path d="M3 64 H97 M3 68 H97" stroke="#f4efe6" strokeWidth={1.4} />
           </g>
         )}
+        {scenery === "storm" && (
+          /* rain slanting across, and a dark, choppy sea */
+          <g>
+            {Array.from({ length: 36 }, (_, i) => (
+              <path key={i} d={`M${(i * 37) % 170} ${(i * 13) % 50} l-3 7`} stroke="#c9d6ea" strokeWidth={0.5} opacity={0.7} />
+            ))}
+            <rect y="50" width="160" height="40" fill="#1f4a6e" />
+            {[[10, 56], [40, 60], [72, 55], [104, 61], [136, 57], [24, 66], [90, 68], [126, 70]].map(([x, y]) => (
+              <path key={x} d={`M${x} ${y} q4 -4 8 0 q4 -4 8 0`} fill="none" stroke="#dfeaf5" strokeWidth={0.9} strokeLinecap="round" />
+            ))}
+          </g>
+        )}
+        {scenery === "space" && (
+          <g>
+            {Array.from({ length: 40 }, (_, i) => (
+              <circle key={i} cx={(i * 41) % 160} cy={(i * 17) % 60} r={i % 5 === 0 ? 0.8 : 0.4} fill="#fff" opacity={0.85} />
+            ))}
+          </g>
+        )}
         {scenery === "sea" && (
           <g>
             <rect y="50" width="160" height="40" fill="#3aa0d8" />
@@ -472,7 +523,16 @@ function Scene({ scenery, children }: { scenery: Scenery; children: React.ReactN
           </g>
         )}
         {/* the ground */}
-        {scenery === "sea" ? (
+        {scenery === "space" ? (
+          <g>
+            <path d="M0 74 Q40 68 80 72 T160 70 V90 H0 Z" fill="#b9bccb" stroke="#8a8ea0" strokeWidth={0.5} />
+            {[[24, 80, 5], [70, 84, 3.5], [112, 79, 6], [146, 86, 3]].map(([x, y, r]) => (
+              <ellipse key={x} cx={x} cy={y} rx={r} ry={r * 0.4} fill="#9a9eb0" stroke="#7a7e90" strokeWidth={0.4} />
+            ))}
+          </g>
+        ) : scenery === "storm" ? (
+          <path d="M0 78 Q30 74 60 78 L70 90 H0 Z M100 80 Q130 74 160 78 V90 H96 Z" fill="#4a4a52" stroke="#2a2a32" strokeWidth={0.5} />
+        ) : scenery === "sea" ? (
           <path d="M0 76 Q40 72 80 76 T160 75 V90 H0 Z" fill="#f2d79b" stroke="#d9b56a" strokeWidth={0.5} />
         ) : (
           <rect y="70" width="160" height="20" fill={scenery === "night" ? "#1f3d24" : night ? "#3b4a3a" : snowy ? "#f4f8fb" : "#6dbb4f"} />

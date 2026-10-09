@@ -801,6 +801,270 @@ export const ART = {
       </g>
     ),
   },
+  kitten: {
+    w: 70,
+    h: 60,
+    draw: (
+      <g>
+        <path d="M14 50 Q0 44 4 30 Q8 24 12 30 Q8 38 18 44" fill="none" stroke="#f0a050" strokeWidth={6} strokeLinecap="round" />
+        <ellipse cx={30} cy={44} rx={18} ry={14} fill="#f6b066" {...line} />
+        <path d="M22 54 v4 M36 54 v4" stroke={INK} strokeWidth={3} strokeLinecap="round" />
+        <path d="M34 14 L36 2 L44 12 Z M52 12 L60 2 L60 16 Z" fill="#f6b066" {...line} />
+        <circle cx={48} cy={24} r={14} fill="#f6b066" {...line} />
+        <path d="M40 16 l4 3 M48 12 v4 M56 16 l-4 3" stroke="#d98a3a" strokeWidth={2} strokeLinecap="round" />
+        <ellipse cx={43} cy={24} rx={2.6} ry={3.2} fill={INK} />
+        <ellipse cx={54} cy={24} rx={2.6} ry={3.2} fill={INK} />
+        <path d="M47 29 l1.5 1.5 l1.5 -1.5 Z" fill="#ff8fa3" />
+        <path d="M44 32 q4 3 8 0 M38 29 l-8 -1 M38 31 l-8 2 M58 29 l8 -1 M58 31 l8 2" fill="none" {...line} strokeWidth={1.2} />
+      </g>
+    ),
+  },
+  ladder: {
+    w: 40,
+    h: 110,
+    draw: (
+      <g>
+        <path d="M8 108 L12 2 M32 108 L28 2" stroke="#a0662f" strokeWidth={5} strokeLinecap="round" />
+        {[14, 28, 42, 56, 70, 84, 98].map((y) => <path key={y} d={`M11 ${y} H29`} stroke="#c88a4a" strokeWidth={4} strokeLinecap="round" />)}
+      </g>
+    ),
+  },
+  dino: {
+    w: 110,
+    h: 100,
+    draw: (
+      <g>
+        <path d="M30 70 Q4 74 2 54 Q14 66 34 58 Z" fill="#5fc25a" {...line} />
+        <rect x={34} y={74} width={12} height={22} rx={4} fill="#5fc25a" {...line} />
+        <rect x={56} y={74} width={12} height={22} rx={4} fill="#5fc25a" {...line} />
+        <path d="M30 98 h18 M52 98 h18" stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <ellipse cx={52} cy={62} rx={26} ry={20} fill="#5fc25a" {...line} />
+        <ellipse cx={58} cy={66} rx={14} ry={13} fill="#d9f2a6" />
+        {[[40, 54], [46, 46], [36, 64]].map(([x, y]) => <circle key={x} cx={x} cy={y} r={3} fill="#3e9a3c" />)}
+        <path d="M70 60 q8 0 10 6 M68 68 q8 2 8 8" fill="none" stroke="#5fc25a" strokeWidth={5} strokeLinecap="round" />
+        <path d="M62 46 Q60 26 72 18 Q86 10 100 18 Q108 24 106 34 Q100 42 84 40 Q76 42 74 50 Z" fill="#5fc25a" {...line} />
+        {[64, 70, 76].map((x, i) => <path key={x} d={`M${x} ${30 - i * 5} l-5 -5 l6 -1 z`} fill="#f5b72a" {...line} strokeWidth={1.4} />)}
+        <ellipse cx={86} cy={24} rx={4} ry={4.6} fill="#fff" {...line} strokeWidth={1.4} />
+        <circle cx={87} cy={25} r={2.2} fill={INK} />
+        <circle cx={102} cy={24} r={1.3} fill={INK} />
+        <path d="M86 34 Q96 38 104 32" fill="none" {...line} strokeWidth={1.8} />
+        {cheek(80, 32, 3)}
+      </g>
+    ),
+  },
+  ball: {
+    w: 40,
+    h: 40,
+    draw: (
+      <g>
+        <circle cx={20} cy={20} r={18} fill="#fff" {...line} />
+        <path d="M20 12 l6 4 l-2 7 h-8 l-2 -7 z" fill={INK} />
+        <path d="M20 12 V4 M26 16 l8 -3 M24 23 l5 7 M16 23 l-5 7 M14 16 l-8 -3" stroke={INK} strokeWidth={1.4} />
+      </g>
+    ),
+  },
+  keeper: {
+    w: 70,
+    h: 100,
+    draw: (
+      <g>
+        <rect x={22} y={78} width={11} height={18} fill="#2d4a7a" {...line} />
+        <rect x={37} y={78} width={11} height={18} fill="#2d4a7a" {...line} />
+        <path d="M18 97 h16 M36 97 h16" stroke="#3a2a20" strokeWidth={5} strokeLinecap="round" />
+        <path d="M14 46 Q35 38 56 46 L60 82 L10 82 Z" fill="#ffd23a" {...line} />
+        <path d="M35 46 V82" stroke="#d9a70a" strokeWidth={1.6} />
+        <path d="M16 50 Q6 62 10 74 M54 50 Q64 62 60 74" stroke="#ffd23a" strokeWidth={9} strokeLinecap="round" fill="none" />
+        <circle cx={35} cy={30} r={13} fill={SKIN} {...line} />
+        <path d="M23 32 Q24 52 35 52 Q46 52 47 32 Q41 38 35 37 Q29 38 23 32 Z" fill="#f2f2f2" {...line} strokeWidth={1.6} />
+        <path d="M14 24 Q16 8 35 8 Q54 8 56 24 Q46 20 35 20 Q24 20 14 24 Z" fill="#ffd23a" {...line} />
+        <path d="M12 24 Q35 30 58 24" fill="none" stroke="#d9a70a" strokeWidth={2} />
+        {eye(30, 29, 2)}
+        {eye(40, 29, 2)}
+        {cheek(26, 34, 2.4)}
+        {cheek(44, 34, 2.4)}
+      </g>
+    ),
+  },
+  lighthouse: {
+    w: 60,
+    h: 140,
+    draw: (
+      <g>
+        <circle cx={30} cy={22} r={22} fill="#fff6a8" opacity={0.45} />
+        <path d="M14 136 L20 40 H40 L46 136 Z" fill="#fff" {...line} />
+        {[52, 80, 108].map((y) => <path key={y} d={`M${19 - (y - 40) * 0.06} ${y} H${41 + (y - 40) * 0.06} L${41.6 + (y + 14 - 40) * 0.06} ${y + 14} H${18.4 - (y + 14 - 40) * 0.06} Z`} fill="#e8433a" />)}
+        <path d="M14 136 L20 40 H40 L46 136 Z" fill="none" {...line} />
+        <rect x={16} y={34} width={28} height={6} fill="#3b2a2f" />
+        <rect x={20} y={16} width={20} height={18} fill="#ffe46a" {...line} />
+        <path d="M26 16 V34 M34 16 V34" stroke={INK} strokeWidth={1.4} />
+        <path d="M16 16 L30 4 L44 16 Z" fill="#e8433a" {...line} />
+        <path d="M6 136 H54" {...line} strokeWidth={3} />
+      </g>
+    ),
+  },
+  lighthouseDark: {
+    w: 60,
+    h: 140,
+    draw: (
+      <g>
+        <path d="M14 136 L20 40 H40 L46 136 Z" fill="#d8dde6" {...line} />
+        {[52, 80, 108].map((y) => <path key={y} d={`M${19 - (y - 40) * 0.06} ${y} H${41 + (y - 40) * 0.06} L${41.6 + (y + 14 - 40) * 0.06} ${y + 14} H${18.4 - (y + 14 - 40) * 0.06} Z`} fill="#a8352e" />)}
+        <path d="M14 136 L20 40 H40 L46 136 Z" fill="none" {...line} />
+        <rect x={16} y={34} width={28} height={6} fill="#3b2a2f" />
+        <rect x={20} y={16} width={20} height={18} fill="#4a5470" {...line} />
+        <path d="M26 16 V34 M34 16 V34" stroke={INK} strokeWidth={1.4} />
+        <path d="M16 16 L30 4 L44 16 Z" fill="#a8352e" {...line} />
+        <path d="M6 136 H54" {...line} strokeWidth={3} />
+      </g>
+    ),
+  },
+  beam: {
+    w: 160,
+    h: 60,
+    draw: <path d="M160 26 L0 0 L0 60 Z" fill="#ffe46a" opacity={0.55} />,
+  },
+  boat: {
+    w: 120,
+    h: 80,
+    draw: (
+      <g>
+        <path d="M60 10 V52" {...line} strokeWidth={3} />
+        <path d="M62 12 L92 46 H62 Z" fill="#fff" {...line} />
+        <rect x={30} y={36} width={24} height={16} rx={2} fill="#f4efe6" {...line} />
+        <rect x={34} y={40} width={7} height={6} fill="#ffe46a" />
+        <rect x={44} y={40} width={7} height={6} fill="#ffe46a" />
+        <path d="M6 52 H114 L100 74 H20 Z" fill="#e8433a" {...line} />
+        <path d="M12 60 H108" stroke="#fff" strokeWidth={3} />
+      </g>
+    ),
+  },
+  rocket: {
+    w: 60,
+    h: 110,
+    draw: (
+      <g>
+        <path d="M22 92 Q30 112 38 92 Z" fill="#ffb627" />
+        <path d="M26 92 Q30 104 34 92 Z" fill="#fff6a8" />
+        <path d="M14 70 L4 92 H18 Z M46 70 L56 92 H42 Z" fill="#e8433a" {...line} />
+        <path d="M30 4 Q50 24 48 70 L44 92 H16 L12 70 Q10 24 30 4 Z" fill="#f4f6fa" {...line} />
+        <path d="M30 4 Q42 14 45 28 H15 Q18 14 30 4 Z" fill="#e8433a" {...line} />
+        <circle cx={30} cy={48} r={9} fill="#7fd0ff" {...line} />
+        <circle cx={27} cy={45} r={3} fill="#fff" opacity={0.8} />
+        <path d="M26 92 V70 M34 92 V70" stroke="#c9cfdb" strokeWidth={2} />
+      </g>
+    ),
+  },
+  astronaut: {
+    w: 70,
+    h: 100,
+    draw: (
+      <g>
+        <rect x={20} y={74} width={13} height={20} rx={4} fill="#f4f6fa" {...line} />
+        <rect x={37} y={74} width={13} height={20} rx={4} fill="#f4f6fa" {...line} />
+        <path d="M18 97 h17 M35 97 h17" stroke="#5b6b82" strokeWidth={6} strokeLinecap="round" />
+        <rect x={6} y={42} width={10} height={24} rx={4} fill="#c9cfdb" {...line} />
+        <path d="M14 44 Q35 38 56 44 L56 78 L14 78 Z" fill="#f4f6fa" {...line} />
+        <rect x={26} y={52} width={18} height={12} rx={3} fill="#3a7be8" {...line} strokeWidth={1.6} />
+        <circle cx={31} cy={58} r={2} fill="#e8433a" />
+        <circle cx={39} cy={58} r={2} fill="#ffd23a" />
+        <path d="M56 46 Q66 40 64 30" stroke="#f4f6fa" strokeWidth={9} strokeLinecap="round" fill="none" />
+        <path d="M56 46 Q66 40 64 30" stroke={INK} strokeWidth={1} fill="none" opacity={0} />
+        <circle cx={35} cy={26} r={20} fill="#f4f6fa" {...line} />
+        <ellipse cx={35} cy={27} rx={14} ry={12} fill="#2a3a5a" {...line} strokeWidth={1.6} />
+        <circle cx={35} cy={28} r={9} fill="#a8703f" />
+        <path d="M27 24 Q28 18 35 18 Q42 18 43 24 Q38 21 35 22 Q31 21 27 24 Z" fill="#2a1a10" />
+        {eye(32, 28, 1.8)}
+        {eye(38, 28, 1.8)}
+        <path d="M33 32 q2 1.6 4 0" fill="none" stroke="#fff" strokeWidth={1.2} />
+        <path d="M25 18 q4 -4 9 -4" fill="none" stroke="#fff" strokeWidth={2.4} opacity={0.6} strokeLinecap="round" />
+      </g>
+    ),
+  },
+  alien: {
+    w: 70,
+    h: 80,
+    draw: (
+      <g>
+        <path d="M24 16 L18 2 M46 16 L52 2" {...line} />
+        <circle cx={18} cy={2} r={3.4} fill="#ff6fb0" {...line} strokeWidth={1.4} />
+        <circle cx={52} cy={2} r={3.4} fill="#ff6fb0" {...line} strokeWidth={1.4} />
+        <path d="M8 76 Q4 30 35 14 Q66 30 62 76 Q48 70 35 76 Q22 70 8 76 Z" fill="#7fe07a" {...line} />
+        <ellipse cx={35} cy={56} rx={14} ry={12} fill="#b8f2a6" />
+        {[22, 35, 48].map((x) => (
+          <g key={x}>
+            <circle cx={x} cy={34} r={6} fill="#fff" {...line} strokeWidth={1.6} />
+            <circle cx={x + 1} cy={35} r={3} fill={INK} />
+          </g>
+        ))}
+        <path d="M28 46 Q35 52 42 46" fill="none" {...line} strokeWidth={1.8} />
+        {cheek(18, 46, 3)}
+        {cheek(52, 46, 3)}
+      </g>
+    ),
+  },
+  planet: {
+    w: 80,
+    h: 80,
+    draw: (
+      <g>
+        <circle cx={40} cy={40} r={24} fill="#ff9b3d" {...line} />
+        <path d="M22 32 Q40 26 58 34 M20 46 Q40 40 60 48" fill="none" stroke="#e86f1f" strokeWidth={3} />
+        <ellipse cx={40} cy={42} rx={38} ry={9} fill="none" stroke="#ffd23a" strokeWidth={4} transform="rotate(-14 40 42)" />
+      </g>
+    ),
+  },
+  bluePlanet: {
+    w: 80,
+    h: 80,
+    draw: (
+      <g>
+        <circle cx={40} cy={40} r={30} fill="#3a9ff0" {...line} />
+        <path d="M22 26 Q30 20 36 28 Q32 36 24 34 Z M44 44 Q56 40 60 50 Q52 60 44 54 Z M30 54 Q36 50 38 58 Q34 62 30 58 Z" fill="#5fc25a" />
+        <path d="M24 18 Q30 14 38 14" fill="none" stroke="#fff" strokeWidth={3} opacity={0.6} strokeLinecap="round" />
+      </g>
+    ),
+  },
+  starMap: {
+    w: 100,
+    h: 70,
+    draw: (
+      <g>
+        <path d="M6 10 Q4 4 10 4 H90 Q96 4 94 10 V60 Q96 66 90 66 H10 Q4 66 6 60 Z" fill="#1e2a5a" {...line} />
+        <path d="M18 50 L34 30 L52 40 L70 18 L84 28" fill="none" stroke="#7cf0ff" strokeWidth={2} strokeDasharray="4 3" />
+        {[[18, 50], [34, 30], [52, 40], [70, 18]].map(([x, y]) => <circle key={x} cx={x} cy={y} r={2.6} fill="#fff6a8" />)}
+        <circle cx={84} cy={28} r={5} fill="#3a9ff0" stroke="#fff" strokeWidth={1.4} />
+      </g>
+    ),
+  },
+  saucer: {
+    w: 100,
+    h: 60,
+    draw: (
+      <g>
+        {[20, 50, 80].map((x) => <path key={x} d={`M${x} 46 L${x - 8} 60 H${x + 8} Z`} fill="#fff6a8" opacity={0.6} />)}
+        <ellipse cx={50} cy={22} rx={18} ry={16} fill="#bfe8ff" fillOpacity={0.85} {...line} />
+        <circle cx={50} cy={24} r={8} fill="#7fe07a" {...line} strokeWidth={1.4} />
+        <circle cx={46} cy={22} r={2} fill={INK} />
+        <circle cx={50} cy={20} r={2} fill={INK} />
+        <circle cx={54} cy={22} r={2} fill={INK} />
+        <ellipse cx={50} cy={38} rx={46} ry={12} fill="#9aa6b8" {...line} />
+        {[18, 34, 50, 66, 82].map((x) => <circle key={x} cx={x} cy={39} r={3} fill="#ffd23a" {...line} strokeWidth={1} />)}
+      </g>
+    ),
+  },
+  meteor: {
+    w: 100,
+    h: 60,
+    draw: (
+      <g>
+        <path d="M70 34 L6 6 L64 44 Z" fill="#ffb627" opacity={0.75} />
+        <path d="M70 36 L22 16 L66 44 Z" fill="#fff6a8" opacity={0.8} />
+        <circle cx={76} cy={42} r={14} fill="#8a6a5a" {...line} />
+        <circle cx={72} cy={38} r={3} fill="#6a4e42" />
+        <circle cx={82} cy={46} r={2.4} fill="#6a4e42" />
+      </g>
+    ),
+  },
 } satisfies Record<string, Art>;
 
 export type ArtId = keyof typeof ART;
