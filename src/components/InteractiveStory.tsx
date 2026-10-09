@@ -11,10 +11,11 @@
    Speech comes from the app's /api/tts audio. Word highlighting follows the
    audio's clock, with each word's start measured from the recording itself
    (lib/speechTiming: where the speech and its pauses are); if that can't be
-   worked out, the line's length is shared out over its words. Voices are the same
-   recording played faster and higher (small characters) or slower and
-   deeper (big ones). If the audio can't play, the browser's own voice reads
-   the line instead and its word events drive the highlight. */
+   worked out, the line's length is shared out over its words. The narrator
+   reads in a British voice and each character speaks in another accent,
+   played faster and higher (small characters) or slower and deeper (big
+   ones). If the audio can't play, the browser's own voice reads the line
+   instead and its word events drive the highlight. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Andika, Fraunces } from "next/font/google";
@@ -27,13 +28,21 @@ import { timeWords } from "@/lib/speechTiming";
 const body = Andika({ subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 const display = Fraunces({ subsets: ["latin"], weight: ["700", "800"], display: "swap" });
 
-/** Playback speed (and so pitch) for each voice. */
+/** Playback speed (and so pitch) for each voice: small characters higher
+    and quicker, big ones deeper and slower. */
 const VOICE: Record<Voice, { rate: number; pitch: number; keepPitch: boolean }> = {
   narrator: { rate: 0.95, pitch: 1, keepPitch: true },
-  normal: { rate: 1.0, pitch: 1.1, keepPitch: false },
-  small: { rate: 1.18, pitch: 1.6, keepPitch: false },
-  big: { rate: 0.84, pitch: 0.6, keepPitch: false },
+  normal: { rate: 1.06, pitch: 1.15, keepPitch: false },
+  small: { rate: 1.25, pitch: 1.6, keepPitch: false },
+  big: { rate: 0.8, pitch: 0.6, keepPitch: false },
 };
+
+/** The narrator reads in a British voice; the characters speak in the
+    other accents the voice service has (American, Australian, Indian), a
+    different one for each character in a story, so no character ever
+    sounds like the narrator or like each other. */
+const NARRATOR_ACCENT = "en";
+const CHARACTER_ACCENTS = ["en-US", "en-AU", "en-IN"];
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean);
 
@@ -82,7 +91,7 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
 
   /** Say one line in a voice, lighting up its words; resolves when done
       (or false if stopped). */
-  const say = useCallback((text: string, voice: Voice, onWord: (i: number) => void): Promise<boolean> => {
+  const say = useCallback((text: string, voice: Voice, accent: string, onWord: (i: number) => void): Promise<boolean> => {
     const my = token.current;
     const v = VOICE[voice];
     const starts = wordStarts(text);
@@ -91,6 +100,7 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
         const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
         if (!synth || my !== token.current) return resolve(my === token.current);
         const u = new SpeechSynthesisUtterance(text);
+        u.lang = accent === "en" ? "en-GB" : accent;
         u.rate = Math.min(1.3, v.rate * 0.95);
         u.pitch = v.pitch;
         const offsets: number[] = [];
@@ -147,7 +157,7 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
         cancelAnimationFrame(raf.current);
         browserVoice();
       };
-      fetch(`/api/tts?tl=en&q=${encodeURIComponent(text.slice(0, 200))}`)
+      fetch(`/api/tts?tl=${accent}&q=${encodeURIComponent(text.slice(0, 200))}`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error("tts"))))
         .then(async (buf) => {
           if (my !== token.current) return resolve(false);
@@ -172,6 +182,14 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
   }, []);
 
   const voiceOf = useCallback((line: Line): Voice => (line.who ? story.cast[line.who]?.voice ?? "normal" : "narrator"), [story]);
+  const accentOf = useCallback(
+    (who?: string) => {
+      if (!who) return NARRATOR_ACCENT;
+      const k = Object.keys(story.cast).indexOf(who);
+      return CHARACTER_ACCENTS[(k < 0 ? 0 : k) % CHARACTER_ACCENTS.length];
+    },
+    [story],
+  );
 
   /** Read the page's lines from `from` on. */
   const readPage = useCallback(
@@ -179,14 +197,14 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
       stop();
       const lines = story.pages[p]?.lines ?? [];
       for (let l = from; l < lines.length; l++) {
-        const ok = await say(lines[l].text, voiceOf(lines[l]), (w) => setPlaying({ line: l, word: w }));
+        const ok = await say(lines[l].text, voiceOf(lines[l]), accentOf(lines[l].who), (w) => setPlaying({ line: l, word: w }));
         if (!ok) return;
         if (only) break;
         await new Promise((r) => setTimeout(r, 350));
       }
       setPlaying(null);
     },
-    [say, stop, story, voiceOf],
+    [say, stop, story, voiceOf, accentOf],
   );
 
   const go = useCallback(
@@ -218,7 +236,7 @@ export default function InteractiveStory({ story, onClose }: { story: Story; onC
     const c = actor.cast ? story.cast[actor.cast] : null;
     if (c) {
       stop();
-      void say(c.tap, c.voice, () => {});
+      void say(c.tap, c.voice, accentOf(actor.cast), () => {});
     }
   };
 
