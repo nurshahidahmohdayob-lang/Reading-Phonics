@@ -6,7 +6,7 @@
    sign-in) goes to the network as usual, so nothing can go stale and a
    deploy is picked up straight away. */
 
-const CACHE = "phonics-static-v1";
+const CACHE = "phonics-static-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 

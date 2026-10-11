@@ -118,17 +118,19 @@ export default function FirstLetter({
         <span className="text-sm font-bold text-zinc-400">🔊 tap to hear</span>
       </button>
       <p className="text-zinc-500">Which letter does it start with?</p>
-      <div className="flex gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         {round.options.map((letter) => (
           <button
             key={letter}
             onClick={() => pick(letter)}
-            className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl font-black shadow-sm transition-all active:scale-90 ${
+            aria-label={`${letter.toUpperCase()} ${letter}`}
+            className={`flex h-16 min-w-16 items-center justify-center rounded-2xl px-3 text-3xl font-black shadow-sm transition-all active:scale-90 ${
               wrong === letter
                 ? "animate-pulse bg-rose-200 text-rose-700"
                 : "bg-white text-zinc-700 hover:bg-brand-50 dark:bg-zinc-800 dark:text-zinc-200"
             }`}
           >
+            {letter.toUpperCase()}
             {letter}
           </button>
         ))}

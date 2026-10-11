@@ -4,12 +4,10 @@ import { playClip, playSoundClip, speak } from "@/lib/speak";
    speech voice reads a lone "the" as "thee" and a lone "a" as "ay" — their
    emphasised forms. That isn't how children are taught to read them.
 
-   "the" plays a short recording, public/sounds/word-the.mp3: "theh", in the
-   same voice as every other word. No spelling makes the voice say it — "theh",
-   "thè", "dheh" and the rest all come back as "thee" — so the recording is the
-   voice saying "thed", cut just before the d. Measured: its vowel has formants
-   of ~717/2074 Hz, the "e" in "then" (~737/2033 Hz), with the "th" voiced and
-   no d at the end. If the file can't play, it falls back to "thuh".
+   "the" plays a short recording, public/sounds/word-the.mp3: "thuh" (/ðə/),
+   the everyday form, cut from a "How to Say: The" pronunciation video where
+   the word is said on its own (a voiced "th", then a neutral "uh", formants
+   ~470-640/1490 Hz). If the file can't play, it falls back to "thuh".
 
    "a" is spelt "uh", which the voice says the way "a" sounds in a sentence. */
 const RECORDED: Record<string, { clip: string; fallback: string }> = {
