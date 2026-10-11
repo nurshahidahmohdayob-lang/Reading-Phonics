@@ -19,9 +19,16 @@ const ALL_SENTENCES: string[] = (() => {
   const out: string[] = [];
   for (const lvl of storyLevels) {
     for (const story of lvl.stories) {
-      for (const raw of story.pages[0].text.match(/[^.!?]+[.!?]?/g) ?? []) {
+      // A sentence ends at . ! or ? (with its closing speech mark, if any)
+      // only when the next word starts a new sentence, so "“Stop!” said Jo."
+      // stays whole instead of leaving a stray ” on "said Jo.".
+      for (const raw of story.pages[0].text.split(/(?<=[.!?][”"’]?)\s+(?=[“"A-Z])/)) {
         const s = raw.trim();
         const n = s.split(/\s+/).length;
+        const opens = (s.match(/“/g) ?? []).length;
+        const closes = (s.match(/”/g) ?? []).length;
+        // Skip the odd piece cut from the middle of someone speaking.
+        if (opens !== closes) continue;
         if (n >= 3 && n <= 14 && !seen.has(s.toLowerCase())) {
           seen.add(s.toLowerCase());
           out.push(s);

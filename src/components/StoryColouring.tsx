@@ -7,8 +7,8 @@ import { chime } from "@/lib/speak";
 
 /* A colouring page for one story: the story's own picture large in the
    middle, three pictures from the story along the hills, a sun and a cloud.
-   Two stacked canvases — paint underneath, black outlines on top — so a
-   tap-fill always stops at the outlines, whatever colour is already there. */
+   Two stacked canvases — paint underneath, black outlines on top — so the
+   brush never paints over the lines. */
 
 const SIZE = 800;
 const COLOURS = [
@@ -17,39 +17,12 @@ const COLOURS = [
   "#111827", "#ffffff",
 ];
 
-type Tool = "fill" | "brush";
-
-/** Walls are thickened this many pixels, so the small gaps some drawings
-    leave in their outlines do not let a fill spill into the next space. */
-const GAP = 5;
-
-function thicken(ink: Uint8Array, r: number): Uint8Array {
-  const across = new Uint8Array(ink.length);
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      for (let d = -r; d <= r; d++) {
-        const xx = x + d;
-        if (xx >= 0 && xx < SIZE && ink[y * SIZE + xx]) {
-          across[y * SIZE + x] = 1;
-          break;
-        }
-      }
-    }
-  }
-  const out = new Uint8Array(ink.length);
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      for (let d = -r; d <= r; d++) {
-        const yy = y + d;
-        if (yy >= 0 && yy < SIZE && across[yy * SIZE + x]) {
-          out[y * SIZE + x] = 1;
-          break;
-        }
-      }
-    }
-  }
-  return out;
-}
+/** Brush sizes on the 800-pixel page. */
+const SIZES = [
+  { label: "Small", px: 10 },
+  { label: "Medium", px: 22 },
+  { label: "Big", px: 40 },
+];
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -103,7 +76,7 @@ async function drawOutlines(ctx: CanvasRenderingContext2D, codes: string[]) {
   const [main, ...rest] = codes;
   const imgs = await Promise.all(codes.map((c) => loadImage(`/colouring/${c}.svg`)));
   // OpenMoji art sits on a 72-unit grid with a little margin; scale so the
-  // 2-unit lines come out bold enough to fill between.
+  // 2-unit lines come out bold and easy to see.
   if (imgs[0] && main) ctx.drawImage(imgs[0], 190, 90, 420, 420);
   const spots = [
     { x: 40, y: 600 },
@@ -125,14 +98,16 @@ export default function StoryColouring({
 }) {
   const paintRef = useRef<HTMLCanvasElement>(null);
   const lineRef = useRef<HTMLCanvasElement>(null);
-  const wall = useRef<Uint8Array | null>(null);
   const history = useRef<ImageData[]>([]);
   const drawing = useRef<{ x: number; y: number } | null>(null);
-  const [tool, setTool] = useState<Tool>("fill");
   const [colour, setColour] = useState(COLOURS[0]);
-  const [brush, setBrush] = useState(18);
+  const [brush, setBrush] = useState(SIZES[1].px);
   const [ready, setReady] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
+  // The child types their name before colouring; it goes with the picture.
+  const [name, setName] = useState("");
+  const [nameDraft, setNameDraft] = useState("");
+  const [send, setSend] = useState<"idle" | "sending" | "sent" | "error" | "off">("idle");
 
   const codes = COLOURING_SCENES[story.id] ?? [];
 
@@ -146,16 +121,11 @@ export default function StoryColouring({
   useEffect(() => {
     let live = true;
     (async () => {
-      const line = lineRef.current?.getContext("2d", { willReadFrequently: true });
+      const line = lineRef.current?.getContext("2d");
       if (!line) return;
       clearPaint();
       await drawOutlines(line, codes);
       if (!live) return;
-      // Any pixel with real ink in it is a wall the fill cannot cross.
-      const data = line.getImageData(0, 0, SIZE, SIZE).data;
-      const ink = new Uint8Array(SIZE * SIZE);
-      for (let i = 0; i < ink.length; i++) ink[i] = data[i * 4 + 3] > 90 ? 1 : 0;
-      wall.current = thicken(ink, GAP);
       setReady(true);
     })();
     return () => {
@@ -188,64 +158,6 @@ export default function StoryColouring({
     };
   }
 
-  function fill(x: number, y: number) {
-    const ctx = paintRef.current?.getContext("2d");
-    const w = wall.current;
-    if (!ctx || !w || x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
-    if (w[y * SIZE + x]) return;
-    snapshot();
-    const img = ctx.getImageData(0, 0, SIZE, SIZE);
-    const px = img.data;
-    const r = parseInt(colour.slice(1, 3), 16);
-    const g = parseInt(colour.slice(3, 5), 16);
-    const b = parseInt(colour.slice(5, 7), 16);
-    const seen = new Uint8Array(SIZE * SIZE);
-    const stack = [y * SIZE + x];
-    seen[y * SIZE + x] = 1;
-    while (stack.length) {
-      const p = stack.pop()!;
-      px[p * 4] = r;
-      px[p * 4 + 1] = g;
-      px[p * 4 + 2] = b;
-      px[p * 4 + 3] = 255;
-      const px0 = p % SIZE;
-      const near = [
-        px0 > 0 ? p - 1 : -1,
-        px0 < SIZE - 1 ? p + 1 : -1,
-        p - SIZE,
-        p + SIZE,
-      ];
-      for (const n of near) {
-        if (n < 0 || n >= w.length || seen[n] || w[n]) continue;
-        seen[n] = 1;
-        stack.push(n);
-      }
-    }
-    // The thickened walls leave a white band beside each line; grow the
-    // colour back out across it (under the real line is hidden anyway).
-    let edge: number[] = [];
-    for (let p = 0; p < w.length; p++) if (seen[p] === 1) edge.push(p);
-    for (let step = 0; step <= GAP + 1; step++) {
-      const next: number[] = [];
-      for (const p of edge) {
-        const x0 = p % SIZE;
-        const near = [x0 > 0 ? p - 1 : -1, x0 < SIZE - 1 ? p + 1 : -1, p - SIZE, p + SIZE];
-        for (const n of near) {
-          if (n < 0 || n >= w.length || seen[n]) continue;
-          seen[n] = 2;
-          px[n * 4] = r;
-          px[n * 4 + 1] = g;
-          px[n * 4 + 2] = b;
-          px[n * 4 + 3] = 255;
-          next.push(n);
-        }
-      }
-      edge = next;
-    }
-    ctx.putImageData(img, 0, 0);
-    chime(true);
-  }
-
   function stroke(from: { x: number; y: number }, to: { x: number; y: number }) {
     const ctx = paintRef.current?.getContext("2d");
     if (!ctx) return;
@@ -262,10 +174,6 @@ export default function StoryColouring({
   function down(e: React.PointerEvent) {
     if (!ready) return;
     const p = point(e);
-    if (tool === "fill") {
-      fill(p.x, p.y);
-      return;
-    }
     e.currentTarget.setPointerCapture(e.pointerId);
     snapshot();
     drawing.current = p;
@@ -283,20 +191,37 @@ export default function StoryColouring({
     drawing.current = null;
   }
 
-  function save() {
+  /** The finished page, outlines on top, as a JPEG small enough to send. */
+  function picture(): string | null {
     const paint = paintRef.current;
     const line = lineRef.current;
-    if (!paint || !line) return;
+    if (!paint || !line) return null;
     const out = document.createElement("canvas");
     out.width = SIZE;
     out.height = SIZE;
     const ctx = out.getContext("2d")!;
     ctx.drawImage(paint, 0, 0);
     ctx.drawImage(line, 0, 0);
-    const a = document.createElement("a");
-    a.href = out.toDataURL("image/png");
-    a.download = `${story.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-colouring.png`;
-    a.click();
+    return out.toDataURL("image/jpeg", 0.82);
+  }
+
+  async function submit() {
+    const image = picture();
+    if (!image || !name) return;
+    setSend("sending");
+    try {
+      const res = await fetch("/api/colouring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "submit", storyId: story.id, title: story.title, name, image }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d.configured === false) return setSend("off");
+      setSend(res.ok && d.ok ? "sent" : "error");
+      if (res.ok && d.ok) chime(true);
+    } catch {
+      setSend("error");
+    }
   }
 
   return (
@@ -313,11 +238,12 @@ export default function StoryColouring({
         </h2>
         <span className="w-20" />
       </div>
-      <p className="mt-1 text-center text-sm font-semibold text-zinc-500">
-        {tool === "fill"
-          ? "Pick a colour, then tap a space to fill it 🪣"
-          : "Pick a colour and draw with your finger 🖌️"}
-      </p>
+      {name && (
+        <p className="mt-1 text-center text-sm font-semibold text-zinc-500">
+          🧒 <span className="font-extrabold text-amber-800">{name}</span> · pick a colour and a
+          brush size, then draw with your finger 🖌️
+        </p>
+      )}
 
       <div className="mt-3 flex w-full flex-col items-center gap-4 lg:flex-row lg:items-start lg:justify-center">
         {/* The page */}
@@ -340,24 +266,64 @@ export default function StoryColouring({
               Getting your page ready…
             </div>
           )}
+          {/* Name first, then colour */}
+          {!name && (
+            <form
+              onPointerDown={(e) => e.stopPropagation()}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (nameDraft.trim()) setName(nameDraft.trim().replace(/\s+/g, " "));
+              }}
+              className="absolute inset-0 grid place-items-center bg-white/80 p-6 backdrop-blur-sm"
+            >
+              <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-xl ring-4 ring-amber-200">
+                <span className="text-4xl">👋</span>
+                <label htmlFor="colour-name" className="text-lg font-extrabold text-amber-900">
+                  What is your name?
+                </label>
+                <input
+                  id="colour-name"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  maxLength={60}
+                  autoFocus
+                  autoComplete="off"
+                  placeholder="Type your name"
+                  className="w-full rounded-2xl border-2 border-amber-200 px-4 py-3 text-center text-lg font-bold text-zinc-800 outline-none focus:border-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!nameDraft.trim()}
+                  className="w-full rounded-2xl bg-amber-500 px-4 py-3 text-lg font-extrabold text-white shadow-md active:scale-95 disabled:opacity-40"
+                >
+                  Start colouring 🖍️
+                </button>
+              </div>
+            </form>
+          )}
+          {/* Sent */}
+          {send === "sent" && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute inset-0 grid place-items-center bg-white/85 p-6 backdrop-blur-sm"
+            >
+              <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-xl ring-4 ring-green-300">
+                <span className="text-5xl">🎉</span>
+                <p className="text-xl font-extrabold text-green-700">Sent to your teacher!</p>
+                <p className="font-semibold text-zinc-500">Well done, {name}.</p>
+                <button
+                  onClick={onClose}
+                  className="rounded-2xl bg-green-500 px-5 py-2.5 font-extrabold text-white shadow-md active:scale-95"
+                >
+                  Back to stories
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tools */}
         <div className="flex w-full max-w-[560px] flex-col gap-3 lg:w-56">
-          <div className="grid grid-cols-2 gap-2">
-            {(["fill", "brush"] as Tool[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTool(t)}
-                className={`rounded-2xl px-3 py-2.5 text-base font-extrabold shadow-sm active:scale-95 ${
-                  tool === t ? "bg-amber-500 text-white" : "bg-white text-amber-800 dark:bg-zinc-800"
-                }`}
-              >
-                {t === "fill" ? "🪣 Fill" : "🖌️ Brush"}
-              </button>
-            ))}
-          </div>
-
           <div className="grid grid-cols-7 gap-2 rounded-2xl bg-white p-3 shadow-sm dark:bg-zinc-900 lg:grid-cols-4">
             {COLOURS.map((c) => (
               <button
@@ -372,24 +338,29 @@ export default function StoryColouring({
             ))}
           </div>
 
-          {tool === "brush" && (
-            <div className="flex items-center justify-center gap-3 rounded-2xl bg-white p-3 shadow-sm dark:bg-zinc-900">
-              {[8, 18, 34].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setBrush(s)}
-                  aria-label={`Brush size ${s}`}
-                  className={`grid h-12 w-12 place-items-center rounded-full ${
-                    brush === s ? "bg-amber-100 ring-2 ring-amber-500" : "bg-zinc-50"
-                  }`}
-                >
-                  <span className="rounded-full" style={{ width: s / 1.4, height: s / 1.4, background: colour }} />
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-white p-3 shadow-sm dark:bg-zinc-900">
+            {SIZES.map((sz) => (
+              <button
+                key={sz.label}
+                onClick={() => setBrush(sz.px)}
+                className={`flex flex-col items-center gap-1 rounded-xl py-2 text-xs font-extrabold active:scale-95 ${
+                  brush === sz.px
+                    ? "bg-amber-100 text-amber-900 ring-2 ring-amber-500"
+                    : "bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                }`}
+              >
+                <span className="grid h-8 place-items-center">
+                  <span
+                    className="block rounded-full"
+                    style={{ width: sz.px * 0.7, height: sz.px * 0.7, background: colour }}
+                  />
+                </span>
+                {sz.label}
+              </button>
+            ))}
+          </div>
 
-          <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
             <button
               onClick={undo}
               disabled={!canUndo}
@@ -406,13 +377,25 @@ export default function StoryColouring({
             >
               🧽 Start again
             </button>
-            <button
-              onClick={save}
-              className="rounded-2xl bg-brand-600 px-3 py-2.5 font-extrabold text-white shadow-md active:scale-95"
-            >
-              💾 Save picture
-            </button>
           </div>
+
+          <button
+            onClick={submit}
+            disabled={!name || !ready || send === "sending" || send === "sent"}
+            className="rounded-2xl bg-green-500 px-3 py-3.5 text-lg font-extrabold text-white shadow-md active:scale-95 disabled:opacity-50"
+          >
+            {send === "sending" ? "Sending…" : "📤 Submit to teacher"}
+          </button>
+          {send === "error" && (
+            <p className="text-center text-sm font-bold text-rose-600">
+              It didn&apos;t send. Check the internet and try again.
+            </p>
+          )}
+          {send === "off" && (
+            <p className="text-center text-sm font-bold text-rose-600">
+              Sending isn&apos;t switched on for this app yet.
+            </p>
+          )}
         </div>
       </div>
 

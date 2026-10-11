@@ -86,3 +86,21 @@ export async function kvDel(...keys: string[]): Promise<void> {
   if (!kvConfigured() || keys.length === 0) return;
   await cmd(["DEL", ...keys]);
 }
+
+/** Push a value onto the front of a list (newest first). */
+export async function kvLPush(key: string, value: string): Promise<void> {
+  if (!kvConfigured()) return;
+  await cmd(["LPUSH", key, value]);
+}
+
+/** Read part of a list; 0 to -1 is all of it. */
+export async function kvLRange(key: string, start = 0, stop = -1): Promise<string[]> {
+  if (!kvConfigured()) return [];
+  return ((await cmd(["LRANGE", key, start, stop])) as string[] | null) ?? [];
+}
+
+/** Take every copy of a value out of a list. */
+export async function kvLRem(key: string, value: string): Promise<void> {
+  if (!kvConfigured()) return;
+  await cmd(["LREM", key, 0, value]);
+}

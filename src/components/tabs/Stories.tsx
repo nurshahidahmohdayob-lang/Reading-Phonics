@@ -9,6 +9,7 @@ import { speak, stopSpeech, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import StoryGames from "@/components/StoryGames";
 import StoryColouring from "@/components/StoryColouring";
+import ColouringGallery from "@/components/ColouringGallery";
 import GrammarLegend from "@/components/GrammarLegend";
 
 const PER_PAGE = 10;
@@ -44,6 +45,9 @@ export default function Stories() {
   const [level, setLevel] = useState<Level | null>(null);
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [colouring, setColouring] = useState<number | null>(null);
+  const [gallery, setGallery] = useState(false);
+
+  if (gallery) return <ColouringGallery onBack={() => setGallery(false)} />;
 
   if (level && colouring !== null) {
     return (
@@ -72,19 +76,34 @@ export default function Stories() {
         onBack={() => setLevel(null)}
         onPick={setStoryIndex}
         onColour={setColouring}
+        onGallery={() => setGallery(true)}
       />
     );
   }
 
-  return <LevelGrid onPick={setLevel} />;
+  return <LevelGrid onPick={setLevel} onGallery={() => setGallery(true)} />;
 }
 
 /* ---------- Level chooser (Lexile bands) ---------- */
 
-function LevelGrid({ onPick }: { onPick: (l: Level) => void }) {
+function LevelGrid({
+  onPick,
+  onGallery,
+}: {
+  onPick: (l: Level) => void;
+  onGallery: () => void;
+}) {
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
-      <p className="text-center text-zinc-500 dark:text-zinc-400">
+      <div className="flex w-full justify-end">
+        <button
+          onClick={onGallery}
+          className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
+        >
+          🖼️ Colouring sent in
+        </button>
+      </div>
+      <p className="mt-2 text-center text-zinc-500 dark:text-zinc-400">
         Choose your reading level — sorted by Lexile measure.
       </p>
       <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
@@ -128,11 +147,13 @@ function StoryList({
   onBack,
   onPick,
   onColour,
+  onGallery,
 }: {
   level: Level;
   onBack: () => void;
   onPick: (index: number) => void;
   onColour: (index: number) => void;
+  onGallery: () => void;
 }) {
   const [page, setPage] = useState(0);
   const pageCount = Math.ceil(level.stories.length / PER_PAGE);
@@ -153,6 +174,12 @@ function StoryList({
         >
           {level.grade} · Age {level.age}
         </span>
+        <button
+          onClick={onGallery}
+          className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
+        >
+          🖼️ Colouring sent in
+        </button>
       </div>
 
       <h2 className="mt-6 text-xl font-extrabold">Pick a story 📖</h2>
