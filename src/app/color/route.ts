@@ -1,4 +1,4 @@
-/* reading-phonics.vercel.app/color — the easy link for children to type. It
+/* readingpals.vercel.app/color — the easy link for children to type. It
    opens the colouring page a teacher last made a link for (lib/colouring.ts).
    A route handler, not a page, so the sign-in screen never gets in the way. */
 

@@ -24,6 +24,14 @@ const SIZES = [
   { label: "Big", px: 40 },
 ];
 
+/** Where links for children point: the short public address on the live
+    site (whichever address the teacher opened it from), this machine in
+    development. */
+const PUBLIC_ORIGIN = "https://readingpals.vercel.app";
+function siteOrigin(): string {
+  return location.hostname.endsWith(".vercel.app") ? PUBLIC_ORIGIN : location.origin;
+}
+
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -249,7 +257,7 @@ export default function StoryColouring({
       if (!d.ok) return setLink("error");
       // /color is the easy one to type — it now opens this page. The long
       // one keeps this exact story even after another link moves /color on.
-      const url = d.easy ? `${location.origin}/color` : `${location.origin}/colour#${d.code}-${story.id}`;
+      const url = d.easy ? `${siteOrigin()}/color` : `${siteOrigin()}/colour#${d.code}-${story.id}`;
       const typed = url.replace(/^https?:\/\//, "");
       let copied = false;
       try {

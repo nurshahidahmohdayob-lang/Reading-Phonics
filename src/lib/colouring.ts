@@ -90,7 +90,7 @@ export async function ownerForCode(code: string): Promise<string | null> {
   return isShareCode(code) ? kvGetJson<string>(`col:code:${code}`) : null;
 }
 
-/* The one easy link: reading-phonics.vercel.app/color opens the colouring
+/* The one easy link: readingpals.vercel.app/color opens the colouring
    page a teacher last tapped "Link for students" on, sending pictures to
    that teacher. One page at a time, for the whole site — making a new link
    moves it on. */
