@@ -210,6 +210,13 @@ export default function Assignments() {
                 Tap a child&apos;s name and their assignment opens: a short story at their own reading level, with questions.
                 When they press Submit, a ✅ appears beside their name.
               </p>
+              <ClassLinkCard
+                link={`${link}-read`}
+                className={group?.year ?? ""}
+                count={cls.names.length}
+                title={`${group?.year ?? ""} reading link`}
+                note="Share this with parents. Children tap their name and get only their own story at their level, with no worksheets or other activities."
+              />
           <StudentPicker
             names={cls.names}
             reading={cls.reading}
@@ -583,7 +590,19 @@ function SessionPlan({ names, sessions, plan }: { names: string[]; sessions: str
   );
 }
 
-function ClassLinkCard({ link, className, count }: { link: string; className: string; count: number }) {
+function ClassLinkCard({
+  link,
+  className,
+  count,
+  title,
+  note = "Children open this (no sign-in), tap their name, and see their activities.",
+}: {
+  link: string;
+  className: string;
+  count: number;
+  title?: string;
+  note?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const [show, setShow] = useState(false);
   const qr = useMemo(() => {
@@ -595,11 +614,9 @@ function ClassLinkCard({ link, className, count }: { link: string; className: st
   return (
     <div className="mt-5 w-full rounded-[1.6rem] bg-sky-50 p-4 text-center ring-2 ring-sky-100 dark:bg-sky-950/30">
       <p className="font-extrabold text-sky-900 dark:text-sky-200">
-        🔗 {className} class link · {count} children
+        🔗 {title ?? `${className} class link`} · {count} children
       </p>
-      <p className="text-xs font-semibold text-sky-800/70 dark:text-sky-200/70">
-        Children open this (no sign-in), tap their name, and see their activities.
-      </p>
+      <p className="text-xs font-semibold text-sky-800/70 dark:text-sky-200/70">{note}</p>
       <div className="mt-2 flex flex-wrap justify-center gap-2">
         <button
           onClick={async () => {

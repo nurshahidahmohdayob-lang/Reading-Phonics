@@ -9,7 +9,9 @@
 
    A link for one activity (…/class#<code>-<activity id>, e.g. a year-group
    worksheet shared with parents) lists only the children it's set for, and
-   tapping a name opens that activity straight away. */
+   tapping a name opens that activity straight away. The reading link
+   (…/class#<code>-read) shows each child only their own story: no
+   worksheets or other activities. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
@@ -37,6 +39,8 @@ export default function ClassPage() {
   const [onStory, setOnStory] = useState(false);
   /** The one activity this link is for, if it's an activity's own link. */
   const [only, setOnly] = useState<string | null>(null);
+  /** The reading link: each child's story and nothing else. */
+  const [readOnly, setReadOnly] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
 
   const load = useCallback(async (c: string) => {
@@ -58,11 +62,12 @@ export default function ClassPage() {
       // The code is the first 12 characters after the #. Links shared in chat
       // apps sometimes pick up text stuck to the end ("…#icj4fv7yfy8yLikeComment"),
       // so read just the code and tidy the address bar.
-      const m = /^#?\s*([a-z2-9]{12})(?:-([a-z2-9]{10}))?/.exec(window.location.hash);
+      const m = /^#?\s*([a-z2-9]{12})(?:-(read|[a-z2-9]{10}))?/.exec(window.location.hash);
       const c = m?.[1] ?? "";
       const tidy = m?.[2] ? `#${c}-${m[2]}` : `#${c}`;
       setCode(c);
-      setOnly(m?.[2] ?? null);
+      setReadOnly(m?.[2] === "read");
+      setOnly(m?.[2] && m[2] !== "read" ? m[2] : null);
       if (c) {
         if (window.location.hash !== tidy) history.replaceState(null, "", tidy);
         void load(c);
@@ -71,7 +76,7 @@ export default function ClassPage() {
     return () => cancelAnimationFrame(frameId);
   }, [load]);
 
-  const mine = (name: string) => (data?.items ?? []).filter((it) => it.for.some((n) => key(n) === key(name)));
+  const mine = (name: string) => (readOnly ? [] : (data?.items ?? []).filter((it) => it.for.some((n) => key(n) === key(name))));
   const isDone = (id: string, name: string) => (data?.done[id] ?? []).some((n) => key(n) === key(name));
   const hasRead = (name: string) => (data?.read ?? []).some((n) => key(n) === key(name));
   const allDone = (name: string) => hasRead(name) && mine(name).every((it) => isDone(it.id, name));
@@ -441,7 +446,7 @@ export default function ClassPage() {
   return (
     <Shell>
       <div>
-        <h1 className="text-center text-3xl font-extrabold text-[#0A4F29]">{data.className} · Activities</h1>
+        <h1 className="text-center text-3xl font-extrabold text-[#0A4F29]">{data.className} · {readOnly ? "Reading" : "Activities"}</h1>
         <p className="mt-1 text-center text-lg font-semibold text-zinc-500">Tap your name 👇</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {data.names.map((n) => {
