@@ -222,7 +222,7 @@ export default function ClassPage() {
             ref={frame}
             title={open.item.title}
             sandbox={LESSON_SANDBOX}
-            srcDoc={lessonDoc(open.html)}
+            srcDoc={lessonDoc(open.html, me)}
             className="w-full flex-1 border-0 bg-white"
           />
         ) : (

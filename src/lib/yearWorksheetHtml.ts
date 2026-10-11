@@ -1,17 +1,25 @@
 /* A year-group worksheet (app/yearWorksheets.ts) as one self-contained,
-   interactive page: the passage at the top with a 🔊 to hear each part, then
-   the questions as bright cards, each a different kind (tap a choice, true or
-   false, fill the gap, put in order, match, find a word, write, draw).
+   game-like page: the story at the top with a 🔊 to hear each part, a
+   progress bar that fills as the child answers, then the questions as bright
+   cards, each a different kind of activity:
 
-   "Check my answers" marks everything at once — a tick or a cross on every
-   card and "You scored 7 out of 9" — and the child can change answers and
-   check again. Writing and drawing aren't marked; the teacher reads them.
+     choose / true or false   big coloured game-show tiles
+     match                    drag each meaning onto its word
+     put in order             drag the events into numbered slots
+     fill the gap             drag the missing word into the sentence
+     find it                  tap the word in the story
+     write / draw             a writing box / a drawing pad
+
+   Every drag can also be done by tapping (tap a card, then where it goes),
+   so it works on any tablet. "Check my answers" marks everything at once —
+   a tick or a cross on every card and "You scored 7 out of 9" — and the child
+   can change answers and check again. Writing and drawing aren't marked.
 
    It runs as an assignment lesson (lib/lessonFrame.ts), sandboxed with no
-   access to the app, so it carries everything it needs. Choices are buttons
-   with aria-pressed, the order is written into a read-only box and every
-   answer box has a label, so the collector reads back exactly what the
-   child did; the score is left in window.zeraResult. */
+   access to the app, so it carries everything it needs. Tiles use
+   aria-pressed, and every drop box and found word is a labelled read-only
+   box, so the collector reads back exactly what the child did; the score is
+   left in window.zeraResult. */
 
 import type { YearWorksheet } from "@/app/yearWorksheets";
 
@@ -108,6 +116,39 @@ canvas{display:block;width:100%;height:260px;background:#fff;border:3px dashed #
 .stars{font-size:22px;letter-spacing:2px}
 .confetti{position:fixed;top:-20px;width:10px;height:14px;border-radius:3px;pointer-events:none;animation:fall linear forwards;z-index:9}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.pbar{position:sticky;top:8px;z-index:5;margin-top:18px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-radius:999px;padding:8px 14px;box-shadow:0 6px 18px rgba(0,0,0,.1);font-weight:800}
+.ptrack{flex:1;height:14px;border-radius:999px;background:#eee9fb;overflow:hidden}
+.pfill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--c1),var(--c2));transition:width .4s}
+.tiles .opt{color:#fff;border:0;background:var(--tc);box-shadow:0 5px 0 rgba(0,0,0,.18);flex:1 1 200px;text-align:left;display:flex;gap:10px;align-items:center;min-height:58px}
+.tiles .opt i{font-style:normal;flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.28);font-size:18px}
+.tiles .opt:hover{border:0;transform:translateY(-3px)}
+.tiles .opt[aria-pressed=true]{background:var(--tc);outline:4px solid var(--ink);outline-offset:2px;transform:scale(1.03)}
+.tiles.chosen .opt[aria-pressed=false]{opacity:.5}
+.pool{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-radius:16px;min-height:60px;background:repeating-linear-gradient(45deg,#faf8ff,#faf8ff 10px,#f3effd 10px,#f3effd 20px);border:2px dashed #ddd6f3}
+.pool:empty:after{content:"All placed! Tap a box to take a card back.";color:var(--soft);font-weight:700;font-size:14px;padding:8px}
+.chip{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;font:inherit;font-weight:800;font-size:${young ? 19 : 16}px;padding:9px 14px;border-radius:14px;background:#fff;border:3px solid var(--hue);color:var(--ink);box-shadow:0 4px 0 color-mix(in srgb,var(--hue) 45%,#fff);transition:transform .12s}
+.chip:hover{transform:translateY(-2px) rotate(-1deg)}
+.chip.picked{background:var(--hue);color:#fff;transform:scale(1.06) rotate(-2deg)}
+.chip.used{display:none}
+.ghost{position:fixed;pointer-events:none;z-index:50;transform:translate(-50%,-50%) rotate(-4deg) scale(1.1);opacity:.95;box-shadow:0 12px 24px rgba(0,0,0,.25)}
+.hintline{font-size:14px;color:var(--soft);font-weight:700;margin:0 0 8px}
+.slots{display:grid;gap:10px;margin-top:12px}
+.slotrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.slotrow label{flex:1 1 200px;font-weight:800;font-size:${young ? 19 : 16}px}
+.slotrow label.nb{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--hue);color:#fff}
+input.drop{flex:1 1 220px;min-height:50px;border:3px dashed #cfc6ef;border-radius:14px;padding:10px 12px;font:inherit;font-weight:800;font-size:${young ? 19 : 16}px;color:var(--ink);background:#fff;cursor:pointer;caret-color:transparent}
+input.drop::placeholder{color:#b9b0d6;font-weight:700}
+input.drop.over{border-color:var(--hue);background:color-mix(in srgb,var(--hue) 12%,#fff);transform:scale(1.02)}
+input.drop.filled{border-style:solid;border-color:var(--hue);background:color-mix(in srgb,var(--hue) 13%,#fff)}
+input.drop.right{border-color:#22c55e;background:#e9fbef}input.drop.wrong{border-color:#f43f5e;background:#ffeef2}
+input.drop.inline{display:inline-block;flex:none;width:170px;text-align:center;min-height:0;padding:4px 10px;vertical-align:middle}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.words{max-height:260px;overflow:auto;line-height:2.1;background:#fffdf5;border-radius:14px;padding:10px 14px;border:2px solid #f1e7c8;font-size:${young ? 20 : 17}px}
+.words p{margin:0 0 8px}
+.w{cursor:pointer;border-radius:8px;padding:2px 1px;transition:background .12s}
+.w:hover{background:#fff1b8}.w.sel{background:#ffd21f;box-shadow:0 0 0 3px #f59e0b;font-weight:800}
+.found{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:800}
+.found input{flex:1;min-width:160px}
 @media (max-width:520px){.big{font-size:40px}.story{padding:16px}.q{padding:16px 14px}}
 </style>
 </head>
@@ -121,6 +162,7 @@ canvas{display:block;width:100%;height:260px;background:#fff;border:3px dashed #
     <div class="name"><label for="childname">My name:</label><input id="childname" name="name" autocomplete="off" placeholder="Type your name"></div>
   </header>
   <section class="story" id="story"></section>
+  <div class="pbar" aria-live="polite"><span>⭐</span><div class="ptrack"><div class="pfill" id="pfill"></div></div><span id="ptext"></span></div>
   <div class="qs" id="qs"></div>
   <div class="bar"><button class="check" id="check">✅ Check my answers</button><span class="score" id="score" aria-live="polite"></span></div>
 </div>
@@ -128,7 +170,8 @@ canvas{display:block;width:100%;height:260px;background:#fff;border:3px dashed #
 (function(){
 var WS=${data};
 var HUES=["#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#f43f5e","#14b8a6","#6366f1","#f97316","#0ea5e9"];
-var KIND={choose:"🎯 Choose",truefalse:"✅ True or false",gap:"🧩 Fill the gap",order:"🔢 Put in order",match:"🔗 Match",find:"🔍 Find it",write:"✏️ Write",draw:"🎨 Draw"};
+var KIND={choose:"🎯 Choose",truefalse:"✅ True or false",gap:"🧩 Drag the missing word",order:"🔢 Drag into order",match:"🔗 Drag to match",find:"🔍 Find it in the story",write:"✏️ Write",draw:"🎨 Draw"};
+var TILE=["#ef4444","#3b82f6","#f59e0b","#10b981","#8b5cf6","#ec4899"];
 var canSpeak="speechSynthesis" in window;
 function say(t){if(!canSpeak)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t.replace(/[\\u{1F300}-\\u{1FAFF}\\u2600-\\u27BF]/gu,""));u.lang="en-GB";u.rate=.9;speechSynthesis.speak(u);}
 function el(tag,attrs,kids){var e=document.createElement(tag);for(var k in attrs||{}){if(k==="text")e.textContent=attrs[k];else if(k==="html")e.innerHTML=attrs[k];else if(k.slice(0,2)==="on")e.addEventListener(k.slice(2),attrs[k]);else e.setAttribute(k,attrs[k]);}
@@ -143,62 +186,104 @@ var story=document.getElementById("story");
 story.appendChild(el("h2",{text:"📖 "+WS.passage.title}));
 WS.passage.paras.forEach(function(p){story.appendChild(el("p",{},[sayBtn(p),el("span",{text:p})]));});
 
+// drag-and-drop (or tap, then tap) cards into boxes
+var dragging=null;
+function board(card,slots,labels,reusable,hint,slotsEl){
+ card.appendChild(el("p",{class:"hintline",text:"✋ "+hint}));
+ var pool=el("div",{class:"pool"});var sel=null;
+ function chipFor(text){var c=el("button",{class:"chip",type:"button",text:text});c._text=text;
+  c.addEventListener("pointerdown",function(e){if(e.button>0)return;var sx=e.clientX,sy=e.clientY,ghost=null,over=null;c.setPointerCapture(e.pointerId);
+   function mv(ev){if(!ghost&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<8)return;
+    if(!ghost){ghost=c.cloneNode(true);ghost.classList.add("ghost");document.body.appendChild(ghost);dragging=c;}
+    ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
+    var t=document.elementFromPoint(ev.clientX,ev.clientY);var d=t&&t.closest?t.closest("input.drop"):null;if(d&&slotOf(d)<0)d=null;
+    if(over&&over!==d)over.classList.remove("over");over=d;if(d)d.classList.add("over");}
+   function up(){c.removeEventListener("pointermove",mv);c.removeEventListener("pointerup",up);c.removeEventListener("pointercancel",up);
+    if(ghost){ghost.remove();dragging=null;if(over){over.classList.remove("over");place(c,slots[slotOf(over)]);}}
+    else{if(sel===c){c.classList.remove("picked");sel=null;}else{if(sel)sel.classList.remove("picked");sel=c;c.classList.add("picked");}}}
+   c.addEventListener("pointermove",mv);c.addEventListener("pointerup",up);c.addEventListener("pointercancel",up);});
+  return c;}
+ function slotOf(inp){for(var k=0;k<slots.length;k++)if(slots[k].input===inp)return k;return -1;}
+ function giveBack(s){if(s.chip&&!reusable)s.chip.classList.remove("used");s.chip=null;s.input.value="";s.input.classList.remove("filled","right","wrong");}
+ function place(c,s){giveBack(s);s.chip=c;s.input.value=c._text;s.input.classList.add("filled");if(!reusable)c.classList.add("used");
+  if(sel){sel.classList.remove("picked");sel=null;}s.input.animate([{transform:"scale(1.08)"},{transform:"scale(1)"}],{duration:220});progress();}
+ slots.forEach(function(s){s.input.addEventListener("click",function(){if(sel)place(sel,s);else if(s.input.value){giveBack(s);progress();}});});
+ labels.forEach(function(t){pool.appendChild(chipFor(t))});
+ card.appendChild(pool);if(slotsEl)card.appendChild(slotsEl);
+}
+// how many questions have an answer so far
+function progress(){var n=0;cards.forEach(function(c){if(c._filled&&c._filled())n++;});
+ document.getElementById("pfill").style.width=(cards.length?n/cards.length*100:0)+"%";
+ document.getElementById("ptext").textContent=n===cards.length?"All answered! Press Check 🎉":n+" of "+cards.length+" answered";}
+var cards=[];
+
 // the questions
 var checks=[];var qs=document.getElementById("qs");
 WS.questions.forEach(function(Q,i){
  var hue=HUES[i%HUES.length];
  var card=el("div",{class:"q",style:"--hue:"+hue+";animation-delay:"+(i*.05)+"s"});
- var title=Q.t==="gap"?"Choose the word that fits the gap.":Q.q;
+ var title=Q.t==="gap"?"Which word fits the gap?":Q.q;
  card.appendChild(el("div",{class:"head"},[el("span",{class:"num",text:String(i+1)}),el("span",{class:"kind",text:KIND[Q.t]}),sayBtn(Q.t==="gap"?Q.before+" blank "+Q.after:Q.q)]));
  card.appendChild(el("h3",{class:"question",text:title}));
  var check=null;
 
- function choices(labels,answer,pics){
-  var box=el("div",{class:"opts"+(pics?" pics":"")});var picked=-1;var btns=[];
+ function choices(labels,answer,pics,tf){
+  var box=el("div",{class:"opts"+(pics?" pics":" tiles")});var picked=-1;var btns=[];
   labels.forEach(function(lab,k){
-   var inner=null;
+   var inner;
    if(pics){var m=lab.match(/^(\\S+)\\s+(.*)$/);inner=[el("span",{class:"e",text:m?m[1]:""}),el("span",{text:m?m[2]:lab})];}
-   var b=el("button",{class:"opt",type:"button","aria-pressed":"false",onclick:function(){picked=k;btns.forEach(function(x,j){x.setAttribute("aria-pressed",String(j===k))});if(blank)blank.textContent=labels[k];}},inner);
-   if(!pics)b.textContent=lab;btns.push(b);box.appendChild(b);});
+   else inner=[el("i",{text:tf?(k===0?"✔":"✘"):"ABCDEF"[k]}),el("span",{text:lab})];
+   var b=el("button",{class:"opt",type:"button","aria-pressed":"false",style:"--tc:"+(tf?(k===0?"#16a34a":"#e11d48"):TILE[k%TILE.length]),onclick:function(){picked=k;box.classList.add("chosen");btns.forEach(function(x,j){x.setAttribute("aria-pressed",String(j===k))});progress();}},inner);
+   btns.push(b);box.appendChild(b);});
   card.appendChild(box);
+  card._filled=function(){return picked>=0};
   return function(){return picked<0?null:picked===answer;};
  }
- var blank=null;
- if(Q.t==="choose")check=choices(Q.options,Q.answer,Q.pics);
- else if(Q.t==="truefalse")check=choices(Q.yesNo?["👍 Yes","👎 No"]:["True","False"],Q.answer?0:1,!!Q.yesNo);
+ if(Q.t==="choose")check=choices(Q.options,Q.answer,Q.pics,false);
+ else if(Q.t==="truefalse")check=choices(Q.yesNo?["👍 Yes","👎 No"]:["True","False"],Q.answer?0:1,!!Q.yesNo,!Q.yesNo);
  else if(Q.t==="gap"){
-  blank=el("span",{class:"blank",text:"?"});
-  card.appendChild(el("div",{class:"gap"},[document.createTextNode(Q.before+" "),blank,document.createTextNode(" "+Q.after)]));
-  check=choices(Q.options,Q.answer,false);
+  var gid="gap"+i;var gin=el("input",{class:"drop inline",id:gid,readonly:"",placeholder:"drop here"});
+  card.appendChild(el("div",{class:"gap"},[document.createTextNode(Q.before+" "),el("label",{class:"sr",for:gid,text:"The missing word"}),gin,document.createTextNode(" "+Q.after)]));
+  var gb=board(card,[{input:gin,want:Q.options[Q.answer]}],Q.options,false,"Drag the right word into the gap, or tap a word and then the gap.");
+  check=function(){var v=gin.value;gin.classList.remove("right","wrong");if(!v)return null;var ok=v===Q.options[Q.answer];gin.classList.add(ok?"right":"wrong");return ok;};
+  card._filled=function(){return !!gin.value};
  }
  else if(Q.t==="order"){
-  var list=el("div",{class:"opts order"});var seq=[];var yours=el("input",{class:"yours",readonly:"",id:"order"+i,"aria-label":"Your order for question "+(i+1),value:"Your order: tap the boxes"});
-  var items=shuffled(Q.items.map(function(t,k){return{t:t,k:k}}));var btns=[];
-  function draw(){btns.forEach(function(b){var n=seq.indexOf(b._k);b.setAttribute("aria-pressed",String(n>=0));b.firstChild.textContent=n>=0?String(n+1):"·";});
-   yours.value=seq.length?"Your order: "+seq.map(function(k){return Q.items[k]}).join(" → "):"Your order: tap the boxes";}
-  items.forEach(function(it){var b=el("button",{class:"opt",type:"button","aria-pressed":"false",onclick:function(){var n=seq.indexOf(it.k);if(n>=0)seq.splice(n,1);else seq.push(it.k);draw();}},[el("b",{text:"·"}),el("span",{text:it.t})]);b._k=it.k;btns.push(b);list.appendChild(b);});
-  card.appendChild(list);
-  card.appendChild(el("div",{class:"row"},[yours,el("button",{class:"small",type:"button",text:"↺ Start again",onclick:function(){seq=[];draw();}})]));
-  check=function(){if(seq.length<Q.items.length)return null;return seq.every(function(k,n){return k===n});};
+  var oslots=Q.items.map(function(t,k){var id="o"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop event "+(k+1)+" here"});return{row:el("div",{class:"slotrow"},[el("label",{class:"nb",for:id,text:String(k+1)}),inp]),input:inp,want:t};});
+  var ol=el("div",{class:"slots"});oslots.forEach(function(x){ol.appendChild(x.row)});
+  board(card,oslots,shuffled(Q.items),false,"Drag each event into its place: what happened first goes in box 1.",ol);
+  check=function(){var all=true,ok=true;oslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)all=false;});if(!all)return null;
+   oslots.forEach(function(x){var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(!r)ok=false;});return ok;};
+  card._filled=function(){return oslots.every(function(x){return x.input.value})};
  }
  else if(Q.t==="match"){
-  var opts=Q.options||shuffled(Q.pairs.map(function(p){return p[1]}));
-  var box=el("div",{class:"match"});var sels=[];
-  Q.pairs.forEach(function(p,k){var id="m"+i+"_"+k;
-   var s=el("select",{id:id},[el("option",{value:"",text:"Choose…"})].concat(opts.map(function(o){return el("option",{value:o,text:o})})));
-   var row=el("div",{class:"pair"},[el("label",{for:id,text:p[0]}),s]);sels.push({s:s,row:row,want:p[1]});box.appendChild(row);});
-  card.appendChild(box);
-  check=function(){var got=0,any=false;sels.forEach(function(x){if(x.s.value)any=true;var ok=x.s.value===x.want;x.row.className="pair"+(x.s.value?(ok?" right":" wrong"):"");if(ok)got++;});return any?{got:got,of:sels.length}:null;};
+  var reuse=!!Q.options;
+  var mslots=Q.pairs.map(function(p,k){var id="m"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop here"});return{row:el("div",{class:"slotrow"},[el("label",{for:id,text:p[0]}),inp]),input:inp,want:p[1]};});
+  var ml=el("div",{class:"slots"});mslots.forEach(function(x){ml.appendChild(x.row)});
+  board(card,mslots,reuse?Q.options:shuffled(Q.pairs.map(function(p){return p[1]})),reuse,reuse?"Drag a label onto each one (you can use each label more than once).":"Drag each card onto the word it matches.",ml);
+  check=function(){var got=0,any=false;mslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)return;any=true;var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(r)got++;});return any?{got:got,of:mslots.length}:null;};
   check.marks=Q.pairs.length;
+  card._filled=function(){return mslots.every(function(x){return x.input.value})};
  }
  else if(Q.t==="find"){
-  var inp=el("input",{class:"text",id:"find"+i,autocomplete:"off","aria-label":"Answer to question "+(i+1),placeholder:"Type the word here"});
-  card.appendChild(inp);
-  check=function(){var v=inp.value.trim().toLowerCase().replace(/[^a-z']/g,"");if(!v)return null;return Q.answers.indexOf(v)>=0;};
+  var fid="find"+i;var fin=el("input",{class:"text",id:fid,readonly:"",placeholder:"tap a word in the story below"});
+  var wbox=el("div",{class:"words"});var cur=null;
+  WS.passage.paras.forEach(function(para){var pp=el("p");para.split(/(\\s+)/).forEach(function(tok){
+   if(/^\\s+$/.test(tok)||!tok){pp.appendChild(document.createTextNode(tok));return;}
+   var m=tok.match(/^([^A-Za-z']*)([A-Za-z'’-]+)(.*)$/);if(!m){pp.appendChild(document.createTextNode(tok));return;}
+   pp.appendChild(document.createTextNode(m[1]));
+   var w=el("span",{class:"w",role:"button",tabindex:"0",text:m[2],onclick:function(){if(cur)cur.classList.remove("sel");cur=w;w.classList.add("sel");fin.value=m[2].replace(/[’]/g,"'");progress();}});
+   pp.appendChild(w);pp.appendChild(document.createTextNode(m[3]));});wbox.appendChild(pp);});
+  card.appendChild(el("p",{class:"hintline",text:"Tap the word in the story. Tap another word to change it."}));
+  card.appendChild(wbox);
+  card.appendChild(el("div",{class:"found"},[el("label",{for:fid,text:"🔍 I found:"}),fin]));
+  check=function(){var v=fin.value.trim().toLowerCase().replace(/[^a-z']/g,"");if(!v)return null;return Q.answers.indexOf(v)>=0;};
+  card._filled=function(){return !!fin.value};
  }
  else if(Q.t==="write"){
   if(Q.hint)card.appendChild(el("p",{class:"hint",text:"💡 "+Q.hint}));
-  card.appendChild(el("textarea",{id:"write"+i,rows:String(Q.lines||3),"aria-label":"Answer to question "+(i+1),placeholder:"Write your answer here…"}));
+  var ta=el("textarea",{id:"write"+i,rows:String(Q.lines||3),"aria-label":"Answer to question "+(i+1),placeholder:"Write your answer here…",oninput:function(){progress()}});
+  card.appendChild(ta);card._filled=function(){return ta.value.trim().length>2};
  }
  else if(Q.t==="draw"){
   var cv=el("canvas",{width:"760",height:"300","aria-label":"Drawing pad"});card.appendChild(cv);
@@ -206,17 +291,18 @@ WS.questions.forEach(function(Q,i){
   function pt(e){var r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];}
   cv.addEventListener("pointerdown",function(e){down=true;cv.setPointerCapture(e.pointerId);var p=pt(e);ctx.beginPath();ctx.moveTo(p[0],p[1]);});
   cv.addEventListener("pointermove",function(e){if(!down)return;var p=pt(e);ctx.strokeStyle=col;ctx.lineWidth=col==="#ffffff"?24:7;ctx.lineTo(p[0],p[1]);ctx.stroke();});
-  cv.addEventListener("pointerup",function(){down=false;});
+  cv.addEventListener("pointerup",function(){if(down){drew=true;progress();}down=false;});var drew=false;card._filled=function(){return drew};
   var pens=el("div",{class:"pens"});var pbs=[];
   ["#2b2340","#e11d48","#f59e0b","#16a34a","#3b82f6","#a855f7","#8b5a2b","#ffffff"].forEach(function(c,k){var b=el("button",{class:"pen",type:"button",title:c==="#ffffff"?"Rubber":"Colour","aria-label":c==="#ffffff"?"Rubber":"Pen colour","aria-pressed":String(k===0),style:"background:"+c,onclick:function(){col=c;pbs.forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});}});pbs.push(b);pens.appendChild(b);});
   pens.appendChild(el("button",{class:"small",type:"button",text:"🧽 Clear",onclick:function(){ctx.clearRect(0,0,cv.width,cv.height);}}));
   card.appendChild(pens);
  }
  var note=el("div",{class:"note"});card.appendChild(note);
- qs.appendChild(card);
+ qs.appendChild(card);cards.push(card);
  checks.push({card:card,check:check,note:note,marks:check&&check.marks||1,t:Q.t});
 });
 
+progress();
 function confetti(){var cs=[WS.colours[0],WS.colours[1],"#facc15","#22c55e","#f472b6"];for(var i=0;i<70;i++){var c=el("span",{class:"confetti",style:"left:"+Math.random()*100+"vw;background:"+cs[i%cs.length]+";animation-duration:"+(1.8+Math.random()*1.8)+"s;animation-delay:"+Math.random()*.4+"s"});document.body.appendChild(c);setTimeout(function(x){return function(){x.remove()}}(c),4200);}}
 
 document.getElementById("check").addEventListener("click",function(){

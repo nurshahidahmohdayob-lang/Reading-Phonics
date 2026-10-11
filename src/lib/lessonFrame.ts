@@ -61,10 +61,25 @@ window.addEventListener("message",function(e){
  parent.postMessage({type:"zera-collected",nonce:e.data.nonce,payload:p},"*");});
 })();<\/script>`;
 
-/** The lesson with the collector added, ready for an iframe's srcdoc. */
-export function lessonDoc(html: string): string {
+/** Fills in the child's name: any box asking for a name (by its name, id,
+    placeholder or label) gets it, and can't be changed, since the child
+    already picked their name to open the lesson. */
+const nameFiller = (name: string) =>
+  `<script>(function(){var N=${JSON.stringify(name).replace(/</g, "\\u003c")};
+function fill(){document.querySelectorAll("input").forEach(function(el){var t=(el.type||"text").toLowerCase();if(t!=="text"&&t!=="search")return;
+ var l=el.id?document.querySelector('label[for="'+el.id+'"]'):null;
+ if(!/name/i.test([el.name,el.id,el.placeholder,el.getAttribute("aria-label"),l&&l.textContent].join(" ")))return;
+ el.value=N;el.readOnly=true;el.setAttribute("aria-readonly","true");el.style.cursor="default";
+ el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));});}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fill);else fill();setTimeout(fill,600);
+})();<\/script>`;
+
+/** The lesson with the collector added, ready for an iframe's srcdoc. With
+    childName, any name box in it is filled in with that name. */
+export function lessonDoc(html: string, childName?: string): string {
+  const extra = COLLECTOR + (childName ? nameFiller(childName) : "");
   const i = html.toLowerCase().lastIndexOf("</body>");
-  return i >= 0 ? html.slice(0, i) + COLLECTOR + html.slice(i) : html + COLLECTOR;
+  return i >= 0 ? html.slice(0, i) + extra + html.slice(i) : html + extra;
 }
 
 /** What the lesson may do: run its own scripts and forms, show alerts and
