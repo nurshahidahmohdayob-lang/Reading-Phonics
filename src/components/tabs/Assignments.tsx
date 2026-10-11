@@ -1,16 +1,20 @@
 "use client";
 
-/* Assignments: set online lessons for a class, and see who has done them.
+/* Assignments, in two halves for the picked class:
 
-   Pick a class and the children get one class link (or QR code). On it they
-   tap their name, then their activity — an interactive HTML lesson, or a link
-   to online material — and press Submit when they're done. Here, each
-   assignment lists the children it's for with a ✅ beside everyone who has
-   submitted; tap a ✅ to see what they did. The list refreshes itself while
-   it's open, so ticks appear as children finish. Stored in the cloud, filed
-   under the signed-in teacher (lib/assignments.ts). */
+     Reading at their level  each child's own story, with ▶ Start, their
+                             answers, history and the next library sessions,
+                             plus the reading link to share with parents
+                             (children tap their name and get only their story)
+     Year-group worksheets   four worksheets per year, sent to the whole class
+                             or chosen children, each with its own link
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+   A ✅ appears beside each child who has submitted; tap it to see what they
+   did. The page refreshes itself while it's open, so ticks appear as
+   children finish. Stored in the cloud, filed under the signed-in teacher
+   (lib/assignments.ts). */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import qrcode from "qrcode-generator";
 import { ROSTER } from "@/app/roster";
 import { allStudents, useRosterEdits } from "@/lib/rosterStore";
@@ -95,9 +99,7 @@ export default function Assignments() {
   const [cls, setCls] = useState<ClassState | null>(null);
   const [problem, setProblem] = useState<{ yearKey: string; kind: "off" | "error" } | null>(null);
   const [error, setError] = useState("");
-  const [adding, setAdding] = useState(false);
   const [viewing, setViewing] = useState<{ item: Item; name: string } | null>(null);
-  const [preview, setPreview] = useState<Item | null>(null);
   const [doing, setDoing] = useState<string | null>(null);
   const [history, setHistory] = useState<string | null>(null);
   /** Which half of Assignments is open: each child's reading, or the year worksheets. */
@@ -228,99 +230,6 @@ export default function Assignments() {
           />
           {cls.sessions.length > 0 && <SessionPlan names={cls.names} sessions={cls.sessions} plan={cls.plan} />}
 
-          <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
-            <summary className="cursor-pointer text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
-              🔗 Class link (children on their own devices) · ➕ set your own lesson
-            </summary>
-          <ClassLinkCard link={link} className={group?.year ?? ""} count={cls.names.length} />
-
-          {adding ? (
-            <NewAssignment
-              names={cls.names}
-              onCancel={() => setAdding(false)}
-              onSave={async (body) => {
-                const d = await call({ op: "create", yearKey, ...body });
-                if (!d.ok) return d.error ?? "Couldn't save it.";
-                setAdding(false);
-                await load();
-                return null;
-              }}
-            />
-          ) : (
-            <button
-              onClick={() => setAdding(true)}
-              className="mt-6 rounded-full bg-emerald-600 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
-            >
-              ➕ New assignment
-            </button>
-          )}
-
-          <div className="mt-6 flex w-full flex-col gap-4">
-            {cls.items.length === 0 && !adding && (
-              <p className="text-center font-semibold text-zinc-400">No lessons of your own for {group?.year} yet.</p>
-            )}
-            {cls.items.map((it) => {
-              const forNames = it.assignees === "all" ? cls.names : cls.names.filter((n) => (it.assignees as string[]).includes(n));
-              const done = cls.done[it.id] ?? {};
-              const count = forNames.filter((n) => done[n]).length;
-              return (
-                <div key={it.id} className="rounded-[1.6rem] bg-white p-5 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-2xl">{it.kind === "html" ? "🎮" : "🌐"}</span>
-                    <span className="flex-1 text-lg font-extrabold text-zinc-800 dark:text-zinc-100">{it.title}</span>
-                    <span className={`rounded-full px-3 py-1 text-sm font-extrabold ${count === forNames.length && count > 0 ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"}`}>
-                      {count} / {forNames.length} submitted
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs font-semibold text-zinc-400">
-                    {it.kind === "html" ? "Interactive lesson" : "Link"} · set {shortDate(it.createdAt)} ·{" "}
-                    {it.assignees === "all" ? "whole class" : `${forNames.length} children`}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {forNames.map((n) =>
-                      done[n] ? (
-                        <button
-                          key={n}
-                          onClick={() => setViewing({ item: it, name: n })}
-                          title="See what they submitted"
-                          className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800 ring-2 ring-emerald-200 hover:bg-emerald-100"
-                        >
-                          ✅ {n}
-                          {done[n].score && (
-                            <span className="rounded-full bg-white px-1.5 text-xs">
-                              {done[n].score!.score}/{done[n].score!.total}
-                            </span>
-                          )}
-                        </button>
-                      ) : (
-                        <span key={n} className="rounded-full bg-zinc-50 px-3 py-1.5 text-sm font-semibold text-zinc-400 ring-2 ring-zinc-100 dark:bg-zinc-800">
-                          ⬜ {n}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                    {it.kind === "html" ? (
-                      <button onClick={() => setPreview(it)} className="rounded-full bg-sky-50 px-3 py-1 font-bold text-sky-700">
-                        👀 Preview
-                      </button>
-                    ) : (
-                      <a href={it.url} target="_blank" rel="noreferrer" className="rounded-full bg-sky-50 px-3 py-1 font-bold text-sky-700">
-                        ↗ Open link
-                      </a>
-                    )}
-                    <DeleteButton
-                      onConfirm={async () => {
-                        await call({ op: "delete", id: it.id });
-                        await load();
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          </details>
             </>
           ) : (
           <YearWorksheets
@@ -381,7 +290,6 @@ export default function Assignments() {
         />
       )}
       {history && <HistoryView yearKey={yearKey} name={history} level={levels[history]} onClose={() => setHistory(null)} />}
-      {preview && cls && <Preview item={preview} code={cls.code} onClose={() => setPreview(null)} />}
     </div>
   );
 }
@@ -647,171 +555,6 @@ function ClassLinkCard({
         </div>
       )}
     </div>
-  );
-}
-
-function NewAssignment({
-  names,
-  onSave,
-  onCancel,
-}: {
-  names: string[];
-  onSave: (body: { title: string; kind: Kind; html?: string; url?: string; assignees: string[] | "all" }) => Promise<string | null>;
-  onCancel: () => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<Kind>("html");
-  const [html, setHtml] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [url, setUrl] = useState("");
-  const [everyone, setEveryone] = useState(true);
-  const [chosen, setChosen] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function readFile(f: File | undefined) {
-    if (!f) return;
-    const text = await f.text();
-    setHtml(text);
-    setFileName(f.name);
-    if (!title.trim()) {
-      const t = text.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim();
-      setTitle(t || f.name.replace(/\.html?$/i, ""));
-    }
-  }
-
-  return (
-    <div className="mt-6 w-full rounded-[1.6rem] bg-white p-5 shadow-md ring-2 ring-emerald-100 dark:bg-zinc-900">
-      <h3 className="text-lg font-extrabold text-[#0A4F29] dark:text-emerald-300">New assignment</h3>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        maxLength={120}
-        placeholder="Title, e.g. “Phonics: the ai sound”"
-        className="mt-3 w-full rounded-2xl border-2 border-zinc-200 px-4 py-2.5 font-bold outline-none focus:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800"
-      />
-      <div className="mt-3 flex flex-wrap gap-2">
-        {(["html", "link"] as Kind[]).map((k) => (
-          <button
-            key={k}
-            onClick={() => setKind(k)}
-            className={`rounded-full px-4 py-2 text-sm font-extrabold ${kind === k ? "bg-[#0A4F29] text-white" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"}`}
-          >
-            {k === "html" ? "🎮 Interactive HTML lesson" : "🌐 Link to online material"}
-          </button>
-        ))}
-      </div>
-
-      {kind === "html" ? (
-        <div className="mt-3">
-          <input ref={fileRef} type="file" accept=".html,.htm,text/html" className="hidden" onChange={(e) => readFile(e.target.files?.[0])} />
-          <button onClick={() => fileRef.current?.click()} className="rounded-full bg-sky-600 px-4 py-2 text-sm font-extrabold text-white active:scale-95">
-            📂 Upload an .html file
-          </button>
-          {fileName && <span className="ml-2 text-sm font-bold text-emerald-700">✓ {fileName}</span>}
-          <p className="mt-2 text-xs font-semibold text-zinc-400">…or paste the lesson&apos;s HTML here:</p>
-          <textarea
-            value={html}
-            onChange={(e) => {
-              setHtml(e.target.value);
-              setFileName("");
-            }}
-            rows={5}
-            placeholder="<!doctype html> …"
-            className="mt-1 w-full rounded-2xl border-2 border-zinc-200 px-3 py-2 font-mono text-xs outline-none focus:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800"
-          />
-        </div>
-      ) : (
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
-          className="mt-3 w-full rounded-2xl border-2 border-zinc-200 px-4 py-2.5 font-semibold outline-none focus:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800"
-        />
-      )}
-
-      <p className="mt-4 text-sm font-extrabold text-zinc-700 dark:text-zinc-200">Who is it for?</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button
-          onClick={() => setEveryone(true)}
-          className={`rounded-full px-4 py-1.5 text-sm font-extrabold ${everyone ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800"}`}
-        >
-          Whole class
-        </button>
-        <button
-          onClick={() => setEveryone(false)}
-          className={`rounded-full px-4 py-1.5 text-sm font-extrabold ${!everyone ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800"}`}
-        >
-          Choose children
-        </button>
-      </div>
-      {!everyone && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {names.map((n) => {
-            const on = chosen.includes(n);
-            return (
-              <button
-                key={n}
-                onClick={() => setChosen((c) => (on ? c.filter((x) => x !== n) : [...c, n]))}
-                className={`rounded-full px-3 py-1.5 text-sm font-bold ring-2 ${on ? "bg-emerald-50 text-emerald-800 ring-emerald-300" : "bg-white text-zinc-500 ring-zinc-200 dark:bg-zinc-800"}`}
-              >
-                {on ? "☑" : "☐"} {n}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {error && <p className="mt-3 text-sm font-bold text-rose-600">{error}</p>}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          disabled={busy}
-          onClick={async () => {
-            if (!title.trim()) return setError("Give it a title.");
-            if (kind === "html" && !html.trim()) return setError("Upload or paste the lesson's HTML.");
-            if (kind === "link" && !url.trim()) return setError("Add the link.");
-            if (!everyone && chosen.length === 0) return setError("Choose at least one child.");
-            setBusy(true);
-            setError("");
-            const err = await onSave({
-              title: title.trim(),
-              kind,
-              html: kind === "html" ? html : undefined,
-              url: kind === "link" ? url.trim() : undefined,
-              assignees: everyone ? "all" : chosen,
-            });
-            setBusy(false);
-            if (err) setError(err);
-          }}
-          className="rounded-full bg-emerald-600 px-6 py-2.5 font-extrabold text-white shadow active:scale-95 disabled:opacity-60"
-        >
-          {busy ? "Saving…" : "✅ Assign it"}
-        </button>
-        <button onClick={onCancel} className="rounded-full bg-zinc-100 px-5 py-2.5 font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function DeleteButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
-  const [sure, setSure] = useState(false);
-  return sure ? (
-    <span className="flex items-center gap-2">
-      <span className="font-bold text-rose-600">Delete it and every submission?</span>
-      <button onClick={onConfirm} className="rounded-full bg-rose-600 px-3 py-1 font-bold text-white">
-        Yes, delete
-      </button>
-      <button onClick={() => setSure(false)} className="rounded-full bg-zinc-100 px-3 py-1 font-bold text-zinc-600">
-        No
-      </button>
-    </span>
-  ) : (
-    <button onClick={() => setSure(true)} className="rounded-full bg-rose-50 px-3 py-1 font-bold text-rose-600">
-      🗑️ Delete
-    </button>
   );
 }
 
@@ -1145,30 +888,6 @@ function HistoryView({ yearKey, name, level, onClose }: { yearKey: string; name:
             </ul>
           )}
         </>
-      )}
-    </Modal>
-  );
-}
-
-function Preview({ item, code, onClose }: { item: Item; code: string; onClose: () => void }) {
-  const [html, setHtml] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetch(`/api/class?code=${code}&id=${item.id}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => alive && setHtml(d.ok ? (d.html ?? "") : ""));
-    return () => {
-      alive = false;
-    };
-  }, [code, item.id]);
-  return (
-    <Modal onClose={onClose} wide>
-      <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {item.title}</h3>
-      <p className="text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
-      {html === null ? (
-        <p className="mt-6 font-bold text-zinc-400">Loading…</p>
-      ) : (
-        <iframe title={item.title} sandbox={LESSON_SANDBOX} srcDoc={lessonDoc(html)} className="mt-3 h-[70vh] w-full rounded-2xl border-2 border-zinc-100 bg-white" />
       )}
     </Modal>
   );

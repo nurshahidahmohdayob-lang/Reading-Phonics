@@ -2,23 +2,40 @@
 
 import { useState } from "react";
 import { useEffect, useMemo } from "react";
-import { levels, type Level } from "@/app/stories";
+import { levels, type Level, type Story } from "@/app/stories";
+import { storyQuizzes } from "@/app/storyQuiz";
 import { describe, POS_BADGE, POS_COLOR } from "@/app/dictionary";
 import { speak, stopSpeech, praise, chime } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import StoryGames from "@/components/StoryGames";
+import StoryColouring from "@/components/StoryColouring";
 import GrammarLegend from "@/components/GrammarLegend";
 
 const PER_PAGE = 10;
 
 /* Candy palette cycled across cards. */
 const CARD_STYLES = [
-  { bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]", text: "text-pink-900" },
-  { bg: "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-900" },
-  { bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]", text: "text-emerald-900" },
-  { bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]", text: "text-amber-900" },
+  {
+    bg: "bg-gradient-to-br from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-pink-900",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D]",
+    text: "text-orange-900",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
+  },
+  {
+    bg: "bg-gradient-to-br from-[#FFEA70] to-[#FFD21F]",
+    text: "text-amber-900",
+  },
   { bg: "bg-gradient-to-br from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-900" },
-  { bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-900" },
+  {
+    bg: "bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF]",
+    text: "text-violet-900",
+  },
 ];
 
 const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
@@ -26,6 +43,16 @@ const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
 export default function Stories() {
   const [level, setLevel] = useState<Level | null>(null);
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
+  const [colouring, setColouring] = useState<number | null>(null);
+
+  if (level && colouring !== null) {
+    return (
+      <StoryColouring
+        story={level.stories[colouring]}
+        onClose={() => setColouring(null)}
+      />
+    );
+  }
 
   if (level && storyIndex !== null) {
     return (
@@ -44,6 +71,7 @@ export default function Stories() {
         level={level}
         onBack={() => setLevel(null)}
         onPick={setStoryIndex}
+        onColour={setColouring}
       />
     );
   }
@@ -99,10 +127,12 @@ function StoryList({
   level,
   onBack,
   onPick,
+  onColour,
 }: {
   level: Level;
   onBack: () => void;
   onPick: (index: number) => void;
+  onColour: (index: number) => void;
 }) {
   const [page, setPage] = useState(0);
   const pageCount = Math.ceil(level.stories.length / PER_PAGE);
@@ -134,21 +164,33 @@ function StoryList({
         {slice.map((s, i) => {
           const style = CARD_STYLES[(start + i) % CARD_STYLES.length];
           return (
-            <button
+            <div
               key={s.id}
-              onClick={() => onPick(start + i)}
-              className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 text-left shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:rotate-1 hover:shadow-xl active:scale-95`}
+              className={`group flex items-center gap-4 rounded-[2rem] ${style.bg} ${style.text} p-5 shadow-lg ring-4 ring-white/60 transition-all hover:-translate-y-1 hover:shadow-xl`}
             >
-              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
-                {s.emoji}
-              </span>
-              <div className="flex flex-col gap-1">
-                <span className="text-lg font-extrabold">{s.title}</span>
-                <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
-                  {s.lexile}L · {s.pages[0].text.split(/\s+/).length} words
+              <button
+                onClick={() => onPick(start + i)}
+                className="flex min-w-0 flex-1 items-center gap-4 text-left active:scale-95"
+              >
+                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/70 text-4xl shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-110">
+                  {s.emoji}
                 </span>
-              </div>
-            </button>
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-extrabold">{s.title}</span>
+                  <span className="w-fit rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-bold">
+                    {s.lexile}L · {s.pages[0].text.split(/\s+/).length} words
+                  </span>
+                </div>
+              </button>
+              <button
+                onClick={() => onColour(start + i)}
+                aria-label={`Colour a picture for ${s.title}`}
+                className="flex shrink-0 flex-col items-center rounded-2xl bg-white/80 px-3 py-2 text-xs font-extrabold shadow-sm transition-transform hover:scale-105 active:scale-90"
+              >
+                <span className="text-2xl">🖍️</span>
+                Colour
+              </button>
+            </div>
           );
         })}
       </div>
@@ -197,7 +239,6 @@ function Reader({
   const [playing, setPlaying] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const entry = picked ? describe(picked) : null;
-  const [quizPick, setQuizPick] = useState<number | null>(null);
   const [colors, setColors] = useState(true);
 
   // Work out each word's part of speech once, so colouring is free on re-render.
@@ -213,7 +254,6 @@ function Reader({
   // Changing story closes the word card, resets the quiz, stops the voice.
   useEffect(() => {
     setPicked(null);
-    setQuizPick(null);
     stopSpeech();
   }, [index]);
 
@@ -302,11 +342,18 @@ function Reader({
             <>
               <div
                 className="relative grid h-32 w-44 place-items-center overflow-hidden rounded-2xl shadow-inner ring-4 ring-white"
-                style={{ background: "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)" }}
+                style={{
+                  background:
+                    "linear-gradient(180deg, #BFE3FF 0%, #BFE3FF 62%, #C8EFB5 62%, #B7E6A0 100%)",
+                }}
               >
                 <span className="absolute right-2 top-1 text-xl">🌤️</span>
-                <span className="absolute left-2 top-2 text-sm opacity-80">☁️</span>
-                <span className="relative text-6xl drop-shadow-md">{entry.emoji}</span>
+                <span className="absolute left-2 top-2 text-sm opacity-80">
+                  ☁️
+                </span>
+                <span className="relative text-6xl drop-shadow-md">
+                  {entry.emoji}
+                </span>
               </div>
               <span className="text-xl font-extrabold lowercase text-amber-800">
                 {picked}
@@ -346,45 +393,8 @@ function Reader({
         </div>
       )}
 
-      {/* Quick quiz after the story */}
-      {story.quiz && (
-        <div className="mt-4 w-full max-w-2xl rounded-2xl bg-amber-50/80 p-5 ring-2 ring-amber-200 dark:bg-amber-950/40">
-          <p className="text-center text-base font-extrabold text-amber-900 dark:text-amber-100">
-            ❓ {story.quiz.question}
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            {story.quiz.options.map((opt, i) => {
-              const isRight = quizPick !== null && i === story.quiz!.answer;
-              const isWrongPick = quizPick === i && i !== story.quiz!.answer;
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setQuizPick(i);
-                    if (i === story.quiz!.answer) {
-                      chime(true);
-                      praise();
-                    } else {
-                      chime(false);
-                    }
-                  }}
-                  className={`flex items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left text-base font-bold transition-all active:scale-[0.98] ${
-                    isRight
-                      ? "border-green-400 bg-green-50 text-green-800"
-                      : isWrongPick
-                        ? "animate-pulse border-rose-300 bg-rose-50 text-rose-700"
-                        : "border-transparent bg-white text-zinc-700 hover:border-amber-300 dark:bg-zinc-900 dark:text-zinc-200"
-                  }`}
-                >
-                  <span className="text-2xl">{opt.emoji}</span>
-                  {opt.label}
-                  {isRight && <span className="ml-auto">🎉</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Ten questions after the story */}
+      <StoryQuestions key={story.id} story={story} />
 
       {/* Controls */}
       <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -408,7 +418,6 @@ function Reader({
         </button>
       </div>
 
-
       {/* Move between different stories */}
       <nav className="mt-6 flex w-full items-center justify-between gap-4">
         <button
@@ -429,6 +438,142 @@ function Reader({
           Next story →
         </button>
       </nav>
+    </div>
+  );
+}
+
+/** The story's questions one at a time: tap an answer, see if it was right,
+    then go on. A score and a "try again" come at the end. */
+function StoryQuestions({ story }: { story: Story }) {
+  const quizzes = useMemo(() => storyQuizzes(story), [story]);
+  const [qi, setQi] = useState(0);
+  const [picks, setPicks] = useState<(number | null)[]>(() =>
+    quizzes.map(() => null),
+  );
+  if (quizzes.length === 0) return null;
+
+  const done = qi >= quizzes.length;
+  const score = picks.filter((p, i) => p === quizzes[i]?.answer).length;
+  const quiz = quizzes[Math.min(qi, quizzes.length - 1)];
+  const pick = picks[qi] ?? null;
+
+  function choose(i: number) {
+    if (pick !== null) return;
+    setPicks((p) => p.map((v, k) => (k === qi ? i : v)));
+    if (i === quiz.answer) {
+      chime(true);
+      praise();
+    } else {
+      chime(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 w-full max-w-2xl rounded-2xl bg-amber-50/80 p-5 ring-2 ring-amber-200 dark:bg-amber-950/40">
+      {/* Progress dots — green right, rose wrong, tap to look back */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {quizzes.map((q, i) => {
+          const p = picks[i];
+          const tone =
+            p === null
+              ? i === qi
+                ? "bg-amber-400 text-white"
+                : "bg-white text-amber-700 dark:bg-zinc-800"
+              : p === q.answer
+                ? "bg-green-500 text-white"
+                : "bg-rose-400 text-white";
+          return (
+            <button
+              key={i}
+              onClick={() => setQi(i)}
+              aria-label={`Question ${i + 1}`}
+              className={`h-8 w-8 rounded-full text-sm font-extrabold shadow-sm active:scale-90 ${tone} ${
+                i === qi ? "ring-2 ring-amber-500 ring-offset-1" : ""
+              }`}
+            >
+              {i + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {done ? (
+        <div className="mt-4 text-center">
+          <p className="text-4xl">
+            {score === quizzes.length
+              ? "🏆"
+              : score >= quizzes.length / 2
+                ? "🌟"
+                : "💪"}
+          </p>
+          <p className="mt-2 text-xl font-extrabold text-amber-900 dark:text-amber-100">
+            You got {score} out of {quizzes.length}!
+          </p>
+          <button
+            onClick={() => {
+              setPicks(quizzes.map(() => null));
+              setQi(0);
+            }}
+            className="mt-3 rounded-full bg-amber-500 px-5 py-2 font-extrabold text-white shadow-md active:scale-95"
+          >
+            🔁 Try again
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="mt-3 text-center text-xs font-bold uppercase tracking-wide text-amber-700">
+            Question {qi + 1} of {quizzes.length}
+          </p>
+          <p className="mt-1 text-center text-base font-extrabold text-amber-900 dark:text-amber-100">
+            ❓ {quiz.question}
+            <button
+              onClick={() => speak(quiz.question, 0.85)}
+              aria-label="Read the question"
+              className="ml-2 align-middle text-lg active:scale-90"
+            >
+              🔊
+            </button>
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            {quiz.options.map((opt, i) => {
+              const isRight = pick !== null && i === quiz.answer;
+              const isWrongPick = pick === i && i !== quiz.answer;
+              return (
+                <button
+                  key={i}
+                  onClick={() => choose(i)}
+                  className={`flex items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left text-base font-bold transition-all active:scale-[0.98] ${
+                    isRight
+                      ? "border-green-400 bg-green-50 text-green-800"
+                      : isWrongPick
+                        ? "border-rose-300 bg-rose-50 text-rose-700"
+                        : pick !== null
+                          ? "border-transparent bg-white text-zinc-400 dark:bg-zinc-900"
+                          : "border-transparent bg-white text-zinc-700 hover:border-amber-300 dark:bg-zinc-900 dark:text-zinc-200"
+                  }`}
+                >
+                  <span className="text-2xl">{opt.emoji}</span>
+                  {opt.label}
+                  {isRight && <span className="ml-auto">🎉</span>}
+                  {isWrongPick && <span className="ml-auto">✖️</span>}
+                </button>
+              );
+            })}
+          </div>
+          {pick !== null && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={() => setQi(qi + 1)}
+                className="rounded-full bg-amber-500 px-6 py-2 font-extrabold text-white shadow-md active:scale-95"
+              >
+                {qi + 1 < quizzes.length
+                  ? "Next question ➡️"
+                  : "See my score ⭐"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
