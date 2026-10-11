@@ -23,7 +23,7 @@ import { createPortal } from "react-dom";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
 import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
-import { YEAR_WORKSHEETS, type YearWorksheet } from "@/app/yearWorksheets";
+import { worksheetsFor, type YearWorksheet } from "@/app/yearWorksheets";
 import { yearWorksheetHtml } from "@/lib/yearWorksheetHtml";
 
 type Kind = "html" | "link";
@@ -174,7 +174,7 @@ export default function Assignments() {
         {(
           [
             { id: "reading", icon: "📖", label: "Reading at their level", sub: "Each child's own story", bg: "from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-950" },
-            { id: "worksheets", icon: "📝", label: "Year-group worksheets", sub: "Year 1 to Year 6", bg: "from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-950" },
+            { id: "worksheets", icon: "📝", label: "Year-group worksheets", sub: `Written for ${group?.year ?? "this year"}`, bg: "from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-950" },
           ] as const
         ).map((b) => (
           <button
@@ -1154,8 +1154,8 @@ function Preview({ item, code, onClose }: { item: Item; code: string; onClose: (
 
 const worksheetTitle = (ws: YearWorksheet) => `📝 ${ws.year} worksheet: ${ws.title}`;
 
-/** A card for each year's worksheet, easiest (Year 1) to hardest (Year 6),
-    the class's own year first. Try it to see what children see; Set it and
+/** A card for each of the picked year's worksheets, all written for that
+    year (Year 1 the easiest, Year 6 the hardest). Try it to see what children see; Set it and
     it becomes an assignment for the whole class, marked by itself, with the
     child's score beside their ✅. */
 function YearWorksheets({
@@ -1179,30 +1179,25 @@ function YearWorksheets({
   const [trying, setTrying] = useState<YearWorksheet | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const sheets = [...YEAR_WORKSHEETS].sort((a, b) => Number(b.key === yearKey) - Number(a.key === yearKey));
+  const sheets = worksheetsFor(yearKey);
   return (
     <section className="mt-6 w-full">
-      <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📝 Year-group reading worksheets</h3>
+      <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📝 {className} reading worksheets</h3>
       <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        A story and a mix of questions for each year, from Year 1 (easiest) to Year 6. Children tick, match, sort, find and write, then check
-        their own answers. Set one for {className || "the class"} and their score appears beside their ✅.
+        {sheets.length} worksheets written for {className}: a story and a mix of questions on each. Children tick, match, sort, find and write,
+        then check their own answers. Set one and each child&apos;s score appears beside their ✅.
       </p>
       {error && <p className="mt-2 text-center font-bold text-rose-600">{error}</p>}
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {sheets.map((ws) => {
           const set = items.find((it) => it.title === worksheetTitle(ws));
           const finished = set ? (done[set.id] ?? {}) : {};
           const submitted = names.filter((n) => finished[n]).length;
-          const own = ws.key === yearKey;
           return (
-            <div
-              key={ws.key}
-              className={`relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-md dark:bg-zinc-900 ${own ? "ring-4 ring-amber-300" : "ring-2 ring-white/70"}`}
-            >
+            <div key={ws.title} className="relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-md ring-2 ring-white/70 dark:bg-zinc-900">
               <div className="relative px-4 pb-3 pt-4 text-white" style={{ background: `linear-gradient(135deg, ${ws.colours[0]}, ${ws.colours[1]})` }}>
                 <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-extrabold text-zinc-700">
                   {ws.year}
-                  {own && " · this class"}
                 </span>
                 <span aria-hidden className="absolute right-3 top-2 text-4xl drop-shadow">{ws.emoji}</span>
                 <p className="mt-2 pr-10 text-lg font-extrabold leading-tight drop-shadow-sm">{ws.title}</p>
@@ -1224,7 +1219,7 @@ function YearWorksheets({
                     <button
                       disabled={busy !== null}
                       onClick={async () => {
-                        setBusy(ws.key);
+                        setBusy(ws.title);
                         setError("");
                         const e = await onSet(ws);
                         if (e) setError(e);
@@ -1232,7 +1227,7 @@ function YearWorksheets({
                       }}
                       className="rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-extrabold text-white shadow active:scale-95 disabled:opacity-60"
                     >
-                      {busy === ws.key ? "Setting…" : `📮 Set for ${className || "the class"}`}
+                      {busy === ws.title ? "Setting…" : `📮 Set for ${className || "the class"}`}
                     </button>
                   )}
                 </div>

@@ -12,8 +12,11 @@
      Year 6  inference across the passage, devices, viewpoint, a written
              answer explained with evidence from the text
 
+   Each year has four (three more in app/yearWorksheetsMore.ts).
    lib/yearWorksheetHtml.ts turns one into a self-contained interactive page,
    which the teacher sets as an assignment (tabs/Assignments.tsx). */
+
+import { MORE_WORKSHEETS } from "@/app/yearWorksheetsMore";
 
 export type WorksheetQuestion =
   /** Tap one answer. pics: the options are big picture tiles. */
@@ -48,7 +51,7 @@ export type YearWorksheet = {
   questions: WorksheetQuestion[];
 };
 
-export const YEAR_WORKSHEETS: YearWorksheet[] = [
+const FIRST_WORKSHEETS: YearWorksheet[] = [
   {
     key: "y1",
     year: "Year 1",
@@ -301,4 +304,9 @@ export const YEAR_WORKSHEETS: YearWorksheet[] = [
   },
 ];
 
-export const yearWorksheet = (key: string) => YEAR_WORKSHEETS.find((w) => w.key === key);
+/** Every worksheet, four for each year (more in app/yearWorksheetsMore.ts),
+    in year order. */
+export const YEAR_WORKSHEETS: YearWorksheet[] = [...FIRST_WORKSHEETS, ...MORE_WORKSHEETS].sort((a, b) => a.key.localeCompare(b.key));
+
+/** The worksheets written for one year, e.g. "y2". */
+export const worksheetsFor = (key: string) => YEAR_WORKSHEETS.filter((w) => w.key === key);
