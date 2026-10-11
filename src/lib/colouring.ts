@@ -8,6 +8,8 @@
      col:img:<id>       the picture itself (kept apart, so the list stays light)
      col:code:<code>    a teacher's share code → their address
      col:mycode:<email> that teacher's code
+     col:current        what /color opens: the share code and story of the
+                        colouring page a teacher last made a link for
 
    The share code goes in colouring links sent to children
    (…/colour#<code>-<story id>). Like the class code, it is the permission:
@@ -86,4 +88,16 @@ export async function shareCodeFor(owner: string): Promise<string> {
 
 export async function ownerForCode(code: string): Promise<string | null> {
   return isShareCode(code) ? kvGetJson<string>(`col:code:${code}`) : null;
+}
+
+/* The one easy link: reading-phonics.vercel.app/color opens the colouring
+   page a teacher last tapped "Link for students" on, sending pictures to
+   that teacher. One page at a time, for the whole site — making a new link
+   moves it on. */
+export async function setCurrentColouring(owner: string, storyId: string): Promise<void> {
+  await kvSetJson("col:current", { code: await shareCodeFor(owner), storyId, at: new Date().toISOString() });
+}
+
+export async function currentColouring(): Promise<{ code: string; storyId: string } | null> {
+  return kvGetJson<{ code: string; storyId: string }>("col:current");
 }

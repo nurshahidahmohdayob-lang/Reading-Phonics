@@ -6,7 +6,9 @@
    POST { op: "submit", code, … }                       the same from a shared
                                                         link, no sign-in: the
                                                         code says whose it is
-   POST { op: "link" }                                  this teacher's share code
+   POST { op: "link", storyId }                         this teacher's share code;
+                                                        also points /color at
+                                                        this story for them
    POST { op: "delete", id }                            remove one
    GET                                                  the list, newest first
    GET  ?id=…                                           one picture */
@@ -22,6 +24,7 @@ import {
   listColouring,
   ownerForCode,
   shareCodeFor,
+  setCurrentColouring,
   MAX_IMAGE_CHARS,
   submitColouring,
 } from "@/lib/colouring";
@@ -50,7 +53,11 @@ export async function POST(req: Request) {
   if (!me) return bad(shared ? "bad link" : "signed-out", shared ? 404 : 401);
 
   if (body.op === "link") {
-    return NextResponse.json({ ok: true, code: await shareCodeFor(me) });
+    const storyId = text(body.storyId, 20);
+    const code = await shareCodeFor(me);
+    const easy = /^y\d-\d\d$/.test(storyId);
+    if (easy) await setCurrentColouring(me, storyId);
+    return NextResponse.json({ ok: true, code, easy });
   }
 
   if (body.op === "submit") {

@@ -112,7 +112,7 @@ export default function StoryColouring({
   const [name, setName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [send, setSend] = useState<"idle" | "sending" | "sent" | "error" | "off">("idle");
-  const [link, setLink] = useState<{ url: string; copied: boolean } | "loading" | "error" | null>(null);
+  const [link, setLink] = useState<{ url: string; typed: string; copied: boolean } | "loading" | "error" | null>(null);
 
   const codes = COLOURING_SCENES[story.id] ?? [];
 
@@ -243,17 +243,20 @@ export default function StoryColouring({
       const res = await fetch("/api/colouring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ op: "link" }),
+        body: JSON.stringify({ op: "link", storyId: story.id }),
       });
       const d = await res.json();
       if (!d.ok) return setLink("error");
-      const url = `${location.origin}/colour#${d.code}-${story.id}`;
+      // /color is the easy one to type — it now opens this page. The long
+      // one keeps this exact story even after another link moves /color on.
+      const url = d.easy ? `${location.origin}/color` : `${location.origin}/colour#${d.code}-${story.id}`;
+      const typed = url.replace(/^https?:\/\//, "");
       let copied = false;
       try {
         await navigator.clipboard.writeText(url);
         copied = true;
       } catch {}
-      setLink({ url, copied });
+      setLink({ url, typed, copied });
     } catch {
       setLink("error");
     }
@@ -297,15 +300,17 @@ export default function StoryColouring({
           {typeof link === "object" && (
             <>
               <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-                {link.copied ? "✅ Copied! " : ""}Share this with your students. They type their name,
-                colour, and tap Submit — it comes to your 🖼️ Colouring sent in.
+                {link.copied ? "✅ Copied! " : ""}Students go to this link, type their name, colour,
+                and tap Submit — it comes to your 🖼️ Colouring sent in. It opens this picture
+                until you make a link for a different one.
               </p>
               <div className="mt-2 flex gap-2">
                 <input
                   readOnly
-                  value={link.url}
+                  value={link.typed}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="min-w-0 flex-1 rounded-xl border-2 border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700"
+                  aria-label="Link for students"
+                  className="min-w-0 flex-1 rounded-xl border-2 border-zinc-200 px-3 py-2 text-center text-lg font-extrabold tracking-wide text-zinc-800"
                 />
                 <button
                   onClick={async () => {
