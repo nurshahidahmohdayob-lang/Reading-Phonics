@@ -6,6 +6,12 @@
      col:list:<email>   ids, newest first
      col:meta:<id>      who, which story, when
      col:img:<id>       the picture itself (kept apart, so the list stays light)
+     col:code:<code>    a teacher's share code → their address
+     col:mycode:<email> that teacher's code
+
+   The share code goes in colouring links sent to children
+   (…/colour#<code>-<story id>). Like the class code, it is the permission:
+   it lets a child send a picture to that teacher, and nothing else.
 
    The list is a Redis list, so two children pressing Submit at the same
    moment both land. */
@@ -62,4 +68,22 @@ export async function deleteColouring(owner: string, id: string): Promise<void> 
   if (!meta || meta.owner !== owner) return;
   await kvLRem(listKey(owner), id);
   await kvDel(`col:meta:${id}`, `col:img:${id}`);
+}
+
+const CODE_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
+const CODE = /^[a-z2-9]{12}$/;
+export const isShareCode = (code: string) => CODE.test(code);
+
+/** The teacher's colouring share code, made the first time they ask. */
+export async function shareCodeFor(owner: string): Promise<string> {
+  const have = await kvGetJson<string>(`col:mycode:${owner}`);
+  if (have) return have;
+  const code = Array.from(randomBytes(12), (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+  await kvSetJson(`col:code:${code}`, owner);
+  await kvSetJson(`col:mycode:${owner}`, code);
+  return code;
+}
+
+export async function ownerForCode(code: string): Promise<string | null> {
+  return isShareCode(code) ? kvGetJson<string>(`col:code:${code}`) : null;
 }

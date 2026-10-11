@@ -92,9 +92,13 @@ async function drawOutlines(ctx: CanvasRenderingContext2D, codes: string[]) {
 export default function StoryColouring({
   story,
   onClose,
+  shareCode,
 }: {
   story: Story;
-  onClose: () => void;
+  /** Back to the story list; left out on a shared link, which has nowhere to go back to. */
+  onClose?: () => void;
+  /** Set on a shared link (/colour): sends the picture to that teacher without a sign-in. */
+  shareCode?: string;
 }) {
   const paintRef = useRef<HTMLCanvasElement>(null);
   const lineRef = useRef<HTMLCanvasElement>(null);
@@ -108,6 +112,7 @@ export default function StoryColouring({
   const [name, setName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [send, setSend] = useState<"idle" | "sending" | "sent" | "error" | "off">("idle");
+  const [link, setLink] = useState<{ url: string; copied: boolean } | "loading" | "error" | null>(null);
 
   const codes = COLOURING_SCENES[story.id] ?? [];
 
@@ -213,7 +218,14 @@ export default function StoryColouring({
       const res = await fetch("/api/colouring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ op: "submit", storyId: story.id, title: story.title, name, image }),
+        body: JSON.stringify({
+          op: "submit",
+          ...(shareCode ? { code: shareCode } : {}),
+          storyId: story.id,
+          title: story.title,
+          name,
+          image,
+        }),
       });
       const d = await res.json().catch(() => ({}));
       if (d.configured === false) return setSend("off");
@@ -224,20 +236,101 @@ export default function StoryColouring({
     }
   }
 
+  /** The link children open to colour this page on their own device. */
+  async function shareLink() {
+    setLink("loading");
+    try {
+      const res = await fetch("/api/colouring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "link" }),
+      });
+      const d = await res.json();
+      if (!d.ok) return setLink("error");
+      const url = `${location.origin}/colour#${d.code}-${story.id}`;
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(url);
+        copied = true;
+      } catch {}
+      setLink({ url, copied });
+    } catch {
+      setLink("error");
+    }
+  }
+
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full items-center justify-between gap-3">
-        <button
-          onClick={onClose}
-          className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-        >
-          ← Stories
-        </button>
+        {onClose ? (
+          <button
+            onClick={onClose}
+            className="rounded-full bg-zinc-100 px-4 py-2 font-semibold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            ← Stories
+          </button>
+        ) : (
+          <span className="w-20" />
+        )}
         <h2 className="text-center text-xl font-extrabold text-amber-900 dark:text-amber-100">
           🖍️ Colour: {story.title}
         </h2>
-        <span className="w-20" />
+        {shareCode ? (
+          <span className="w-20" />
+        ) : (
+          <button
+            onClick={shareLink}
+            className="rounded-full bg-white px-4 py-2 text-sm font-extrabold text-brand-700 shadow-sm ring-2 ring-brand-200 active:scale-95 dark:bg-zinc-800"
+          >
+            🔗 Link for students
+          </button>
+        )}
       </div>
+      {link && (
+        <div className="mt-3 w-full max-w-2xl rounded-2xl bg-white p-4 shadow-sm ring-2 ring-brand-200 dark:bg-zinc-900">
+          {link === "loading" && <p className="text-center font-semibold text-zinc-500">Making the link…</p>}
+          {link === "error" && (
+            <p className="text-center font-semibold text-rose-600">
+              Couldn&apos;t make the link. Check the internet and try again.
+            </p>
+          )}
+          {typeof link === "object" && (
+            <>
+              <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
+                {link.copied ? "✅ Copied! " : ""}Share this with your students. They type their name,
+                colour, and tap Submit — it comes to your 🖼️ Colouring sent in.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <input
+                  readOnly
+                  value={link.url}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="min-w-0 flex-1 rounded-xl border-2 border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700"
+                />
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(link.url);
+                      setLink({ ...link, copied: true });
+                    } catch {}
+                  }}
+                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-extrabold text-white active:scale-95"
+                >
+                  📋 Copy
+                </button>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-extrabold text-zinc-700 active:scale-95"
+                >
+                  Open
+                </a>
+              </div>
+            </>
+          )}
+        </div>
+      )}
       {name && (
         <p className="mt-1 text-center text-sm font-semibold text-zinc-500">
           🧒 <span className="font-extrabold text-amber-800">{name}</span> · pick a colour and a
@@ -311,12 +404,14 @@ export default function StoryColouring({
                 <span className="text-5xl">🎉</span>
                 <p className="text-xl font-extrabold text-green-700">Sent to your teacher!</p>
                 <p className="font-semibold text-zinc-500">Well done, {name}.</p>
-                <button
-                  onClick={onClose}
-                  className="rounded-2xl bg-green-500 px-5 py-2.5 font-extrabold text-white shadow-md active:scale-95"
-                >
-                  Back to stories
-                </button>
+                {onClose && (
+                  <button
+                    onClick={onClose}
+                    className="rounded-2xl bg-green-500 px-5 py-2.5 font-extrabold text-white shadow-md active:scale-95"
+                  >
+                    Back to stories
+                  </button>
+                )}
               </div>
             </div>
           )}

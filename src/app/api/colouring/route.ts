@@ -3,6 +3,10 @@
    that teacher, and each teacher sees only their own.
 
    POST { op: "submit", storyId, title, name, image }   send a finished page
+   POST { op: "submit", code, … }                       the same from a shared
+                                                        link, no sign-in: the
+                                                        code says whose it is
+   POST { op: "link" }                                  this teacher's share code
    POST { op: "delete", id }                            remove one
    GET                                                  the list, newest first
    GET  ?id=…                                           one picture */
@@ -16,6 +20,8 @@ import {
   deleteColouring,
   isColouringId,
   listColouring,
+  ownerForCode,
+  shareCodeFor,
   MAX_IMAGE_CHARS,
   submitColouring,
 } from "@/lib/colouring";
@@ -29,8 +35,6 @@ const bad = (error: string, status = 400) => NextResponse.json({ ok: false, erro
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 export async function POST(req: Request) {
-  const me = await teacher();
-  if (!me) return bad("signed-out", 401);
   if (!colouringReady()) return NextResponse.json({ ok: false, configured: false });
 
   let body: Record<string, unknown>;
@@ -38,6 +42,15 @@ export async function POST(req: Request) {
     body = await req.json();
   } catch {
     return bad("bad request");
+  }
+
+  // A child on a shared link: the code stands in for the teacher's sign-in.
+  const shared = body.op === "submit" && typeof body.code === "string";
+  const me = shared ? await ownerForCode(body.code as string) : await teacher();
+  if (!me) return bad(shared ? "bad link" : "signed-out", shared ? 404 : 401);
+
+  if (body.op === "link") {
+    return NextResponse.json({ ok: true, code: await shareCodeFor(me) });
   }
 
   if (body.op === "submit") {

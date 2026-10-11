@@ -23,14 +23,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   // can read anything about the school, so neither asks to sign in. Nor does
   // an online worksheet: its link carries a story and a level, nothing else.
   // Nor the class activities page, which a class code opens (lib/assignments),
-  // nor the interactive stories, which hold nothing but the stories.
+  // nor the interactive stories, which hold nothing but the stories, nor a
+  // shared colouring page, whose code only lets a child send a picture in.
   const isPublic =
     !!pathname &&
     (pathname.startsWith("/report") ||
       pathname.startsWith("/scan") ||
       pathname.startsWith("/worksheet") ||
       pathname.startsWith("/class") ||
-      pathname.startsWith("/play"));
+      pathname.startsWith("/play") ||
+      pathname.startsWith("/colour"));
 
   useEffect(() => {
     let alive = true;
