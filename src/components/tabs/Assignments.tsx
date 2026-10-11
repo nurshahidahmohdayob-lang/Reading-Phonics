@@ -100,6 +100,8 @@ export default function Assignments() {
   const [preview, setPreview] = useState<Item | null>(null);
   const [doing, setDoing] = useState<string | null>(null);
   const [history, setHistory] = useState<string | null>(null);
+  /** Which half of Assignments is open: each child's reading, or the year worksheets. */
+  const [view, setView] = useState<"reading" | "worksheets">("reading");
 
   // Ask for the class (making its link on first use, and refreshing its names);
   // `apply` puts the answer on screen.
@@ -153,10 +155,6 @@ export default function Assignments() {
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <h2 className="text-center text-2xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📮 Assignments</h2>
-      <p className="mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        Tap a child&apos;s name and their assignment opens: a short story at their own reading level, with questions.
-        When they press Submit, a ✅ appears beside their name.
-      </p>
 
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {ROSTER.map((g) => (
@@ -172,6 +170,30 @@ export default function Assignments() {
         ))}
       </div>
 
+      <div className="mt-5 grid w-full max-w-2xl grid-cols-2 gap-3">
+        {(
+          [
+            { id: "reading", icon: "📖", label: "Reading at their level", sub: "Each child's own story", bg: "from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-950" },
+            { id: "worksheets", icon: "📝", label: "Year-group worksheets", sub: "Year 1 to Year 6", bg: "from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-950" },
+          ] as const
+        ).map((b) => (
+          <button
+            key={b.id}
+            onClick={() => setView(b.id)}
+            aria-pressed={view === b.id}
+            className={`flex items-center gap-3 rounded-[1.4rem] bg-gradient-to-br ${b.bg} px-4 py-3 text-left shadow-md transition-all active:scale-95 ${
+              view === b.id ? "ring-4 ring-white scale-[1.02]" : "opacity-80 hover:opacity-100"
+            }`}
+          >
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/90 text-2xl shadow">{b.icon}</span>
+            <span className={b.text}>
+              <span className="block text-base font-extrabold leading-tight sm:text-lg">{b.label}</span>
+              <span className="block text-xs font-bold opacity-80">{b.sub}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+
       {status === "loading" && <p className="mt-10 font-bold text-zinc-400">Loading…</p>}
       {status === "off" && (
         <p className="mt-10 max-w-md text-center font-bold text-amber-700">
@@ -182,6 +204,12 @@ export default function Assignments() {
 
       {status === "ready" && cls && (
         <>
+          {view === "reading" ? (
+            <>
+              <p className="mt-4 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+                Tap a child&apos;s name and their assignment opens: a short story at their own reading level, with questions.
+                When they press Submit, a ✅ appears beside their name.
+              </p>
           <StudentPicker
             names={cls.names}
             reading={cls.reading}
@@ -192,20 +220,6 @@ export default function Assignments() {
             session={cls.sessions[0]}
           />
           {cls.sessions.length > 0 && <SessionPlan names={cls.names} sessions={cls.sessions} plan={cls.plan} />}
-
-          <YearWorksheets
-            yearKey={yearKey}
-            className={group?.year ?? ""}
-            items={cls.items}
-            done={cls.done}
-            count={cls.names.length}
-            onSet={async (ws) => {
-              const d = await call({ op: "create", yearKey, title: worksheetTitle(ws), kind: "html", html: yearWorksheetHtml(ws), assignees: "all" });
-              if (!d.ok) return d.error ?? "Couldn't set it.";
-              await load();
-              return null;
-            }}
-          />
 
           <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
             <summary className="cursor-pointer text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
@@ -300,6 +314,23 @@ export default function Assignments() {
             })}
           </div>
           </details>
+            </>
+          ) : (
+          <YearWorksheets
+            yearKey={yearKey}
+            className={group?.year ?? ""}
+            items={cls.items}
+            done={cls.done}
+            names={cls.names}
+            onView={(item, name) => setViewing({ item, name })}
+            onSet={async (ws) => {
+              const d = await call({ op: "create", yearKey, title: worksheetTitle(ws), kind: "html", html: yearWorksheetHtml(ws), assignees: "all" });
+              if (!d.ok) return d.error ?? "Couldn't set it.";
+              await load();
+              return null;
+            }}
+          />
+          )}
         </>
       )}
 
@@ -1132,22 +1163,25 @@ function YearWorksheets({
   className,
   items,
   done,
-  count,
+  names,
   onSet,
+  onView,
 }: {
   yearKey: string;
   className: string;
   items: Item[];
   done: ClassState["done"];
-  count: number;
+  names: string[];
   onSet: (ws: YearWorksheet) => Promise<string | null>;
+  /** See what a child submitted for a worksheet. */
+  onView: (item: Item, name: string) => void;
 }) {
   const [trying, setTrying] = useState<YearWorksheet | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const sheets = [...YEAR_WORKSHEETS].sort((a, b) => Number(b.key === yearKey) - Number(a.key === yearKey));
   return (
-    <section className="mt-10 w-full">
+    <section className="mt-6 w-full">
       <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📝 Year-group reading worksheets</h3>
       <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
         A story and a mix of questions for each year, from Year 1 (easiest) to Year 6. Children tick, match, sort, find and write, then check
@@ -1157,7 +1191,8 @@ function YearWorksheets({
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sheets.map((ws) => {
           const set = items.find((it) => it.title === worksheetTitle(ws));
-          const submitted = set ? Object.keys(done[set.id] ?? {}).length : 0;
+          const finished = set ? (done[set.id] ?? {}) : {};
+          const submitted = names.filter((n) => finished[n]).length;
           const own = ws.key === yearKey;
           return (
             <div
@@ -1183,7 +1218,7 @@ function YearWorksheets({
                   </button>
                   {set ? (
                     <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-extrabold text-emerald-700 ring-2 ring-emerald-200">
-                      ✓ Set · {submitted} / {count} done
+                      ✓ Set · {submitted} / {names.length} done
                     </span>
                   ) : (
                     <button
@@ -1201,6 +1236,27 @@ function YearWorksheets({
                     </button>
                   )}
                 </div>
+                {set && (
+                  <div className="mt-1 flex flex-wrap gap-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                    {names.map((n) =>
+                      finished[n] ? (
+                        <button
+                          key={n}
+                          onClick={() => onView(set, n)}
+                          title="See what they did"
+                          className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
+                        >
+                          ✅ {n}
+                          {finished[n].score && ` ${finished[n].score!.score}/${finished[n].score!.total}`}
+                        </button>
+                      ) : (
+                        <span key={n} className="rounded-full bg-zinc-50 px-2 py-0.5 text-xs font-semibold text-zinc-400 ring-1 ring-zinc-100 dark:bg-zinc-800">
+                          ⬜ {n}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

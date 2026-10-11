@@ -1,7 +1,7 @@
 "use client";
 
 /* The home screen: a tidy board of bright tiles, one per section, in a
-   frosted frame over the softly blurred forest glade
+   solid cream frame over the softly blurred forest glade
    (components/ForestBackdrop). Each tile is its section's colour, with its
    picture and name. Pointing at a tile lifts it and Polly says its name;
    tapping it sends a ring of light round it, then opens the section. */

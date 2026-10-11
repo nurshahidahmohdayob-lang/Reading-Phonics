@@ -543,9 +543,8 @@ body {
    board in a wooden frame, bright tiles that lift and glow when pointed at,
    and the tagline's ribbon (app/page.tsx). */
 .home-board {
-  background: rgba(255, 250, 236, 0.5);
-  backdrop-filter: blur(8px);
-  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55), 0 0 0 4px #8f5a2a, 0 0 0 7px #f2d9a6, 0 22px 44px -18px rgba(20, 40, 10, 0.7);
+  background: linear-gradient(180deg, #fffaf0, #f7ebd2);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 4px #8f5a2a, 0 0 0 7px #f2d9a6, 0 22px 44px -18px rgba(20, 40, 10, 0.7);
 }
 .home-tile {
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), inset 0 -5px 0 rgba(0, 0, 0, 0.12), 0 5px 12px -4px rgba(20, 40, 10, 0.45);
