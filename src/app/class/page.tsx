@@ -5,7 +5,11 @@
    level with its questions (the online worksheet), and a Submit button that
    ticks it off. Any activities the teacher set are listed after it. No
    sign-in — the code in the link is the permission (lib/assignments.ts). A
-   name gets a ✅ once today's story and every activity set for it are in. */
+   name gets a ✅ once today's story and every activity set for it are in.
+
+   A link for one activity (…/class#<code>-<activity id>, e.g. a year-group
+   worksheet shared with parents) lists only the children it's set for, and
+   tapping a name opens that activity straight away. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
@@ -31,6 +35,8 @@ export default function ClassPage() {
   const [note, setNote] = useState("");
   const [reading, setReading] = useState<Reading | "loading" | "none" | null>(null);
   const [onStory, setOnStory] = useState(false);
+  /** The one activity this link is for, if it's an activity's own link. */
+  const [only, setOnly] = useState<string | null>(null);
   const frame = useRef<HTMLIFrameElement>(null);
 
   const load = useCallback(async (c: string) => {
@@ -52,10 +58,13 @@ export default function ClassPage() {
       // The code is the first 12 characters after the #. Links shared in chat
       // apps sometimes pick up text stuck to the end ("…#icj4fv7yfy8yLikeComment"),
       // so read just the code and tidy the address bar.
-      const c = /^#?\s*([a-z2-9]{12})/.exec(window.location.hash)?.[1] ?? "";
+      const m = /^#?\s*([a-z2-9]{12})(?:-([a-z2-9]{10}))?/.exec(window.location.hash);
+      const c = m?.[1] ?? "";
+      const tidy = m?.[2] ? `#${c}-${m[2]}` : `#${c}`;
       setCode(c);
+      setOnly(m?.[2] ?? null);
       if (c) {
-        if (window.location.hash !== `#${c}`) history.replaceState(null, "", `#${c}`);
+        if (window.location.hash !== tidy) history.replaceState(null, "", tidy);
         void load(c);
       } else setError("This class link isn't complete. Ask your teacher for it again.");
     });
@@ -70,6 +79,15 @@ export default function ClassPage() {
   /* Tap a name: their story at their level opens at once — unless today's
      is already in, then their list, with it ticked. */
   async function pick(name: string) {
+    // an activity's own link: straight into that activity
+    const item = only ? data?.items.find((it) => it.id === only) : undefined;
+    if (item) {
+      setMe(name);
+      setOnStory(false);
+      setReading(null);
+      void start(item);
+      return;
+    }
     setMe(name);
     setReading("loading");
     setOnStory(true);
@@ -163,13 +181,20 @@ export default function ClassPage() {
     );
   }
 
+  /** Leave an activity: back to the child's list, or, on an activity's own
+      link, back to the names. */
+  function leave() {
+    setOpen(null);
+    if (only) setMe(null);
+  }
+
   /* ---- doing an activity ---- */
   if (open && me) {
     return (
       <main className="flex h-dvh flex-col bg-[#EEF8FF]">
         <div className="flex items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white">
           <button
-            onClick={() => setOpen(null)}
+            onClick={leave}
             className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold active:scale-95"
           >
             ← Back
@@ -186,10 +211,10 @@ export default function ClassPage() {
             <p className="text-3xl font-extrabold text-[#0A4F29]">Submitted!</p>
             <p className="font-semibold text-zinc-500">Well done, {me}. Your teacher can see your work now.</p>
             <button
-              onClick={() => setOpen(null)}
+              onClick={leave}
               className="mt-2 rounded-full bg-[#0A4F29] px-6 py-3 text-lg font-extrabold text-white active:scale-95"
             >
-              Back to my activities
+              {only ? "Back to the names" : "Back to my activities"}
             </button>
           </div>
         ) : open.html !== undefined ? (
@@ -370,6 +395,49 @@ export default function ClassPage() {
   }
 
   /* ---- choose your name ---- */
+  const one = only ? data.items.find((it) => it.id === only) : undefined;
+  if (only && !one) {
+    return (
+      <Shell width="max-w-md">
+        <div className="py-10 text-center">
+          <div className="text-6xl">🔎</div>
+          <p className="mt-3 text-xl font-extrabold text-zinc-700">This activity isn&apos;t set any more. Ask your teacher for a new link.</p>
+        </div>
+      </Shell>
+    );
+  }
+  if (one) {
+    const forNames = data.names.filter((n) => mine(n).some((it) => it.id === one.id));
+    return (
+      <Shell>
+        <div>
+          <h1 className="text-center text-3xl font-extrabold text-[#0A4F29]">{one.title}</h1>
+          <p className="mt-1 text-center text-lg font-semibold text-zinc-500">{data.className} · Tap your child&apos;s name to start 👇</p>
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {forNames.map((n) => {
+              const finished = isDone(one.id, n);
+              return (
+                <button
+                  key={n}
+                  onClick={() => pick(n)}
+                  className={`flex items-center gap-3 rounded-2xl px-5 py-4 text-left text-lg font-extrabold shadow-sm ring-4 ring-white/70 transition-all active:scale-[.98] ${
+                    finished ? "bg-emerald-50 text-emerald-900" : "bg-white text-zinc-800 hover:-translate-y-0.5"
+                  }`}
+                >
+                  <span className="flex-1">{n}</span>
+                  {finished ? (
+                    <span className="text-2xl" aria-label="Submitted">✅</span>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm text-amber-800">▶ Start</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Shell>
+    );
+  }
   return (
     <Shell>
       <div>

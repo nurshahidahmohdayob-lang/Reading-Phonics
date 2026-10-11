@@ -319,13 +319,20 @@ export default function Assignments() {
           <YearWorksheets
             yearKey={yearKey}
             className={group?.year ?? ""}
+            code={cls.code}
             items={cls.items}
             done={cls.done}
             names={cls.names}
             onView={(item, name) => setViewing({ item, name })}
-            onSet={async (ws) => {
-              const d = await call({ op: "create", yearKey, title: worksheetTitle(ws), kind: "html", html: yearWorksheetHtml(ws), assignees: "all" });
-              if (!d.ok) return d.error ?? "Couldn't set it.";
+            onSet={async (ws, assignees) => {
+              const d = await call({ op: "create", yearKey, title: worksheetTitle(ws), kind: "html", html: yearWorksheetHtml(ws), assignees });
+              if (!d.ok) return d.error ?? "Couldn't send it.";
+              await load();
+              return null;
+            }}
+            onAssign={async (item, assignees) => {
+              const d = await call({ op: "assignees", id: item.id, assignees });
+              if (!d.ok) return d.error ?? "Couldn't save that.";
               await load();
               return null;
             }}
@@ -1155,107 +1162,58 @@ function Preview({ item, code, onClose }: { item: Item; code: string; onClose: (
 const worksheetTitle = (ws: YearWorksheet) => `📝 ${ws.year} worksheet: ${ws.title}`;
 
 /** A card for each of the picked year's worksheets, all written for that
-    year (Year 1 the easiest, Year 6 the hardest). Try it to see what children see; Set it and
-    it becomes an assignment for the whole class, marked by itself, with the
-    child's score beside their ✅. */
+    year (Year 1 the easiest, Year 6 the hardest). Try it to see what children
+    see; Send it to the whole class or to the children you tap, and it becomes
+    an assignment, marked by itself, with each child's score beside their ✅.
+    A sent worksheet has its own link for parents: they tap their child's
+    name and it opens. */
 function YearWorksheets({
   yearKey,
   className,
+  code,
   items,
   done,
   names,
   onSet,
+  onAssign,
   onView,
 }: {
   yearKey: string;
   className: string;
+  /** The class link's code, for each worksheet's own link. */
+  code: string;
   items: Item[];
   done: ClassState["done"];
   names: string[];
-  onSet: (ws: YearWorksheet) => Promise<string | null>;
+  onSet: (ws: YearWorksheet, assignees: string[] | "all") => Promise<string | null>;
+  onAssign: (item: Item, assignees: string[] | "all") => Promise<string | null>;
   /** See what a child submitted for a worksheet. */
   onView: (item: Item, name: string) => void;
 }) {
   const [trying, setTrying] = useState<YearWorksheet | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState("");
   const sheets = worksheetsFor(yearKey);
   return (
     <section className="mt-6 w-full">
       <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📝 {className} reading worksheets</h3>
       <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        {sheets.length} worksheets written for {className}: a story and a mix of questions on each. Children tick, match, sort, find and write,
-        then check their own answers. Set one and each child&apos;s score appears beside their ✅.
+        {sheets.length} worksheets written for {className}. Send one to the whole class or to the children you choose. Children can do it on
+        the class link, or share the worksheet&apos;s own link with parents: they tap their child&apos;s name and it opens.
       </p>
-      {error && <p className="mt-2 text-center font-bold text-rose-600">{error}</p>}
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {sheets.map((ws) => {
-          const set = items.find((it) => it.title === worksheetTitle(ws));
-          const finished = set ? (done[set.id] ?? {}) : {};
-          const submitted = names.filter((n) => finished[n]).length;
-          return (
-            <div key={ws.title} className="relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-md ring-2 ring-white/70 dark:bg-zinc-900">
-              <div className="relative px-4 pb-3 pt-4 text-white" style={{ background: `linear-gradient(135deg, ${ws.colours[0]}, ${ws.colours[1]})` }}>
-                <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-extrabold text-zinc-700">
-                  {ws.year}
-                </span>
-                <span aria-hidden className="absolute right-3 top-2 text-4xl drop-shadow">{ws.emoji}</span>
-                <p className="mt-2 pr-10 text-lg font-extrabold leading-tight drop-shadow-sm">{ws.title}</p>
-              </div>
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{ws.focus}</p>
-                <p className="text-xs font-bold text-zinc-400">
-                  {ws.questions.length} questions · about {ws.minutes} min
-                </p>
-                <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                  <button onClick={() => setTrying(ws)} className="rounded-full bg-sky-100 px-3 py-1.5 text-sm font-extrabold text-sky-800 active:scale-95">
-                    👀 Try it
-                  </button>
-                  {set ? (
-                    <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-extrabold text-emerald-700 ring-2 ring-emerald-200">
-                      ✓ Set · {submitted} / {names.length} done
-                    </span>
-                  ) : (
-                    <button
-                      disabled={busy !== null}
-                      onClick={async () => {
-                        setBusy(ws.title);
-                        setError("");
-                        const e = await onSet(ws);
-                        if (e) setError(e);
-                        setBusy(null);
-                      }}
-                      className="rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-extrabold text-white shadow active:scale-95 disabled:opacity-60"
-                    >
-                      {busy === ws.title ? "Setting…" : `📮 Set for ${className || "the class"}`}
-                    </button>
-                  )}
-                </div>
-                {set && (
-                  <div className="mt-1 flex flex-wrap gap-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                    {names.map((n) =>
-                      finished[n] ? (
-                        <button
-                          key={n}
-                          onClick={() => onView(set, n)}
-                          title="See what they did"
-                          className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
-                        >
-                          ✅ {n}
-                          {finished[n].score && ` ${finished[n].score!.score}/${finished[n].score!.total}`}
-                        </button>
-                      ) : (
-                        <span key={n} className="rounded-full bg-zinc-50 px-2 py-0.5 text-xs font-semibold text-zinc-400 ring-1 ring-zinc-100 dark:bg-zinc-800">
-                          ⬜ {n}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {sheets.map((ws) => (
+          <WorksheetCard
+            key={ws.title}
+            ws={ws}
+            set={items.find((it) => it.title === worksheetTitle(ws))}
+            done={done}
+            names={names}
+            code={code}
+            onTry={() => setTrying(ws)}
+            onSet={(who) => onSet(ws, who)}
+            onAssign={onAssign}
+            onView={onView}
+          />
+        ))}
       </div>
       {trying && (
         <Modal onClose={() => setTrying(null)} wide>
@@ -1270,5 +1228,180 @@ function YearWorksheets({
         </Modal>
       )}
     </section>
+  );
+}
+
+function WorksheetCard({
+  ws,
+  set,
+  done,
+  names,
+  code,
+  onTry,
+  onSet,
+  onAssign,
+  onView,
+}: {
+  ws: YearWorksheet;
+  /** The assignment, once it's been sent. */
+  set: Item | undefined;
+  done: ClassState["done"];
+  names: string[];
+  code: string;
+  onTry: () => void;
+  onSet: (assignees: string[] | "all") => Promise<string | null>;
+  onAssign: (item: Item, assignees: string[] | "all") => Promise<string | null>;
+  onView: (item: Item, name: string) => void;
+}) {
+  /** The children ticked while choosing who it's for; null when not choosing. */
+  const [picking, setPicking] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const assigned = set ? (set.assignees === "all" ? names : names.filter((n) => (set.assignees as string[]).includes(n))) : [];
+  const finished = set ? (done[set.id] ?? {}) : {};
+  const submitted = assigned.filter((n) => finished[n]).length;
+  const link = set ? `${publicSiteBase()}/class#${code}-${set.id}` : "";
+
+  async function save() {
+    if (!picking || picking.length === 0) return setError("Tap at least one name.");
+    setBusy(true);
+    setError("");
+    const who = picking.length === names.length ? "all" : picking;
+    const e = set ? await onAssign(set, who) : await onSet(who);
+    setBusy(false);
+    if (e) setError(e);
+    else setPicking(null);
+  }
+
+  return (
+    <div className="relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-md ring-2 ring-white/70 dark:bg-zinc-900">
+      <div className="relative px-4 pb-3 pt-4 text-white" style={{ background: `linear-gradient(135deg, ${ws.colours[0]}, ${ws.colours[1]})` }}>
+        <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-extrabold text-zinc-700">{ws.year}</span>
+        <span aria-hidden className="absolute right-3 top-2 text-4xl drop-shadow">{ws.emoji}</span>
+        <p className="mt-2 pr-10 text-lg font-extrabold leading-tight drop-shadow-sm">{ws.title}</p>
+      </div>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{ws.focus}</p>
+        <p className="text-xs font-bold text-zinc-400">
+          {ws.questions.length} questions · about {ws.minutes} min
+        </p>
+
+        {picking ? (
+          /* choosing who it's for */
+          <div className="mt-1 rounded-2xl bg-amber-50 p-3 ring-2 ring-amber-200 dark:bg-amber-950/30">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex-1 text-sm font-extrabold text-amber-900 dark:text-amber-200">Send to: {picking.length} of {names.length}</span>
+              <button onClick={() => setPicking(names)} className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-amber-800 shadow-sm">
+                Everyone
+              </button>
+              <button onClick={() => setPicking([])} className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-amber-800 shadow-sm">
+                Nobody
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {names.map((n) => {
+                const on = picking.includes(n);
+                return (
+                  <button
+                    key={n}
+                    onClick={() => setPicking(on ? picking.filter((x) => x !== n) : [...picking, n])}
+                    aria-pressed={on}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold transition-all active:scale-95 ${
+                      on ? "bg-emerald-600 text-white shadow-sm" : "bg-white text-zinc-500 ring-1 ring-zinc-200"
+                    }`}
+                  >
+                    {on ? "✓" : "＋"} {n}
+                  </button>
+                );
+              })}
+            </div>
+            {error && <p className="mt-2 text-sm font-bold text-rose-600">{error}</p>}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                disabled={busy}
+                onClick={save}
+                className="rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-extrabold text-white shadow active:scale-95 disabled:opacity-60"
+              >
+                {busy ? "Sending…" : set ? "Save" : `📮 Send to ${picking.length === names.length ? "everyone" : `${picking.length} ${picking.length === 1 ? "child" : "children"}`}`}
+              </button>
+              <button
+                onClick={() => {
+                  setPicking(null);
+                  setError("");
+                }}
+                className="rounded-full bg-zinc-100 px-4 py-1.5 text-sm font-extrabold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+            <button onClick={onTry} className="rounded-full bg-sky-100 px-3 py-1.5 text-sm font-extrabold text-sky-800 active:scale-95">
+              👀 Try it
+            </button>
+            {set ? (
+              <>
+                <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-extrabold text-emerald-700 ring-2 ring-emerald-200">
+                  ✓ Sent · {submitted} / {assigned.length} done
+                </span>
+                <button onClick={() => setPicking(assigned)} className="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-extrabold text-amber-800 active:scale-95">
+                  ✏️ Change who
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setPicking(names)} className="rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-extrabold text-white shadow active:scale-95">
+                📮 Send to…
+              </button>
+            )}
+          </div>
+        )}
+
+        {set && !picking && (
+          <>
+            <div className="mt-1 flex flex-wrap gap-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+              {assigned.map((n) =>
+                finished[n] ? (
+                  <button
+                    key={n}
+                    onClick={() => onView(set, n)}
+                    title="See what they did"
+                    className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
+                  >
+                    ✅ {n}
+                    {finished[n].score && ` ${finished[n].score!.score}/${finished[n].score!.total}`}
+                  </button>
+                ) : (
+                  <span key={n} className="rounded-full bg-zinc-50 px-2 py-0.5 text-xs font-semibold text-zinc-400 ring-1 ring-zinc-100 dark:bg-zinc-800">
+                    ⬜ {n}
+                  </span>
+                ),
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 dark:bg-sky-950/30">
+              <span className="flex-1 text-xs font-bold text-sky-900 dark:text-sky-200">🔗 Link for parents: they tap their child&apos;s name, then it opens.</span>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  } catch {
+                    window.prompt("Copy this link:", link);
+                  }
+                }}
+                className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-sky-800 shadow-sm active:scale-95"
+              >
+                {copied ? "✓ Copied" : "Copy link"}
+              </button>
+              <a href={link} target="_blank" rel="noreferrer" className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-sky-800 shadow-sm active:scale-95">
+                ↗ Open
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

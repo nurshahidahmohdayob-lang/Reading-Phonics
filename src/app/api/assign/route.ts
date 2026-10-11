@@ -7,6 +7,7 @@
                                                      and each child's reading
    POST { op: "clearReading", yearKey, name }        let a child redo today's reading
    POST { op: "create", yearKey, title, kind, html | url, assignees }
+   POST { op: "assignees", id, assignees }          change who it's for
    POST { op: "delete", id }
    POST { op: "clear", id, name }                    let a child do it again
    GET  ?id=…&name=…                                 one child's submission
@@ -39,6 +40,7 @@ import {
   isItemId,
   MAX_HTML_CHARS,
   openClass,
+  setAssignees,
   readingMarks,
   doneThisSession,
   planFor,
@@ -108,6 +110,20 @@ export async function POST(req: Request) {
     const url = cleanUrl(body.url);
     if (!url) return bad("That doesn't look like a web link.");
     const a = await createAssignment(me, { yearKey, title: String(body.title ?? ""), kind, url, assignees });
+    return NextResponse.json({ ok: true, item: a });
+  }
+
+  if (body.op === "assignees") {
+    if (!isItemId(body.id)) return bad("bad request");
+    const assignees =
+      body.assignees === "all"
+        ? "all"
+        : Array.isArray(body.assignees)
+          ? body.assignees.filter((n): n is string => typeof n === "string")
+          : null;
+    if (!assignees || (assignees !== "all" && assignees.length === 0)) return bad("Choose who it's for.");
+    const a = await setAssignees(me, body.id, assignees);
+    if (!a) return bad("not found", 404);
     return NextResponse.json({ ok: true, item: a });
   }
 

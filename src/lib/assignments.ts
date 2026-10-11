@@ -212,6 +212,15 @@ export async function createAssignment(
   return a;
 }
 
+/** Change who an assignment is for. Work already submitted is kept. */
+export async function setAssignees(owner: string, id: string, assignees: string[] | "all"): Promise<Assignment | null> {
+  const a = await getItem(id);
+  if (!a || a.owner !== owner.toLowerCase()) return null;
+  a.assignees = assignees === "all" ? "all" : assignees.slice(0, 80);
+  await kvSetJson(itemKey(a.id), a);
+  return a;
+}
+
 export async function getItem(id: string): Promise<Assignment | null> {
   return isItemId(id) ? kvGetJson<Assignment>(itemKey(id)) : null;
 }
