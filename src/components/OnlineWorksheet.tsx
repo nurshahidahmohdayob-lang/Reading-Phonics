@@ -476,27 +476,15 @@ export default function OnlineWorksheet({
       case "meanings":
         return (
           <section key={i} className={CARD}>
-            <Title n={++n} title="Word meanings" say="For each word, tap the letter of its meaning." keys={s.words.map((_, j) => k(j))} />
-            <ul className="mt-3 space-y-1 rounded-2xl bg-zinc-50 p-3 text-base font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-              {s.meanings.map((m) => (
-                <li key={m.letter}>
-                  <b className="mr-2 text-[#0A4F29] dark:text-emerald-300">{m.letter}</b>
-                  {m.text}
-                </li>
-              ))}
-            </ul>
-            {s.words.map((w, j) => (
-              <div key={j} className="mt-3 flex flex-wrap items-center gap-2">
-                <button onClick={() => sayWord(w)} className="min-w-28 text-left text-xl font-extrabold text-zinc-800 dark:text-zinc-100">
-                  {w}
-                </button>
-                {s.meanings.map((m) => (
-                  <button key={m.letter} disabled={checked} onClick={() => set(k(j), m.letter)} className={optClass(answers[k(j)] === m.letter, k(j), m.word === w) + " !px-3.5 !py-1.5"}>
-                    {m.letter}
-                  </button>
-                ))}
-              </div>
-            ))}
+            <Title n={++n} title="Word meanings" say="Drag each meaning into the box next to its word." keys={s.words.map((_, j) => k(j))} />
+            <MeaningsDrag
+              words={s.words}
+              meanings={s.meanings}
+              value={(j) => (typeof answers[k(j)] === "string" ? (answers[k(j)] as string) : null)}
+              onSet={(j, letter) => set(k(j), letter)}
+              checked={checked}
+              result={(j) => result(k(j))}
+            />
           </section>
         );
       case "hunt":
@@ -594,6 +582,134 @@ export default function OnlineWorksheet({
 }
 
 /** The hand-in indicator: a big tick once the work is in. */
+/** Word meanings, side by side: each word with an empty box on the left, the
+    meaning cards on the right. Drag a card into a box, or tap a card and then
+    a box; tap a filled box to send its card back. The answer is the card's
+    letter, as before, so marking is unchanged. */
+function MeaningsDrag({
+  words,
+  meanings,
+  value,
+  onSet,
+  checked,
+  result,
+}: {
+  words: string[];
+  meanings: { letter: string; text: string; word: string }[];
+  value: (j: number) => string | null;
+  onSet: (j: number, letter: string | null) => void;
+  checked: boolean;
+  result: (j: number) => boolean | undefined;
+}) {
+  const [held, setHeld] = useState<string | null>(null);
+  const [drag, setDrag] = useState<{ letter: string; x: number; y: number } | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const placed = words.map((_, j) => value(j));
+  const text = (letter: string | null) => meanings.find((m) => m.letter === letter)?.text ?? "";
+
+  function place(j: number, letter: string) {
+    // a card lives in one box at a time
+    placed.forEach((l, x) => l === letter && x !== j && onSet(x, null));
+    onSet(j, letter);
+    setHeld(null);
+  }
+  const boxAt = (x: number, y: number) => {
+    const el = document.elementFromPoint(x, y)?.closest("[data-drop]") as HTMLElement | null;
+    return el ? Number(el.dataset.drop) : null;
+  };
+
+  function startDrag(e: React.PointerEvent, letter: string) {
+    if (checked || e.button > 0) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let moved = false;
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+      moved = true;
+      setDrag({ letter, x: ev.clientX, y: ev.clientY });
+      setOver(boxAt(ev.clientX, ev.clientY));
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      setDrag(null);
+      setOver(null);
+      if (moved) {
+        const j = boxAt(ev.clientX, ev.clientY);
+        if (j !== null) place(j, letter);
+      } else setHeld((h) => (h === letter ? null : letter));
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }
+
+  const pool = meanings.filter((m) => !placed.includes(m.letter));
+  return (
+    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-3">
+        {words.map((w, j) => {
+          const r = result(j);
+          const l = placed[j];
+          return (
+            <div key={j} className="flex flex-col gap-1.5">
+              <button onClick={() => sayWord(w)} className="w-fit text-xl font-extrabold text-zinc-800 dark:text-zinc-100">
+                🔊 {w}
+              </button>
+              <button
+                data-drop={j}
+                disabled={checked}
+                onClick={() => (held ? place(j, held) : l ? onSet(j, null) : undefined)}
+                className={`min-h-14 rounded-2xl border-4 px-3 py-2 text-left text-base font-bold transition-all ${
+                  r === true
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-800"
+                    : r === false
+                      ? "border-rose-400 bg-rose-50 text-rose-700"
+                      : over === j
+                        ? "scale-[1.02] border-sky-500 bg-sky-50"
+                        : l
+                          ? "border-sky-400 bg-sky-50 text-sky-900"
+                          : held
+                            ? "border-dashed border-sky-400 bg-white text-zinc-400"
+                            : "border-dashed border-zinc-300 bg-white text-zinc-400"
+                }`}
+              >
+                {l ? text(l) : held ? "Tap to put it here" : "Drop the meaning here"}
+              </button>
+              {checked && r === false && <p className="text-sm font-bold text-emerald-700">It means: {meanings.find((m) => m.word === w)?.text}</p>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-col gap-2 self-start rounded-2xl bg-[repeating-linear-gradient(45deg,#f8fafc,#f8fafc_10px,#f1f5f9_10px,#f1f5f9_20px)] p-3 dark:bg-zinc-800">
+        <p className="text-sm font-bold text-zinc-500 dark:text-zinc-300">✋ Drag a meaning to its word (or tap it, then tap the box)</p>
+        {pool.map((m) => (
+          <button
+            key={m.letter}
+            disabled={checked}
+            onPointerDown={(e) => startDrag(e, m.letter)}
+            className={`touch-none select-none rounded-2xl border-4 px-4 py-3 text-left text-base font-bold shadow-sm transition-all ${
+              held === m.letter ? "scale-105 border-sky-500 bg-sky-500 text-white" : "cursor-grab border-amber-300 bg-white text-zinc-800 hover:-translate-y-0.5"
+            } ${drag?.letter === m.letter ? "opacity-40" : ""}`}
+          >
+            {m.text}
+          </button>
+        ))}
+        {pool.length === 0 && !checked && <p className="py-2 text-center text-sm font-bold text-zinc-400">All placed! Tap a box to take a meaning back.</p>}
+      </div>
+      {drag && (
+        <div
+          className="pointer-events-none fixed z-50 max-w-xs -translate-x-1/2 -translate-y-1/2 -rotate-3 rounded-2xl border-4 border-sky-500 bg-white px-4 py-3 text-base font-bold text-zinc-800 shadow-2xl"
+          style={{ left: drag.x, top: drag.y }}
+        >
+          {text(drag.letter)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SubmitBadge({ state, error, onRetry }: { state: "no" | "sending" | "sent"; error: string; onRetry: () => void }) {
   if (state === "sent") {
     return (

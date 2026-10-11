@@ -8,6 +8,7 @@
      put in order             drag the events into numbered slots
      fill the gap             drag the missing word into the sentence
      find it                  tap the word in the story
+     build the word           a picture; drag its sounds into the boxes
      write / draw             a writing box / a drawing pad
 
    Every drag can also be done by tapping (tap a card, then where it goes),
@@ -124,6 +125,7 @@ canvas{display:block;width:100%;height:260px;background:#fff;border:3px dashed #
 .tiles .opt:hover{border:0;transform:translateY(-3px)}
 .tiles .opt[aria-pressed=true]{background:var(--tc);outline:4px solid var(--ink);outline-offset:2px;transform:scale(1.03)}
 .tiles.chosen .opt[aria-pressed=false]{opacity:.5}
+.tiles.short .opt{flex:0 1 110px;justify-content:center;font-size:30px}
 .pool{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-radius:16px;min-height:60px;background:repeating-linear-gradient(45deg,#faf8ff,#faf8ff 10px,#f3effd 10px,#f3effd 20px);border:2px dashed #ddd6f3}
 .pool:empty:after{content:"All placed! Tap a box to take a card back.";color:var(--soft);font-weight:700;font-size:14px;padding:8px}
 .chip{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;font:inherit;font-weight:800;font-size:${young ? 19 : 16}px;padding:9px 14px;border-radius:14px;background:#fff;border:3px solid var(--hue);color:var(--ink);box-shadow:0 4px 0 color-mix(in srgb,var(--hue) 45%,#fff);transition:transform .12s}
@@ -149,6 +151,12 @@ input.drop.inline{display:inline-block;flex:none;width:170px;text-align:center;m
 .w:hover{background:#fff1b8}.w.sel{background:#ffd21f;box-shadow:0 0 0 3px #f59e0b;font-weight:800}
 .found{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:800}
 .found input{flex:1;min-width:160px}
+.spell{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.spell .pic{font-size:72px;line-height:1;filter:drop-shadow(0 4px 4px rgba(0,0,0,.15))}
+.spell .boxes{display:flex;gap:8px}
+input.drop.sound{flex:none;width:64px;height:64px;min-height:0;padding:0;text-align:center;font-size:30px;border-radius:16px}
+.chip.chip-l{font-size:26px;min-width:56px;text-align:center}
+.slotrow label.pic{flex:none;font-size:46px;line-height:1;width:70px;text-align:center}
 @media (max-width:520px){.big{font-size:40px}.story{padding:16px}.q{padding:16px 14px}}
 </style>
 </head>
@@ -170,7 +178,7 @@ input.drop.inline{display:inline-block;flex:none;width:170px;text-align:center;m
 (function(){
 var WS=${data};
 var HUES=["#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#f43f5e","#14b8a6","#6366f1","#f97316","#0ea5e9"];
-var KIND={choose:"🎯 Choose",truefalse:"✅ True or false",gap:"🧩 Drag the missing word",order:"🔢 Drag into order",match:"🔗 Drag to match",find:"🔍 Find it in the story",write:"✏️ Write",draw:"🎨 Draw"};
+var KIND={spell:"🔤 Build the word",choose:"🎯 Choose",truefalse:"✅ True or false",gap:"🧩 Drag the missing word",order:"🔢 Drag into order",match:"🔗 Drag to match",find:"🔍 Find it in the story",write:"✏️ Write",draw:"🎨 Draw"};
 var TILE=["#ef4444","#3b82f6","#f59e0b","#10b981","#8b5cf6","#ec4899"];
 var canSpeak="speechSynthesis" in window;
 function say(t){if(!canSpeak)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t.replace(/[\\u{1F300}-\\u{1FAFF}\\u2600-\\u27BF]/gu,""));u.lang="en-GB";u.rate=.9;speechSynthesis.speak(u);}
@@ -229,10 +237,17 @@ WS.questions.forEach(function(Q,i){
 
  function choices(labels,answer,pics,tf){
   var box=el("div",{class:"opts"+(pics?" pics":" tiles")});var picked=-1;var btns=[];
+  // mix the choices so the answer isn't always in the same place (not yes/no,
+  // true/false or numbers, which read best in their usual order)
+  if(!tf&&!/^(👍 Yes)$/.test(labels[0])&&!labels.every(function(l){return /^\\d+$/.test(l)})){
+   var order=shuffled(labels.map(function(_,k){return k}));answer=order.indexOf(answer);labels=order.map(function(k){return labels[k]});}
+  // single letters or sounds ("o", "sh") get no A/B/C badge, so the badge isn't mistaken for an answer
+  var short=!tf&&!pics&&labels.every(function(l){return l.length<=3});
+  if(short)box.classList.add("short");
   labels.forEach(function(lab,k){
    var inner;
    if(pics){var m=lab.match(/^(\\S+)\\s+(.*)$/);inner=[el("span",{class:"e",text:m?m[1]:""}),el("span",{text:m?m[2]:lab})];}
-   else inner=[el("i",{text:tf?(k===0?"✔":"✘"):"ABCDEF"[k]}),el("span",{text:lab})];
+   else inner=short?[el("span",{text:lab})]:[el("i",{text:tf?(k===0?"✔":"✘"):"ABCDEF"[k]}),el("span",{text:lab})];
    var b=el("button",{class:"opt",type:"button","aria-pressed":"false",style:"--tc:"+(tf?(k===0?"#16a34a":"#e11d48"):TILE[k%TILE.length]),onclick:function(){picked=k;box.classList.add("chosen");btns.forEach(function(x,j){x.setAttribute("aria-pressed",String(j===k))});progress();}},inner);
    btns.push(b);box.appendChild(b);});
   card.appendChild(box);
@@ -256,9 +271,18 @@ WS.questions.forEach(function(Q,i){
    oslots.forEach(function(x){var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(!r)ok=false;});return ok;};
   card._filled=function(){return oslots.every(function(x){return x.input.value})};
  }
+ else if(Q.t==="spell"){
+  var sslots=Q.sounds.map(function(x,k){var id="s"+i+"_"+k;return{input:el("input",{class:"drop sound",id:id,readonly:"","aria-label":"Sound "+(k+1)+" of "+Q.word}),want:x};});
+  var row=el("div",{class:"spell"},[el("span",{class:"pic","aria-hidden":"true",text:Q.pic}),el("div",{class:"boxes"},sslots.map(function(x){return x.input})),canSpeak?el("button",{class:"small",type:"button",text:"🔊 Hear the word",onclick:function(){say(Q.word)}}):null]);
+  board(card,sslots,shuffled(Q.sounds.concat(Q.extra||[])),false,"Drag the sounds into the boxes to build the word.",row);
+  card.querySelectorAll(".pool .chip").forEach(function(c){c.classList.add("chip-l")});
+  check=function(){var all=true;sslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)all=false;});if(!all)return null;
+   var ok=true;sslots.forEach(function(x){var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(!r)ok=false;});return ok;};
+  card._filled=function(){return sslots.every(function(x){return x.input.value})};
+ }
  else if(Q.t==="match"){
   var reuse=!!Q.options;
-  var mslots=Q.pairs.map(function(p,k){var id="m"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop here"});return{row:el("div",{class:"slotrow"},[el("label",{for:id,text:p[0]}),inp]),input:inp,want:p[1]};});
+  var mslots=Q.pairs.map(function(p,k){var id="m"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop here"});var isPic=/^\\p{Extended_Pictographic}/u.test(p[0])&&p[0].length<=4;return{row:el("div",{class:"slotrow"},[el("label",{for:id,class:isPic?"pic":"",text:p[0]}),inp]),input:inp,want:p[1]};});
   var ml=el("div",{class:"slots"});mslots.forEach(function(x){ml.appendChild(x.row)});
   board(card,mslots,reuse?Q.options:shuffled(Q.pairs.map(function(p){return p[1]})),reuse,reuse?"Drag a label onto each one (you can use each label more than once).":"Drag each card onto the word it matches.",ml);
   check=function(){var got=0,any=false;mslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)return;any=true;var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(r)got++;});return any?{got:got,of:mslots.length}:null;};

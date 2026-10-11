@@ -12,11 +12,14 @@
      Year 6  inference across the passage, devices, viewpoint, a written
              answer explained with evidence from the text
 
-   Each year has four (three more in app/yearWorksheetsMore.ts).
+   Each year has four. Year 1 and 2 (kept easy, Year 1 mostly phonics) are in
+   app/yearWorksheetsEarly.ts; Years 3 to 6 are here and in
+   app/yearWorksheetsMore.ts.
    lib/yearWorksheetHtml.ts turns one into a self-contained interactive page,
    which the teacher sets as an assignment (tabs/Assignments.tsx). */
 
 import { MORE_WORKSHEETS } from "@/app/yearWorksheetsMore";
+import { EARLY_WORKSHEETS } from "@/app/yearWorksheetsEarly";
 
 export type WorksheetQuestion =
   /** Tap one answer. pics: the options are big picture tiles. */
@@ -34,7 +37,10 @@ export type WorksheetQuestion =
   /** A written answer, read by the teacher (not marked). */
   | { t: "write"; q: string; hint?: string; lines?: number }
   /** A drawing, seen by the teacher (not marked). */
-  | { t: "draw"; q: string };
+  | { t: "draw"; q: string }
+  /** Build a word from its sounds: a picture, then drag the sounds into the
+      boxes. sounds: the word's sounds in order ("sh", "i", "p"); extra: decoys. */
+  | { t: "spell"; q: string; pic: string; word: string; sounds: string[]; extra?: string[] };
 
 export type YearWorksheet = {
   /** The roster key of the year it's written for, e.g. "y1". */
@@ -52,70 +58,6 @@ export type YearWorksheet = {
 };
 
 const FIRST_WORKSHEETS: YearWorksheet[] = [
-  {
-    key: "y1",
-    year: "Year 1",
-    title: "Pip and the Magic Hat",
-    emoji: "🎩",
-    focus: "Reading simple sentences · picture clues · yes or no · order · rhyme",
-    minutes: 15,
-    colours: ["#FF75B5", "#FFD21F"],
-    passage: {
-      title: "Pip and the Magic Hat",
-      paras: [
-        "Pip the pup had a red hat. One day, he got in the hat and sat on a big log.",
-        "“Hop, hop, hop!” said Pip. Up, up, up went the hat! It went past a tree and a nest.",
-        "At the top, Pip met a pink bird. The bird had a gold egg. Then the hat went down, down, down, and Pip was back on the log. He was a glad pup!",
-      ],
-    },
-    questions: [
-      { t: "choose", q: "What colour was Pip's hat?", options: ["🔴 red", "🔵 blue", "🟢 green"], answer: 0, pics: true },
-      { t: "choose", q: "What is Pip?", options: ["🐱 a cat", "🐶 a pup", "🐸 a frog"], answer: 1, pics: true },
-      { t: "truefalse", q: "Pip sat on a big log.", answer: true, yesNo: true },
-      { t: "truefalse", q: "The bird was blue.", answer: false, yesNo: true },
-      { t: "gap", before: "The bird had a gold", after: ".", options: ["hat", "egg", "log"], answer: 1 },
-      { t: "order", q: "Tap what happened, in order.", items: ["Pip got in the hat.", "The hat went up, up, up.", "Pip met a pink bird."] },
-      { t: "choose", q: "Which word rhymes with hat?", options: ["cat", "hop", "pup"], answer: 0 },
-      { t: "find", q: "Find the word that tells you how Pip felt at the end.", answers: ["glad"] },
-      { t: "draw", q: "Draw Pip in his magic hat." },
-    ],
-  },
-  {
-    key: "y2",
-    year: "Year 2",
-    title: "The Snowman Who Wished",
-    emoji: "⛄",
-    focus: "Finding facts · true or false · word meanings · why it happened · writing a sentence",
-    minutes: 20,
-    colours: ["#4DB2FF", "#A27DFF"],
-    passage: {
-      title: "The Snowman Who Wished",
-      paras: [
-        "On a frosty morning, Sam built a snowman in the garden and named him Mr Frost. He gave him a carrot nose, two shiny pebbles for eyes and Grandad's old blue scarf.",
-        "That night, the moon shone on the garden, and Mr Frost wiggled his twig arms. “I wish I could see a sunny day,” he whispered to a sleepy robin.",
-        "When the sun rose, the snow began to drip, drip, drip. Sam ran outside and saw that Mr Frost was smaller, but his pebble smile was brighter than ever. Gently, Sam wrapped the scarf round the apple tree. “I will build you again next winter,” he promised.",
-      ],
-    },
-    questions: [
-      { t: "choose", q: "What did Sam use for Mr Frost's nose?", options: ["a pebble", "a carrot", "a twig"], answer: 1 },
-      { t: "truefalse", q: "Mr Frost wore a red scarf.", answer: false },
-      { t: "truefalse", q: "Mr Frost spoke to a robin.", answer: true },
-      { t: "gap", before: "That night, the", after: "shone on the garden.", options: ["sun", "moon", "star"], answer: 1 },
-      {
-        t: "match",
-        q: "Match each word to what it means.",
-        pairs: [
-          ["whispered", "said very quietly"],
-          ["wiggled", "moved from side to side"],
-          ["promised", "said they would really do it"],
-        ],
-      },
-      { t: "choose", q: "Why was Mr Frost smaller in the morning?", options: ["Sam took some snow away.", "The sun began to melt him.", "The robin ate his nose."], answer: 1 },
-      { t: "order", q: "Tap what happened, in order.", items: ["Sam built a snowman.", "Mr Frost made a wish.", "The snow began to drip.", "Sam wrapped the scarf round the tree."] },
-      { t: "find", q: "Find a word in the first part that means “very cold”.", answers: ["frosty"] },
-      { t: "write", q: "What would you wish for if you were Mr Frost? Write one sentence.", hint: "Start with a capital letter and end with a full stop.", lines: 2 },
-    ],
-  },
   {
     key: "y3",
     year: "Year 3",
@@ -304,9 +246,9 @@ const FIRST_WORKSHEETS: YearWorksheet[] = [
   },
 ];
 
-/** Every worksheet, four for each year (more in app/yearWorksheetsMore.ts),
-    in year order. */
-export const YEAR_WORKSHEETS: YearWorksheet[] = [...FIRST_WORKSHEETS, ...MORE_WORKSHEETS].sort((a, b) => a.key.localeCompare(b.key));
+/** Every worksheet, four for each year, in year order: Year 1 and Year 2 in
+    app/yearWorksheetsEarly.ts, the rest here and in app/yearWorksheetsMore.ts. */
+export const YEAR_WORKSHEETS: YearWorksheet[] = [...EARLY_WORKSHEETS, ...FIRST_WORKSHEETS, ...MORE_WORKSHEETS].sort((a, b) => a.key.localeCompare(b.key));
 
 /** The worksheets written for one year, e.g. "y2". */
 export const worksheetsFor = (key: string) => YEAR_WORKSHEETS.filter((w) => w.key === key);
