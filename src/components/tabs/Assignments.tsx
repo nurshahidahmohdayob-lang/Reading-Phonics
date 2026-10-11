@@ -23,6 +23,8 @@ import { createPortal } from "react-dom";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
 import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
+import { YEAR_WORKSHEETS, type YearWorksheet } from "@/app/yearWorksheets";
+import { yearWorksheetHtml } from "@/lib/yearWorksheetHtml";
 
 type Kind = "html" | "link";
 type Item = { id: string; title: string; kind: Kind; url?: string; assignees: string[] | "all"; createdAt: string };
@@ -190,6 +192,20 @@ export default function Assignments() {
             session={cls.sessions[0]}
           />
           {cls.sessions.length > 0 && <SessionPlan names={cls.names} sessions={cls.sessions} plan={cls.plan} />}
+
+          <YearWorksheets
+            yearKey={yearKey}
+            className={group?.year ?? ""}
+            items={cls.items}
+            done={cls.done}
+            count={cls.names.length}
+            onSet={async (ws) => {
+              const d = await call({ op: "create", yearKey, title: worksheetTitle(ws), kind: "html", html: yearWorksheetHtml(ws), assignees: "all" });
+              if (!d.ok) return d.error ?? "Couldn't set it.";
+              await load();
+              return null;
+            }}
+          />
 
           <details className="mt-10 w-full rounded-[1.6rem] bg-white/60 p-4 dark:bg-zinc-900/60" open={adding || undefined}>
             <summary className="cursor-pointer text-center text-sm font-extrabold text-zinc-500 dark:text-zinc-400">
@@ -1100,5 +1116,108 @@ function Preview({ item, code, onClose }: { item: Item; code: string; onClose: (
         <iframe title={item.title} sandbox={LESSON_SANDBOX} srcDoc={lessonDoc(html)} className="mt-3 h-[70vh] w-full rounded-2xl border-2 border-zinc-100 bg-white" />
       )}
     </Modal>
+  );
+}
+
+/* ---------- Year-group reading worksheets (app/yearWorksheets.ts) ---------- */
+
+const worksheetTitle = (ws: YearWorksheet) => `📝 ${ws.year} worksheet: ${ws.title}`;
+
+/** A card for each year's worksheet, easiest (Year 1) to hardest (Year 6),
+    the class's own year first. Try it to see what children see; Set it and
+    it becomes an assignment for the whole class, marked by itself, with the
+    child's score beside their ✅. */
+function YearWorksheets({
+  yearKey,
+  className,
+  items,
+  done,
+  count,
+  onSet,
+}: {
+  yearKey: string;
+  className: string;
+  items: Item[];
+  done: ClassState["done"];
+  count: number;
+  onSet: (ws: YearWorksheet) => Promise<string | null>;
+}) {
+  const [trying, setTrying] = useState<YearWorksheet | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const sheets = [...YEAR_WORKSHEETS].sort((a, b) => Number(b.key === yearKey) - Number(a.key === yearKey));
+  return (
+    <section className="mt-10 w-full">
+      <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">📝 Year-group reading worksheets</h3>
+      <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        A story and a mix of questions for each year, from Year 1 (easiest) to Year 6. Children tick, match, sort, find and write, then check
+        their own answers. Set one for {className || "the class"} and their score appears beside their ✅.
+      </p>
+      {error && <p className="mt-2 text-center font-bold text-rose-600">{error}</p>}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sheets.map((ws) => {
+          const set = items.find((it) => it.title === worksheetTitle(ws));
+          const submitted = set ? Object.keys(done[set.id] ?? {}).length : 0;
+          const own = ws.key === yearKey;
+          return (
+            <div
+              key={ws.key}
+              className={`relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-md dark:bg-zinc-900 ${own ? "ring-4 ring-amber-300" : "ring-2 ring-white/70"}`}
+            >
+              <div className="relative px-4 pb-3 pt-4 text-white" style={{ background: `linear-gradient(135deg, ${ws.colours[0]}, ${ws.colours[1]})` }}>
+                <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-extrabold text-zinc-700">
+                  {ws.year}
+                  {own && " · this class"}
+                </span>
+                <span aria-hidden className="absolute right-3 top-2 text-4xl drop-shadow">{ws.emoji}</span>
+                <p className="mt-2 pr-10 text-lg font-extrabold leading-tight drop-shadow-sm">{ws.title}</p>
+              </div>
+              <div className="flex flex-1 flex-col gap-2 p-4">
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{ws.focus}</p>
+                <p className="text-xs font-bold text-zinc-400">
+                  {ws.questions.length} questions · about {ws.minutes} min
+                </p>
+                <div className="mt-auto flex flex-wrap gap-2 pt-1">
+                  <button onClick={() => setTrying(ws)} className="rounded-full bg-sky-100 px-3 py-1.5 text-sm font-extrabold text-sky-800 active:scale-95">
+                    👀 Try it
+                  </button>
+                  {set ? (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-extrabold text-emerald-700 ring-2 ring-emerald-200">
+                      ✓ Set · {submitted} / {count} done
+                    </span>
+                  ) : (
+                    <button
+                      disabled={busy !== null}
+                      onClick={async () => {
+                        setBusy(ws.key);
+                        setError("");
+                        const e = await onSet(ws);
+                        if (e) setError(e);
+                        setBusy(null);
+                      }}
+                      className="rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-extrabold text-white shadow active:scale-95 disabled:opacity-60"
+                    >
+                      {busy === ws.key ? "Setting…" : `📮 Set for ${className || "the class"}`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {trying && (
+        <Modal onClose={() => setTrying(null)} wide>
+          <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {trying.year}: {trying.title}</h3>
+          <p className="text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
+          <iframe
+            title={trying.title}
+            sandbox={LESSON_SANDBOX}
+            srcDoc={lessonDoc(yearWorksheetHtml(trying))}
+            className="mt-3 h-[75vh] w-full rounded-2xl border-2 border-zinc-100 bg-white"
+          />
+        </Modal>
+      )}
+    </section>
   );
 }
