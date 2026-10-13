@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { forgetOwner } from "@/lib/owner";
 import { SIGN_IN_NEEDED } from "@/lib/signInNeeded";
+import CarryOver from "./CarryOver";
 
 type Status = "loading" | "out" | "in";
 
@@ -126,6 +127,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         <span className="text-rose-500">Sign out</span>
       </button>
       {children}
+      <CarryOver />
 
       {expired && !reauth && (
         <div className="fixed inset-x-0 top-0 z-[60] flex justify-center px-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
