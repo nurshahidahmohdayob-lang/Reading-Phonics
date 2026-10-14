@@ -671,7 +671,15 @@ export default function AppHome({ family = false }: { family?: boolean }) {
           </h1>
           <div className="justify-self-end">
             {!section ? (
-              !family && (
+              family ? (
+                // Teachers who land on the parents' page: straight to sign-in.
+                <button
+                  onClick={() => (window.location.href = "/?teacher")}
+                  className={`${gameFont.className} candy candy-green`}
+                >
+                  🧑‍🏫 Teacher
+                </button>
+              ) : (
                 <button
                   onClick={() => go("guide")}
                   className={`${gameFont.className} candy candy-green`}

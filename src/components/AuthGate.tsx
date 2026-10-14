@@ -186,9 +186,12 @@ function SignIn({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // First, who's here: parents go straight to the parents' page (no sign-in);
-  // teachers get the sign-in form. Signing in again over the app skips this.
-  const [who, setWho] = useState<"choose" | "teacher">(
-    onCancel ? "teacher" : "choose",
+  // teachers get the sign-in form. Signing in again over the app skips this,
+  // and so does the Teacher button on the parents' page (/?teacher).
+  const [who, setWho] = useState<"choose" | "teacher">(() =>
+    onCancel || new URLSearchParams(location.search).has("teacher")
+      ? "teacher"
+      : "choose",
   );
 
   async function submit(e: React.FormEvent) {

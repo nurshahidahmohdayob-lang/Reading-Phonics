@@ -6,7 +6,7 @@
    The photo's paper is removed in the browser (lib/cutout.ts), leaving the
    drawing on a transparent background. Saved drawings (lib/drawingStore.ts,
    on this device) are then cut out of card and stood up in a real 3D scene
-   (Stage3D): they roam the jungle floor, turn to face where they're going,
+   (Stage3D): they roam the floor of the chosen place, turn to face where they're going,
    show their own edge as they turn, and cast a shadow on the ground. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +45,25 @@ type Actor = {
   move: Move;
 };
 
+/** The places a drawing can be put in: looping films in public/video. The
+    jungle was filmed; the others are rendered by blender/backdrops.py. */
+const BACKDROPS = [
+  { id: "jungle", label: "🌴 Jungle", place: "the jungle" },
+  { id: "market", label: "🛒 Market", place: "the market" },
+  { id: "ocean", label: "🌊 Ocean", place: "the ocean" },
+  { id: "space", label: "🚀 Space", place: "space" },
+] as const;
+type BackdropId = (typeof BACKDROPS)[number]["id"];
+const BACKDROP_KEY = "phonics.3d.backdrop";
+
+function savedBackdrop(): BackdropId {
+  try {
+    const v = localStorage.getItem(BACKDROP_KEY);
+    if (BACKDROPS.some((b) => b.id === v)) return v as BackdropId;
+  } catch {}
+  return "jungle";
+}
+
 /** `family`: the parents' page — no "Scan with my phone" (pairing a phone to
     a class screen needs a teacher's sign-in); the camera button still works. */
 export default function ThreeD({ family = false }: { family?: boolean }) {
@@ -68,6 +87,15 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   const [actors, setActors] = useState<Actor[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [playing, setPlaying] = useState(true);
+  // Which place the stage shows; remembered on this device.
+  const [backdrop, setBackdrop] = useState<BackdropId>(savedBackdrop);
+  const place = BACKDROPS.find((b) => b.id === backdrop)!.place;
+  function pickBackdrop(id: BackdropId) {
+    setBackdrop(id);
+    try {
+      localStorage.setItem(BACKDROP_KEY, id);
+    } catch {}
+  }
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -289,7 +317,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
       {justAdded && (
         <div className="mt-3 flex w-full max-w-md flex-wrap items-center justify-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
           <span className="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">
-            ✓ It&apos;s in the jungle
+            ✓ It&apos;s in {place}
           </span>
           <input
             value={name}
@@ -319,12 +347,30 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
         </div>
       )}
 
+      {/* Where the stage is */}
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        {BACKDROPS.map((b) => (
+          <button
+            key={b.id}
+            onClick={() => pickBackdrop(b.id)}
+            aria-pressed={backdrop === b.id}
+            className={`rounded-full px-4 py-2 text-sm font-extrabold shadow-sm transition-all active:scale-95 ${
+              backdrop === b.id
+                ? "bg-[#0A4F29] text-white ring-2 ring-[#FFD23A]"
+                : "bg-white text-zinc-600 ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+            }`}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+
       {/* The stage */}
       <div
-        className="relative mt-5 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
+        className="relative mt-3 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
         style={{ aspectRatio: "16 / 9" }}
       >
-        <Backdrop />
+        <Backdrop id={backdrop} />
 
         <Stage3D
           actors={stageActors}
@@ -454,24 +500,25 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   );
 }
 
-/** What the drawings stand in front of: a film of a jungle path, trees and
-    leaves stirring at the sides and the path itself left clear for the
-    drawings to stand on. It loops quietly behind the stage and takes no taps
+/** What the drawings stand in front of: a film of a place (a jungle path, a
+    market street, the sea floor, the moon), scenery stirring at the sides and
+    the middle left clear for the drawings to stand on. It loops quietly behind the stage and takes no taps
     — the drawings on top do. Muted and inline, so it plays on its own on a
     phone as well as the class screen. */
-function Backdrop() {
+function Backdrop({ id }: { id: BackdropId }) {
   return (
     <video
+      key={id}
       aria-hidden
       autoPlay
       muted
       loop
       playsInline
       preload="auto"
-      poster="/video/jungle-poster.jpg"
+      poster={`/video/${id}-poster.jpg`}
       className="pointer-events-none absolute inset-0 h-full w-full object-cover"
     >
-      <source src="/video/jungle.mp4" type="video/mp4" />
+      <source src={`/video/${id}.mp4`} type="video/mp4" />
     </video>
   );
 }
