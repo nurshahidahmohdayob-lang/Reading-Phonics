@@ -46,10 +46,11 @@ type Actor = {
 };
 
 /** The places a drawing can be put in: looping films in public/video. The
-    jungle was filmed; the others are rendered by blender/backdrops.py. */
+    jungle, meadow and ocean are films; space is rendered by
+    blender/backdrops.py. */
 const BACKDROPS = [
   { id: "jungle", label: "🌴 Jungle", place: "the jungle" },
-  { id: "market", label: "🛒 Market", place: "the market" },
+  { id: "meadow", label: "🌳 Meadow", place: "the meadow" },
   { id: "ocean", label: "🌊 Ocean", place: "the ocean" },
   { id: "space", label: "🚀 Space", place: "space" },
 ] as const;
@@ -501,7 +502,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
 }
 
 /** What the drawings stand in front of: a film of a place (a jungle path, a
-    market street, the sea floor, the moon), scenery stirring at the sides and
+    meadow, the sea floor, the moon), scenery stirring at the sides and
     the middle left clear for the drawings to stand on. It loops quietly behind the stage and takes no taps
     — the drawings on top do. Muted and inline, so it plays on its own on a
     phone as well as the class screen. */
