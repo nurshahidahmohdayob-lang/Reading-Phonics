@@ -15,10 +15,16 @@ const gameFont = Fredoka({ subsets: ["latin"], weight: ["600", "700"], display: 
 
 export default function PlayPage() {
   const [id, setId] = useState<string | null>(null);
+  // Opened from the parents' page: Home goes back there, not to the
+  // teachers' sign-in.
+  const [home, setHome] = useState("/");
 
   useEffect(() => {
     const read = () => setId(window.location.hash.replace(/^#/, "") || null);
-    const frame = requestAnimationFrame(read);
+    const frame = requestAnimationFrame(() => {
+      read();
+      if (new URLSearchParams(window.location.search).get("from") === "parents") setHome("/parents");
+    });
     window.addEventListener("hashchange", read);
     return () => {
       cancelAnimationFrame(frame);
@@ -34,7 +40,7 @@ export default function PlayPage() {
       <div className="relative z-10 mx-auto max-w-4xl">
         {/* the wooden sign along the top, with the way home and back */}
         <header className="game-header relative mb-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[1.6rem] px-3 py-3 sm:px-5">
-          <Link href="/" className={`${gameFont.className} candy candy-gold justify-self-start`}>
+          <Link href={home} className={`${gameFont.className} candy candy-gold justify-self-start`}>
             🏠 Home
           </Link>
           <h1 className={`${gameFont.className} game-title justify-self-center whitespace-nowrap text-center leading-none`}>Interactive Stories</h1>

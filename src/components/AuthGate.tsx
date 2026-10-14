@@ -26,6 +26,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   // Nor the class activities page, which a class code opens (lib/assignments),
   // nor the interactive stories, which hold nothing but the stories, nor a
   // shared colouring page, whose code only lets a child send a picture in.
+  // Nor the parents' page, which has only the children's practice sections.
   const isPublic =
     !!pathname &&
     (pathname.startsWith("/report") ||
@@ -33,7 +34,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       pathname.startsWith("/worksheet") ||
       pathname.startsWith("/class") ||
       pathname.startsWith("/play") ||
-      pathname.startsWith("/colour"));
+      pathname.startsWith("/colour") ||
+      pathname.startsWith("/parents"));
 
   useEffect(() => {
     let alive = true;

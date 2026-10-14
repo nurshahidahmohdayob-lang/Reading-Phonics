@@ -12,9 +12,20 @@ import { chime } from "@/lib/speak";
 
 const SIZE = 800;
 const COLOURS = [
-  "#ef4444", "#f97316", "#facc15", "#22c55e", "#15803d", "#38bdf8",
-  "#2563eb", "#a855f7", "#ec4899", "#a16207", "#fcd9b6", "#9ca3af",
-  "#111827", "#ffffff",
+  "#ef4444",
+  "#f97316",
+  "#facc15",
+  "#22c55e",
+  "#15803d",
+  "#38bdf8",
+  "#2563eb",
+  "#a855f7",
+  "#ec4899",
+  "#a16207",
+  "#fcd9b6",
+  "#9ca3af",
+  "#111827",
+  "#ffffff",
 ];
 
 /** Brush sizes on the 800-pixel page. */
@@ -29,7 +40,9 @@ const SIZES = [
     development. */
 const PUBLIC_ORIGIN = "https://readingpals.vercel.app";
 function siteOrigin(): string {
-  return location.hostname.endsWith(".vercel.app") ? PUBLIC_ORIGIN : location.origin;
+  return location.hostname.endsWith(".vercel.app")
+    ? PUBLIC_ORIGIN
+    : location.origin;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -82,7 +95,9 @@ async function drawOutlines(ctx: CanvasRenderingContext2D, codes: string[]) {
   ctx.stroke();
 
   const [main, ...rest] = codes;
-  const imgs = await Promise.all(codes.map((c) => loadImage(`/colouring/${c}.svg`)));
+  const imgs = await Promise.all(
+    codes.map((c) => loadImage(`/colouring/${c}.svg`)),
+  );
   // OpenMoji art sits on a 72-unit grid with a little margin; scale so the
   // 2-unit lines come out bold and easy to see.
   if (imgs[0] && main) ctx.drawImage(imgs[0], 190, 90, 420, 420);
@@ -101,12 +116,16 @@ export default function StoryColouring({
   story,
   onClose,
   shareCode,
+  family,
 }: {
   story: Story;
   /** Back to the story list; left out on a shared link, which has nowhere to go back to. */
   onClose?: () => void;
   /** Set on a shared link (/colour): sends the picture to that teacher without a sign-in. */
   shareCode?: string;
+  /** The parents' page (/parents): nothing is sent anywhere — the picture is
+      saved to the device instead, so no name is asked for. */
+  family?: boolean;
 }) {
   const paintRef = useRef<HTMLCanvasElement>(null);
   const lineRef = useRef<HTMLCanvasElement>(null);
@@ -119,8 +138,12 @@ export default function StoryColouring({
   // The child types their name before colouring; it goes with the picture.
   const [name, setName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
-  const [send, setSend] = useState<"idle" | "sending" | "sent" | "error" | "off">("idle");
-  const [link, setLink] = useState<{ url: string; typed: string; copied: boolean } | "loading" | "error" | null>(null);
+  const [send, setSend] = useState<
+    "idle" | "sending" | "sent" | "error" | "off"
+  >("idle");
+  const [link, setLink] = useState<
+    { url: string; typed: string; copied: boolean } | "loading" | "error" | null
+  >(null);
 
   const codes = COLOURING_SCENES[story.id] ?? [];
 
@@ -171,7 +194,10 @@ export default function StoryColouring({
     };
   }
 
-  function stroke(from: { x: number; y: number }, to: { x: number; y: number }) {
+  function stroke(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ) {
     const ctx = paintRef.current?.getContext("2d");
     if (!ctx) return;
     ctx.strokeStyle = colour;
@@ -257,7 +283,9 @@ export default function StoryColouring({
       if (!d.ok) return setLink("error");
       // /color is the easy one to type — it now opens this page. The long
       // one keeps this exact story even after another link moves /color on.
-      const url = d.easy ? `${siteOrigin()}/color` : `${siteOrigin()}/colour#${d.code}-${story.id}`;
+      const url = d.easy
+        ? `${siteOrigin()}/color`
+        : `${siteOrigin()}/colour#${d.code}-${story.id}`;
       const typed = url.replace(/^https?:\/\//, "");
       let copied = false;
       try {
@@ -286,7 +314,7 @@ export default function StoryColouring({
         <h2 className="text-center text-xl font-extrabold text-amber-900 dark:text-amber-100">
           🖍️ Colour: {story.title}
         </h2>
-        {shareCode ? (
+        {shareCode || family ? (
           <span className="w-20" />
         ) : (
           <button
@@ -299,7 +327,11 @@ export default function StoryColouring({
       </div>
       {link && (
         <div className="mt-3 w-full max-w-2xl rounded-2xl bg-white p-4 shadow-sm ring-2 ring-brand-200 dark:bg-zinc-900">
-          {link === "loading" && <p className="text-center font-semibold text-zinc-500">Making the link…</p>}
+          {link === "loading" && (
+            <p className="text-center font-semibold text-zinc-500">
+              Making the link…
+            </p>
+          )}
           {link === "error" && (
             <p className="text-center font-semibold text-rose-600">
               Couldn&apos;t make the link. Check the internet and try again.
@@ -308,9 +340,10 @@ export default function StoryColouring({
           {typeof link === "object" && (
             <>
               <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-                {link.copied ? "✅ Copied! " : ""}Students go to this link, type their name, colour,
-                and tap Submit — it comes to your 🖼️ Colouring sent in. It opens this picture
-                until you make a link for a different one.
+                {link.copied ? "✅ Copied! " : ""}Students go to this link, type
+                their name, colour, and tap Submit — it comes to your 🖼️
+                Colouring sent in. It opens this picture until you make a link
+                for a different one.
               </p>
               <div className="mt-2 flex gap-2">
                 <input
@@ -346,8 +379,8 @@ export default function StoryColouring({
       )}
       {name && (
         <p className="mt-1 text-center text-sm font-semibold text-zinc-500">
-          🧒 <span className="font-extrabold text-amber-800">{name}</span> · pick a colour and a
-          brush size, then draw with your finger 🖌️
+          🧒 <span className="font-extrabold text-amber-800">{name}</span> ·
+          pick a colour and a brush size, then draw with your finger 🖌️
         </p>
       )}
 
@@ -360,7 +393,12 @@ export default function StoryColouring({
           onPointerUp={up}
           onPointerCancel={up}
         >
-          <canvas ref={paintRef} width={SIZE} height={SIZE} className="absolute inset-0 h-full w-full" />
+          <canvas
+            ref={paintRef}
+            width={SIZE}
+            height={SIZE}
+            className="absolute inset-0 h-full w-full"
+          />
           <canvas
             ref={lineRef}
             width={SIZE}
@@ -373,18 +411,22 @@ export default function StoryColouring({
             </div>
           )}
           {/* Name first, then colour */}
-          {!name && (
+          {!name && !family && (
             <form
               onPointerDown={(e) => e.stopPropagation()}
               onSubmit={(e) => {
                 e.preventDefault();
-                if (nameDraft.trim()) setName(nameDraft.trim().replace(/\s+/g, " "));
+                if (nameDraft.trim())
+                  setName(nameDraft.trim().replace(/\s+/g, " "));
               }}
               className="absolute inset-0 grid place-items-center bg-white/80 p-6 backdrop-blur-sm"
             >
               <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-xl ring-4 ring-amber-200">
                 <span className="text-4xl">👋</span>
-                <label htmlFor="colour-name" className="text-lg font-extrabold text-amber-900">
+                <label
+                  htmlFor="colour-name"
+                  className="text-lg font-extrabold text-amber-900"
+                >
                   What is your name?
                 </label>
                 <input
@@ -415,8 +457,12 @@ export default function StoryColouring({
             >
               <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-xl ring-4 ring-green-300">
                 <span className="text-5xl">🎉</span>
-                <p className="text-xl font-extrabold text-green-700">Sent to your teacher!</p>
-                <p className="font-semibold text-zinc-500">Well done, {name}.</p>
+                <p className="text-xl font-extrabold text-green-700">
+                  Sent to your teacher!
+                </p>
+                <p className="font-semibold text-zinc-500">
+                  Well done, {name}.
+                </p>
                 {onClose && (
                   <button
                     onClick={onClose}
@@ -440,7 +486,9 @@ export default function StoryColouring({
                 aria-label={`Colour ${c}`}
                 style={{ background: c }}
                 className={`aspect-square w-full rounded-full ring-2 active:scale-90 ${
-                  colour === c ? "scale-110 ring-4 ring-amber-500" : "ring-zinc-200"
+                  colour === c
+                    ? "scale-110 ring-4 ring-amber-500"
+                    : "ring-zinc-200"
                 }`}
               />
             ))}
@@ -460,7 +508,11 @@ export default function StoryColouring({
                 <span className="grid h-8 place-items-center">
                   <span
                     className="block rounded-full"
-                    style={{ width: sz.px * 0.7, height: sz.px * 0.7, background: colour }}
+                    style={{
+                      width: sz.px * 0.7,
+                      height: sz.px * 0.7,
+                      background: colour,
+                    }}
                   />
                 </span>
                 {sz.label}
@@ -487,13 +539,32 @@ export default function StoryColouring({
             </button>
           </div>
 
-          <button
-            onClick={submit}
-            disabled={!name || !ready || send === "sending" || send === "sent"}
-            className="rounded-2xl bg-green-500 px-3 py-3.5 text-lg font-extrabold text-white shadow-md active:scale-95 disabled:opacity-50"
-          >
-            {send === "sending" ? "Sending…" : "📤 Submit to teacher"}
-          </button>
+          {family ? (
+            <button
+              onClick={() => {
+                const image = picture();
+                if (!image) return;
+                const a = document.createElement("a");
+                a.href = image;
+                a.download = `${story.title}.jpg`.replace(/[^a-z0-9.]+/gi, "-");
+                a.click();
+              }}
+              disabled={!ready}
+              className="rounded-2xl bg-green-500 px-3 py-3.5 text-lg font-extrabold text-white shadow-md active:scale-95 disabled:opacity-50"
+            >
+              💾 Save my picture
+            </button>
+          ) : (
+            <button
+              onClick={submit}
+              disabled={
+                !name || !ready || send === "sending" || send === "sent"
+              }
+              className="rounded-2xl bg-green-500 px-3 py-3.5 text-lg font-extrabold text-white shadow-md active:scale-95 disabled:opacity-50"
+            >
+              {send === "sending" ? "Sending…" : "📤 Submit to teacher"}
+            </button>
+          )}
           {send === "error" && (
             <p className="text-center text-sm font-bold text-rose-600">
               It didn&apos;t send. Check the internet and try again.

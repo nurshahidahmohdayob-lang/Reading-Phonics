@@ -41,7 +41,9 @@ const CARD_STYLES = [
 
 const LEVEL_EMOJI = ["🐣", "🌱", "🦋", "🚀", "🌈", "🏆"];
 
-export default function Stories() {
+/** `family`: the parents' page — no 🖼️ Colouring sent in (that's the
+    teacher's), and colouring saves to the device instead of sending. */
+export default function Stories({ family = false }: { family?: boolean }) {
   const [level, setLevel] = useState<Level | null>(null);
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [colouring, setColouring] = useState<number | null>(null);
@@ -54,6 +56,7 @@ export default function Stories() {
       <StoryColouring
         story={level.stories[colouring]}
         onClose={() => setColouring(null)}
+        family={family}
       />
     );
   }
@@ -76,12 +79,17 @@ export default function Stories() {
         onBack={() => setLevel(null)}
         onPick={setStoryIndex}
         onColour={setColouring}
-        onGallery={() => setGallery(true)}
+        onGallery={family ? undefined : () => setGallery(true)}
       />
     );
   }
 
-  return <LevelGrid onPick={setLevel} onGallery={() => setGallery(true)} />;
+  return (
+    <LevelGrid
+      onPick={setLevel}
+      onGallery={family ? undefined : () => setGallery(true)}
+    />
+  );
 }
 
 /* ---------- Level chooser (Lexile bands) ---------- */
@@ -91,17 +99,19 @@ function LevelGrid({
   onGallery,
 }: {
   onPick: (l: Level) => void;
-  onGallery: () => void;
+  onGallery?: () => void;
 }) {
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
       <div className="flex w-full justify-end">
-        <button
-          onClick={onGallery}
-          className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
-        >
-          🖼️ Colouring sent in
-        </button>
+        {onGallery && (
+          <button
+            onClick={onGallery}
+            className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
+          >
+            🖼️ Colouring sent in
+          </button>
+        )}
       </div>
       <p className="mt-2 text-center text-zinc-500 dark:text-zinc-400">
         Choose your reading level — sorted by Lexile measure.
@@ -153,7 +163,7 @@ function StoryList({
   onBack: () => void;
   onPick: (index: number) => void;
   onColour: (index: number) => void;
-  onGallery: () => void;
+  onGallery?: () => void;
 }) {
   const [page, setPage] = useState(0);
   const pageCount = Math.ceil(level.stories.length / PER_PAGE);
@@ -174,12 +184,14 @@ function StoryList({
         >
           {level.grade} · Age {level.age}
         </span>
-        <button
-          onClick={onGallery}
-          className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
-        >
-          🖼️ Colouring sent in
-        </button>
+        {onGallery && (
+          <button
+            onClick={onGallery}
+            className="ml-auto rounded-full bg-white px-4 py-2 text-sm font-extrabold text-amber-800 shadow-sm ring-2 ring-amber-200 active:scale-95 dark:bg-zinc-800 dark:text-amber-200"
+          >
+            🖼️ Colouring sent in
+          </button>
+        )}
       </div>
 
       <h2 className="mt-6 text-xl font-extrabold">Pick a story 📖</h2>
