@@ -185,6 +185,11 @@ function SignIn({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // First, who's here: parents go straight to the parents' page (no sign-in);
+  // teachers get the sign-in form. Signing in again over the app skips this.
+  const [who, setWho] = useState<"choose" | "teacher">(
+    onCancel ? "teacher" : "choose",
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -226,45 +231,95 @@ function SignIn({
             </span>
           </h1>
           <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            For school staff — please sign in to continue.
+            {who === "choose"
+              ? "Who is using the app?"
+              : "For school staff — please sign in to continue."}
           </p>
         </div>
 
-        <form onSubmit={submit} className="flex w-full flex-col gap-3">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your.name@school email"
-            autoFocus
-            autoComplete="email"
-            className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="staff password"
-            autoComplete="current-password"
-            className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          {error && (
-            <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-2xl bg-violet-600 px-6 py-3 text-lg font-extrabold text-white shadow-lg transition-all active:scale-95 disabled:opacity-60"
-          >
-            {busy ? "Checking…" : "Sign in"}
-          </button>
-        </form>
+        {who === "choose" ? (
+          <div className="flex w-full flex-col gap-3">
+            <a
+              href="/parents"
+              className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-br from-[#FFC27A] to-[#FF9B3D] px-5 py-4 text-left shadow-lg ring-4 ring-white/70 transition-all active:scale-95"
+            >
+              <span className="text-4xl">🏡</span>
+              <span>
+                <span className="block text-xl font-extrabold text-orange-950">
+                  Parent
+                </span>
+                <span className="block text-xs font-bold text-orange-900/80">
+                  No sign-in needed — start learning
+                </span>
+              </span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setWho("teacher")}
+              className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-br from-[#C9B3FF] to-[#A27DFF] px-5 py-4 text-left shadow-lg ring-4 ring-white/70 transition-all active:scale-95"
+            >
+              <span className="text-4xl">🧑‍🏫</span>
+              <span>
+                <span className="block text-xl font-extrabold text-violet-950">
+                  Teacher
+                </span>
+                <span className="block text-xs font-bold text-violet-900/80">
+                  Sign in with your school email
+                </span>
+              </span>
+            </button>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={submit} className="flex w-full flex-col gap-3">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.name@school email"
+                autoFocus
+                autoComplete="email"
+                className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="staff password"
+                autoComplete="current-password"
+                className="w-full rounded-2xl border-4 border-violet-200 bg-white px-4 py-3 text-center font-bold text-zinc-700 shadow-sm outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+              {error && (
+                <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-2xl bg-violet-600 px-6 py-3 text-lg font-extrabold text-white shadow-lg transition-all active:scale-95 disabled:opacity-60"
+              >
+                {busy ? "Checking…" : "Sign in"}
+              </button>
+            </form>
 
-        <p className="text-xs font-semibold text-zinc-400">
-          We check your email against the school staff directory.
-        </p>
+            <p className="text-xs font-semibold text-zinc-400">
+              We check your email against the school staff directory.
+            </p>
+            {!onCancel && (
+              <button
+                type="button"
+                onClick={() => {
+                  setWho("choose");
+                  setError(null);
+                }}
+                className="text-sm font-bold text-zinc-500 underline underline-offset-4"
+              >
+                ← Back
+              </button>
+            )}
+          </>
+        )}
         {onCancel && (
           <button
             type="button"
