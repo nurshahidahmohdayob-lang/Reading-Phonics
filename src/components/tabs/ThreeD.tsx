@@ -6,8 +6,10 @@
    The photo's paper is removed in the browser (lib/cutout.ts), leaving the
    drawing on a transparent background. Saved drawings (lib/drawingStore.ts,
    on this device) are then cut out of card and stood up in a real 3D scene
-   (Stage3D): they roam the floor of the chosen place, turn to face where they're going,
-   show their own edge as they turn, and cast a shadow on the ground. */
+   (Stage3D): they move about the chosen place the way the real thing would —
+   a fish swims, a jellyfish pulses, a bird flies, a frog hops — and cast a
+   shadow on the ground. What a drawing is gets guessed from its name (or
+   from the place: in the ocean things swim), and can be picked by hand. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -19,9 +21,10 @@ import {
   saveDrawing,
   removeDrawing,
   renameDrawing,
+  updateDrawing,
   type Drawing,
 } from "@/lib/drawingStore";
-import type { Actor3D } from "./Stage3D";
+import type { Actor3D, Move3D } from "./Stage3D";
 
 /* three.js is a big library, and only this section needs it — so it's
    fetched when the section opens, not with the rest of the app. */
@@ -30,12 +33,34 @@ const Stage3D = dynamic(() => import("./Stage3D"), {
   loading: () => null,
 });
 
-type Move = "alive" | "still" | "walk" | "float" | "spin" | "jump";
+type Move = Move3D;
 
-/* Walking is the only thing a drawing is asked to do: it lands walking and
-   stays walking, so nobody has to choose. The scene (Stage3D) still knows
-   how to stand, float, spin and hop, should they be offered again. */
-const MOVES: { id: Move; label: string }[] = [{ id: "walk", label: "🚶 Walk" }];
+/** How a drawing can move: each like the real thing (see Stage3D). */
+const MOVES: { id: Move; label: string }[] = [
+  { id: "walk", label: "🚶 Walk" },
+  { id: "swim", label: "🐟 Swim" },
+  { id: "jelly", label: "🪼 Jellyfish" },
+  { id: "fly", label: "🐦 Fly" },
+  { id: "hop", label: "🐸 Hop" },
+  { id: "slither", label: "🐍 Slither" },
+  { id: "float", label: "🚀 Float" },
+];
+const MOVE_IDS = new Set<string>(MOVES.map((m) => m.id));
+
+/* Guessing how a drawing moves from what it's called — in English or Malay.
+   Jellyfish before fish, so "jellyfish" doesn't swim like a fish. */
+const GUESSES: [Move, RegExp][] = [
+  ["jelly", /jelly|obor|ubur/i],
+  ["swim", /fish|shark|whale|dolphin|seahorse|sea horse|eel|turtle|octopus|squid|seal|ikan|jerung|paus|lumba|penyu|sotong|kuda laut/i],
+  ["fly", /bird|butterfly|bee|bat|dragonfly|ladybird|ladybug|owl|eagle|parrot|plane|dragon|fairy|burung|rama|lebah|kelawar|helang|kapal terbang|pepatung/i],
+  ["hop", /frog|toad|rabbit|bunny|kangaroo|grasshopper|katak|arnab|kanggaru|belalang/i],
+  ["slither", /snake|worm|caterpillar|slug|snail|ular|cacing|ulat|siput/i],
+  ["float", /rocket|astronaut|alien|ufo|planet|star|roket|angkasawan|bintang/i],
+];
+function guessMove(name: string): Move | null {
+  for (const [move, re] of GUESSES) if (re.test(name)) return move;
+  return null;
+}
 
 type Actor = {
   /** One drawing can be on the stage more than once. */
@@ -43,6 +68,8 @@ type Actor = {
   drawingId: string;
   scale: number;
   move: Move;
+  /** Drawn facing left. */
+  flip: boolean;
 };
 
 /** The places a drawing can be put in: looping films in public/video. The
@@ -112,7 +139,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
         width: cut.width,
         height: cut.height,
       });
-      addToStage(saved);
+      addToStage(saved, backdrop === "ocean" ? "swim" : backdrop === "space" ? "float" : "walk");
       setJustAdded(saved.id);
       setName("");
     } catch (e) {
@@ -130,11 +157,32 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   async function nameIt() {
     if (!justAdded || !name.trim()) return;
     await renameDrawing(justAdded, name.trim());
+    // "My fish" swims, "Jelly" pulses: unless it's been picked by hand.
+    const guess = guessMove(name);
+    if (guess && !picked.current.has(justAdded)) setMove(justAdded, guess);
     setJustAdded(null);
     setName("");
   }
 
-  function addToStage(d: Drawing) {
+  /** Drawings whose movement was chosen by hand, so a guess won't undo it. */
+  const picked = useRef(new Set<string>());
+
+  /** How a drawing moves, everywhere it is on the stage, kept with it. */
+  function setMove(drawingId: string, move: Move) {
+    setActors((list) =>
+      list.map((a) => (a.drawingId === drawingId ? { ...a, move } : a)),
+    );
+    void updateDrawing(drawingId, { move });
+  }
+
+  function setFlip(drawingId: string, flip: boolean) {
+    setActors((list) =>
+      list.map((a) => (a.drawingId === drawingId ? { ...a, flip } : a)),
+    );
+    void updateDrawing(drawingId, { flip });
+  }
+
+  function addToStage(d: Drawing, fallback: Move = "walk") {
     const key = `${d.id}-${Date.now().toString(36)}`;
     // Pick it straight away, so what it can do is on screen without having
     // to know to tap it first.
@@ -145,8 +193,13 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
         key,
         drawingId: d.id,
         scale: 1,
-        // Walking from the moment it lands, rather than waiting to be told.
-        move: "walk",
+        // Moving from the moment it lands, rather than waiting to be told:
+        // as it moved last time, or as its name suggests.
+        move:
+          d.move && MOVE_IDS.has(d.move)
+            ? (d.move as Move)
+            : (guessMove(d.name) ?? fallback),
+        flip: !!d.flip,
       },
     ]);
   }
@@ -251,7 +304,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
       actors.flatMap((a) => {
         const dataUrl = pictures.get(a.drawingId);
         return dataUrl
-          ? [{ key: a.key, dataUrl, move: a.move, scale: a.scale }]
+          ? [{ key: a.key, dataUrl, move: a.move, scale: a.scale, flip: a.flip }]
           : [];
       }),
     [actors, pictures],
@@ -345,6 +398,33 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
           >
             Skip
           </button>
+          <div className="flex w-full flex-wrap items-center justify-center gap-1.5 pt-1">
+            <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200">
+              How does it move?
+            </span>
+            {MOVES.map((m) => {
+              const on = actors.some(
+                (a) => a.drawingId === justAdded && a.move === m.id,
+              );
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    picked.current.add(justAdded);
+                    setMove(justAdded, m.id);
+                  }}
+                  aria-pressed={on}
+                  className={`rounded-full px-2.5 py-1 text-xs font-extrabold active:scale-95 ${
+                    on
+                      ? "bg-[#0A4F29] text-white"
+                      : "bg-white text-zinc-600 ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-200"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -413,7 +493,10 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
           {MOVES.map((m) => (
             <button
               key={m.id}
-              onClick={() => update(chosen.key, { move: m.id })}
+              onClick={() => {
+                picked.current.add(chosen.drawingId);
+                setMove(chosen.drawingId, m.id);
+              }}
               className={`rounded-full px-3 py-1.5 text-xs font-extrabold active:scale-95 ${
                 chosen.move === m.id
                   ? "bg-brand-600 text-white shadow"
@@ -424,6 +507,15 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
             </button>
           ))}
           <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" />
+          {chosen.move !== "jelly" && (
+            <button
+              onClick={() => setFlip(chosen.drawingId, !chosen.flip)}
+              title="If it's going backwards, turn it round"
+              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+            >
+              ↔️ Turn round
+            </button>
+          )}
           <button
             onClick={() =>
               update(chosen.key, { scale: Math.max(0.3, chosen.scale - 0.15) })

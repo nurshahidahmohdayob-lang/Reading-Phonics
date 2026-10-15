@@ -25,6 +25,11 @@ export type Drawing = {
   width: number;
   height: number;
   createdAt: string;
+  /** How it moves on the 3D stage (a fish swims, a jellyfish pulses…), once
+      chosen or guessed from its name. */
+  move?: string;
+  /** Drawn facing left, so it needs turning round to swim forwards. */
+  flip?: boolean;
 };
 
 const STORE = "drawings";
@@ -88,11 +93,19 @@ export async function saveDrawing(
 }
 
 export async function renameDrawing(id: string, name: string): Promise<void> {
+  await updateDrawing(id, { name });
+}
+
+/** Change what's kept about a drawing (its name, how it moves…). */
+export async function updateDrawing(
+  id: string,
+  patch: Partial<Pick<Drawing, "name" | "move" | "flip">>,
+): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(STORE, "readwrite");
   const store = tx.objectStore(STORE);
   const existing = await done(store.get(id) as IDBRequest<Drawing | undefined>);
-  if (existing) await done(store.put({ ...existing, name }));
+  if (existing) await done(store.put({ ...existing, ...patch }));
   db.close();
   changed();
 }

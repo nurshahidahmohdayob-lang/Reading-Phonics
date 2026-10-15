@@ -265,7 +265,9 @@ export async function buildFlat(dataUrl: string): Promise<Flat> {
       ? texture.image.width / texture.image.height
       : 1;
 
-  const geometry = new THREE.PlaneGeometry(aspect, 1);
+  // Finely divided, so the stage can bend it: a fish's body ripples to its
+  // tail, a jellyfish's bell squeezes and its tentacles trail.
+  const geometry = new THREE.PlaneGeometry(aspect, 1, 32, 20);
   geometry.translate(0, 0.5, 0);
   return { geometry, texture, aspect };
 }
