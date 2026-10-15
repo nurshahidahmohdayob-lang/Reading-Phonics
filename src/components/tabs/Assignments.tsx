@@ -16,7 +16,7 @@
    children finish. Stored in the cloud, filed under the signed-in teacher
    (lib/assignments.ts). */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import qrcode from "qrcode-generator";
 import { ROSTER } from "@/app/roster";
 import { allStudents, useRosterEdits } from "@/lib/rosterStore";
@@ -629,6 +629,7 @@ function SubmissionView({
   onHistory?: () => void;
 }) {
   const [sub, setSub] = useState<Submission | null | undefined>(undefined);
+  const reviewFrame = useRef<HTMLIFrameElement>(null);
   // A built-in worksheet can be shown again exactly as the child did it.
   const sheet = useMemo(
     () =>
@@ -671,6 +672,14 @@ function SubmissionView({
           )}
           {sub && (
             <button
+              onClick={() => reviewFrame.current?.contentWindow?.postMessage({ type: "zera-print" }, "*")}
+              className="rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-[#0A4F29] shadow active:scale-95"
+            >
+              🖨️ Print
+            </button>
+          )}
+          {sub && (
+            <button
               onClick={async () => {
                 if (!confirm(`Clear ${name}'s answers so they can do it again?`)) return;
                 await call({ op: "clear", id: item.id, name });
@@ -686,8 +695,9 @@ function SubmissionView({
           <p className="mt-10 text-center font-bold text-zinc-400">Loading…</p>
         ) : (
           <iframe
+            ref={reviewFrame}
             title={`${name}'s worksheet`}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-modals"
             srcDoc={yearWorksheetHtml(sheet, { name, answers: sub.answers, images: sub.images })}
             className="w-full flex-1 border-0 bg-white"
           />

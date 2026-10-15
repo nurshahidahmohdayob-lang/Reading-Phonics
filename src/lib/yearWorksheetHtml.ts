@@ -178,6 +178,16 @@ input.drop.sound{flex:none;width:64px;height:64px;min-height:0;padding:0;text-al
 .should{display:block;margin-top:4px;font-size:14px;font-weight:800;color:#16a34a}
 .rbanner{display:none;margin:0 0 14px;padding:12px 16px;border-radius:18px;background:#0A4F29;color:#fff;font-weight:800;font-size:17px}
 .review .rbanner{display:block}
+@media print{
+ @page{margin:12mm}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body{background:#fff!important}
+ .wrap{max-width:none;padding:0}
+ .q,.story,.banner{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;animation:none!important}
+ .bar{position:static;box-shadow:none;margin-top:14px}
+ .big{animation:none}
+ textarea{resize:none;overflow:visible}
+}
 @media (max-width:520px){.big{font-size:40px}.story{padding:16px}.q{padding:16px 14px}}
 </style>
 </head>
@@ -373,6 +383,8 @@ document.getElementById("check").addEventListener("click",function(){
 
 /* ---- review: put a child's answers back and mark them ---- */
 if(REVIEW){
+ // the teacher's 🖨️ Print button (outside this frame) asks for a printout
+ window.addEventListener("message",function(e){if(e.data&&e.data.type==="zera-print")window.print();});
  document.body.classList.add("review");
  document.getElementById("rbanner").textContent="👀 "+REVIEW.name+"'s answers, marked. The right answer shows in green wherever theirs was wrong.";
  function sh(x,n){x=String(x==null?"":x).replace(/🔊/g,"").replace(/\\s+/g," ").trim();return x.length>n?x.slice(0,n)+"…":x;}
