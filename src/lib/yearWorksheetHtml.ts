@@ -20,17 +20,31 @@
    access to the app, so it carries everything it needs. Tiles use
    aria-pressed, and every drop box and found word is a labelled read-only
    box, so the collector reads back exactly what the child did; the score is
-   left in window.zeraResult. */
+   left in window.zeraResult.
+
+   Review mode (with `review`): the same page rebuilt from what a child
+   handed in — their answers put back in place, marked as the Check button
+   marks them, with the right answer shown wherever theirs was wrong — for
+   the teacher to look through. Nothing in it can be changed. */
 
 import type { YearWorksheet } from "@/app/yearWorksheets";
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export function yearWorksheetHtml(ws: YearWorksheet): string {
+/** A child's submission, for review mode: the answers the lesson collector
+    read back (lib/lessonFrame.ts), in its order, and any drawings. */
+export type WorksheetReview = {
+  name: string;
+  answers: { label: string; value: string }[];
+  images: string[];
+};
+
+export function yearWorksheetHtml(ws: YearWorksheet, review?: WorksheetReview): string {
   const [c1, c2] = ws.colours;
   // the data goes in a script, so no "<" may close it early
   const data = JSON.stringify(ws).replace(/</g, "\\u003c");
+  const reviewData = JSON.stringify(review ?? null).replace(/</g, "\\u003c");
   const young = ws.key === "y1" || ws.key === "y2";
   return `<!doctype html>
 <html lang="en-GB">
@@ -157,11 +171,19 @@ input.drop.inline{display:inline-block;flex:none;width:170px;text-align:center;m
 input.drop.sound{flex:none;width:64px;height:64px;min-height:0;padding:0;text-align:center;font-size:30px;border-radius:16px}
 .chip.chip-l{font-size:26px;min-width:56px;text-align:center}
 .slotrow label.pic{flex:none;font-size:46px;line-height:1;width:70px;text-align:center}
+.review .pool,.review .hintline,.review .pens,.review .say,.review #check,.review .pbar{display:none!important}
+.review .q,.review .story,.review .name{pointer-events:none}
+.review .opt[data-right="1"]{outline:4px solid #16a34a;outline-offset:2px}
+.review .opt[aria-pressed="true"]{transform:scale(1.03)}
+.should{display:block;margin-top:4px;font-size:14px;font-weight:800;color:#16a34a}
+.rbanner{display:none;margin:0 0 14px;padding:12px 16px;border-radius:18px;background:#0A4F29;color:#fff;font-weight:800;font-size:17px}
+.review .rbanner{display:block}
 @media (max-width:520px){.big{font-size:40px}.story{padding:16px}.q{padding:16px 14px}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="rbanner" id="rbanner"></div>
   <header class="banner">
     <span class="big" aria-hidden="true">${ws.emoji}</span>
     <span class="tag">${esc(ws.year)} · Reading worksheet · about ${ws.minutes} minutes</span>
@@ -177,10 +199,11 @@ input.drop.sound{flex:none;width:64px;height:64px;min-height:0;padding:0;text-al
 <script>
 (function(){
 var WS=${data};
+var REVIEW=${reviewData};
 var HUES=["#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#f43f5e","#14b8a6","#6366f1","#f97316","#0ea5e9"];
 var KIND={spell:"🔤 Build the word",choose:"🎯 Choose",truefalse:"✅ True or false",gap:"🧩 Drag the missing word",order:"🔢 Drag into order",match:"🔗 Drag to match",find:"🔍 Find it in the story",write:"✏️ Write",draw:"🎨 Draw"};
 var TILE=["#ef4444","#3b82f6","#f59e0b","#10b981","#8b5cf6","#ec4899"];
-var canSpeak="speechSynthesis" in window;
+var canSpeak=!REVIEW&&"speechSynthesis" in window;
 function say(t){if(!canSpeak)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t.replace(/[\\u{1F300}-\\u{1FAFF}\\u2600-\\u27BF]/gu,""));u.lang="en-GB";u.rate=.9;speechSynthesis.speak(u);}
 function el(tag,attrs,kids){var e=document.createElement(tag);for(var k in attrs||{}){if(k==="text")e.textContent=attrs[k];else if(k==="html")e.innerHTML=attrs[k];else if(k.slice(0,2)==="on")e.addEventListener(k.slice(2),attrs[k]);else e.setAttribute(k,attrs[k]);}
  (kids||[]).forEach(function(c){if(c)e.appendChild(c)});return e;}
@@ -248,7 +271,7 @@ WS.questions.forEach(function(Q,i){
    var inner;
    if(pics){var m=lab.match(/^(\\S+)\\s+(.*)$/);inner=[el("span",{class:"e",text:m?m[1]:""}),el("span",{text:m?m[2]:lab})];}
    else inner=short?[el("span",{text:lab})]:[el("i",{text:tf?(k===0?"✔":"✘"):"ABCDEF"[k]}),el("span",{text:lab})];
-   var b=el("button",{class:"opt",type:"button","aria-pressed":"false",style:"--tc:"+(tf?(k===0?"#16a34a":"#e11d48"):TILE[k%TILE.length]),onclick:function(){picked=k;box.classList.add("chosen");btns.forEach(function(x,j){x.setAttribute("aria-pressed",String(j===k))});progress();}},inner);
+   var b=el("button",{class:"opt",type:"button","data-right":k===answer?"1":"0","aria-pressed":"false",style:"--tc:"+(tf?(k===0?"#16a34a":"#e11d48"):TILE[k%TILE.length]),onclick:function(){picked=k;box.classList.add("chosen");btns.forEach(function(x,j){x.setAttribute("aria-pressed",String(j===k))});progress();}},inner);
    btns.push(b);box.appendChild(b);});
   card.appendChild(box);
   card._filled=function(){return picked>=0};
@@ -257,14 +280,14 @@ WS.questions.forEach(function(Q,i){
  if(Q.t==="choose")check=choices(Q.options,Q.answer,Q.pics,false);
  else if(Q.t==="truefalse")check=choices(Q.yesNo?["👍 Yes","👎 No"]:["True","False"],Q.answer?0:1,!!Q.yesNo,!Q.yesNo);
  else if(Q.t==="gap"){
-  var gid="gap"+i;var gin=el("input",{class:"drop inline",id:gid,readonly:"",placeholder:"drop here"});
+  var gid="gap"+i;var gin=el("input",{class:"drop inline",id:gid,readonly:"",placeholder:"drop here","data-want":Q.options[Q.answer]});
   card.appendChild(el("div",{class:"gap"},[document.createTextNode(Q.before+" "),el("label",{class:"sr",for:gid,text:"The missing word"}),gin,document.createTextNode(" "+Q.after)]));
   var gb=board(card,[{input:gin,want:Q.options[Q.answer]}],Q.options,false,"Drag the right word into the gap, or tap a word and then the gap.");
   check=function(){var v=gin.value;gin.classList.remove("right","wrong");if(!v)return null;var ok=v===Q.options[Q.answer];gin.classList.add(ok?"right":"wrong");return ok;};
   card._filled=function(){return !!gin.value};
  }
  else if(Q.t==="order"){
-  var oslots=Q.items.map(function(t,k){var id="o"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop event "+(k+1)+" here"});return{row:el("div",{class:"slotrow"},[el("label",{class:"nb",for:id,text:String(k+1)}),inp]),input:inp,want:t};});
+  var oslots=Q.items.map(function(t,k){var id="o"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop event "+(k+1)+" here","data-want":t});return{row:el("div",{class:"slotrow"},[el("label",{class:"nb",for:id,text:String(k+1)}),inp]),input:inp,want:t};});
   var ol=el("div",{class:"slots"});oslots.forEach(function(x){ol.appendChild(x.row)});
   board(card,oslots,shuffled(Q.items),false,"Drag each event into its place: what happened first goes in box 1.",ol);
   check=function(){var all=true,ok=true;oslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)all=false;});if(!all)return null;
@@ -272,7 +295,7 @@ WS.questions.forEach(function(Q,i){
   card._filled=function(){return oslots.every(function(x){return x.input.value})};
  }
  else if(Q.t==="spell"){
-  var sslots=Q.sounds.map(function(x,k){var id="s"+i+"_"+k;return{input:el("input",{class:"drop sound",id:id,readonly:"","aria-label":"Sound "+(k+1)+" of "+Q.word}),want:x};});
+  var sslots=Q.sounds.map(function(x,k){var id="s"+i+"_"+k;return{input:el("input",{class:"drop sound",id:id,readonly:"","aria-label":"Sound "+(k+1)+" of "+Q.word,"data-want":x}),want:x};});
   var row=el("div",{class:"spell"},[el("span",{class:"pic","aria-hidden":"true",text:Q.pic}),el("div",{class:"boxes"},sslots.map(function(x){return x.input})),canSpeak?el("button",{class:"small",type:"button",text:"🔊 Hear the word",onclick:function(){say(Q.word)}}):null]);
   board(card,sslots,shuffled(Q.sounds.concat(Q.extra||[])),false,"Drag the sounds into the boxes to build the word.",row);
   card.querySelectorAll(".pool .chip").forEach(function(c){c.classList.add("chip-l")});
@@ -282,7 +305,7 @@ WS.questions.forEach(function(Q,i){
  }
  else if(Q.t==="match"){
   var reuse=!!Q.options;
-  var mslots=Q.pairs.map(function(p,k){var id="m"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop here"});var isPic=/^\\p{Extended_Pictographic}/u.test(p[0])&&p[0].length<=4;return{row:el("div",{class:"slotrow"},[el("label",{for:id,class:isPic?"pic":"",text:p[0]}),inp]),input:inp,want:p[1]};});
+  var mslots=Q.pairs.map(function(p,k){var id="m"+i+"_"+k;var inp=el("input",{class:"drop",id:id,readonly:"",placeholder:"drop here","data-want":p[1]});var isPic=/^\\p{Extended_Pictographic}/u.test(p[0])&&p[0].length<=4;return{row:el("div",{class:"slotrow"},[el("label",{for:id,class:isPic?"pic":"",text:p[0]}),inp]),input:inp,want:p[1]};});
   var ml=el("div",{class:"slots"});mslots.forEach(function(x){ml.appendChild(x.row)});
   board(card,mslots,reuse?Q.options:shuffled(Q.pairs.map(function(p){return p[1]})),reuse,reuse?"Drag a label onto each one (you can use each label more than once).":"Drag each card onto the word it matches.",ml);
   check=function(){var got=0,any=false;mslots.forEach(function(x){x.input.classList.remove("right","wrong");if(!x.input.value)return;any=true;var r=x.input.value===x.want;x.input.classList.add(r?"right":"wrong");if(r)got++;});return any?{got:got,of:mslots.length}:null;};
@@ -290,7 +313,7 @@ WS.questions.forEach(function(Q,i){
   card._filled=function(){return mslots.every(function(x){return x.input.value})};
  }
  else if(Q.t==="find"){
-  var fid="find"+i;var fin=el("input",{class:"text",id:fid,readonly:"",placeholder:"tap a word in the story below"});
+  var fid="find"+i;var fin=el("input",{class:"text",id:fid,readonly:"",placeholder:"tap a word in the story below","data-want":Q.answers[0]});
   var wbox=el("div",{class:"words"});var cur=null;
   WS.passage.paras.forEach(function(para){var pp=el("p");para.split(/(\\s+)/).forEach(function(tok){
    if(/^\\s+$/.test(tok)||!tok){pp.appendChild(document.createTextNode(tok));return;}
@@ -344,9 +367,44 @@ document.getElementById("check").addEventListener("click",function(){
  window.zeraResult={score:got,total:total};
  var pct=total?got/total:0;var stars=pct>=.9?"⭐⭐⭐":pct>=.6?"⭐⭐":pct>0?"⭐":"";
  document.getElementById("score").innerHTML="You scored <b>"+got+" out of "+total+"</b> <span class=stars>"+stars+"</span>"+(blank?" · "+blank+" still to answer":"");
- if(pct>=.9&&!blank)confetti();
+ if(pct>=.9&&!blank&&!REVIEW)confetti();
  say(pct>=.9?"Amazing reading!":pct>=.6?"Good work! Check the red ones again.":"Keep going! Read the story again and try the red ones.");
 });
+
+/* ---- review: put a child's answers back and mark them ---- */
+if(REVIEW){
+ document.body.classList.add("review");
+ document.getElementById("rbanner").textContent="👀 "+REVIEW.name+"'s answers, marked. The right answer shows in green wherever theirs was wrong.";
+ function sh(x,n){x=String(x==null?"":x).replace(/🔊/g,"").replace(/\\s+/g," ").trim();return x.length>n?x.slice(0,n)+"…":x;}
+ var A=REVIEW.answers.slice(),k=0;
+ // typed and dropped answers come first, in page order (as the collector reads them)
+ document.querySelectorAll("input,textarea,select").forEach(function(f){
+  var t=(f.type||"").toLowerCase();
+  if(["hidden","button","submit","reset","image","file","password","radio","checkbox"].indexOf(t)>=0)return;
+  if(f.id==="childname"){if(A[k]&&A[k].label==="Name"){f.value=A[k].value;k++;}else f.value=REVIEW.name;return;}
+  var a=A[k++];if(!a)return;var v=a.value==="—"?"":a.value.replace(/…$/,"");
+  f.value=v;if(v&&f.classList.contains("drop"))f.classList.add("filled");
+ });
+ // then the tapped choices: find the question, then the tile
+ A.slice(k).forEach(function(a){
+  cards.forEach(function(card){
+   var h=card.querySelector("h3");if(!h||sh(h.innerText,200)!==a.label)return;
+   card.querySelectorAll(".opt").forEach(function(b){if(sh(b.innerText,200)===a.value)b.click();});
+  });
+ });
+ // their drawings, in order
+ var cvs=[].slice.call(document.querySelectorAll(".q canvas"));
+ (REVIEW.images||[]).forEach(function(src,n){var c=cvs[n];if(!c)return;var im=new Image();
+  im.onload=function(){c.getContext("2d").drawImage(im,0,0,c.width,c.height);};im.src=src;});
+ progress();
+ document.getElementById("check").click();
+ // under each wrong drop or found word, what it should have been
+ document.querySelectorAll("input.wrong[data-want],input.text[data-want]").forEach(function(f){
+  if(f.classList.contains("text")){var card=f.closest(".q");if(!card||!card.classList.contains("wrong"))return;}
+  var w=el("span",{class:"should",text:"✔ Should be: "+f.getAttribute("data-want")});
+  (f.closest(".slotrow")||f.closest(".found")||f.parentElement).appendChild(w);
+ });
+}
 })();
 </script>
 </body>

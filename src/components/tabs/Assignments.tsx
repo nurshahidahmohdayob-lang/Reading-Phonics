@@ -629,6 +629,13 @@ function SubmissionView({
   onHistory?: () => void;
 }) {
   const [sub, setSub] = useState<Submission | null | undefined>(undefined);
+  // A built-in worksheet can be shown again exactly as the child did it.
+  const sheet = useMemo(
+    () =>
+      worksheetsFor(yearKey).find((ws) => worksheetTitle(ws) === item.title) ??
+      INTERACTIVE_VIDEOS.find((v) => videoSheetTitle(v) === item.title)?.worksheet,
+    [yearKey, item.title],
+  );
   useEffect(() => {
     let alive = true;
     const q = item === READING ? `reading=${encodeURIComponent(yearKey)}` : `id=${item.id}`;
@@ -640,6 +647,55 @@ function SubmissionView({
       alive = false;
     };
   }, [item, name, yearKey]);
+
+  // A built-in worksheet: full screen, the way the child saw it, with their
+  // answers in place and marked.
+  if (sheet && sub !== null) {
+    return createPortal(
+      <div className="fixed inset-0 z-[80] flex flex-col bg-[#EEF8FF]">
+        <div className="flex flex-wrap items-center gap-3 bg-[#0A4F29] px-4 py-3 text-white">
+          <button onClick={onClose} className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold active:scale-95">
+            ← Back
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-extrabold text-[#F7B917]">{item.title}</p>
+            <p className="text-xs font-semibold opacity-80">
+              {name}
+              {sub ? ` · handed in ${shortDate(sub.at)}` : ""}
+            </p>
+          </div>
+          {sub?.score && (
+            <span className="rounded-full bg-[#F7B917] px-3 py-1 text-sm font-extrabold text-[#0A4F29]">
+              Score {sub.score.score} / {sub.score.total}
+            </span>
+          )}
+          {sub && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Clear ${name}'s answers so they can do it again?`)) return;
+                await call({ op: "clear", id: item.id, name });
+                onCleared();
+              }}
+              className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold active:scale-95"
+            >
+              🔁 Let them do it again
+            </button>
+          )}
+        </div>
+        {sub === undefined ? (
+          <p className="mt-10 text-center font-bold text-zinc-400">Loading…</p>
+        ) : (
+          <iframe
+            title={`${name}'s worksheet`}
+            sandbox="allow-scripts"
+            srcDoc={yearWorksheetHtml(sheet, { name, answers: sub.answers, images: sub.images })}
+            className="w-full flex-1 border-0 bg-white"
+          />
+        )}
+      </div>,
+      document.body,
+    );
+  }
 
   return (
     <Modal onClose={onClose}>
