@@ -16,7 +16,7 @@
    children finish. Stored in the cloud, filed under the signed-in teacher
    (lib/assignments.ts). */
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import qrcode from "qrcode-generator";
 import { ROSTER } from "@/app/roster";
 import { allStudents, useRosterEdits } from "@/lib/rosterStore";
@@ -955,18 +955,22 @@ function InteractiveVideos({
   onView: (item: Item, name: string) => void;
 }) {
   const [trying, setTrying] = useState<InteractiveVideo | null>(null);
-  const [tryingSheet, setTryingSheet] = useState<InteractiveVideo | null>(null);
+  /** The video whose worksheet panel is open. */
+  const [sheetOf, setSheetOf] = useState<InteractiveVideo | null>(null);
+  const [sheetPreview, setSheetPreview] = useState(false);
   return (
     <section className="mt-6 w-full">
       <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">🎬 Interactive videos</h3>
       <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        A read-aloud that stops for questions as it goes. Children tap an answer, see why, then keep watching. Each video has its own worksheet for
-        afterwards. Send either to {className || "the class"}; their answers and score come back here.
+        A read-aloud that stops for questions as it goes. Children tap an answer, see why, then keep watching. 📝 Worksheet has one for afterwards.
+        Send either to {className || "the class"}; their answers and score come back here.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {INTERACTIVE_VIDEOS.map((v) => (
-          <Fragment key={v.id}>
+        {INTERACTIVE_VIDEOS.map((v) => {
+          const sheetSet = items.find((it) => it.title === videoSheetTitle(v));
+          return (
             <WorksheetCard
+              key={v.id}
               ws={{ ...v, title: `🎬 ${v.title}`, year: "Video", questions: [...v.questions, v.writing] }}
               set={items.find((it) => it.title === videoTitle(v))}
               done={done}
@@ -976,20 +980,20 @@ function InteractiveVideos({
               onSet={(who) => onSet(v, who, false)}
               onAssign={onAssign}
               onView={onView}
+              extra={
+                <button
+                  onClick={() => {
+                    setSheetOf(v);
+                    setSheetPreview(false);
+                  }}
+                  className="rounded-full bg-orange-100 px-3 py-1.5 text-sm font-extrabold text-orange-800 active:scale-95"
+                >
+                  📝 Worksheet{sheetSet ? " ✓" : ""}
+                </button>
+              }
             />
-            <WorksheetCard
-              ws={{ ...v.worksheet, title: `📝 ${v.title}: worksheet` }}
-              set={items.find((it) => it.title === videoSheetTitle(v))}
-              done={done}
-              names={names}
-              code={code}
-              onTry={() => setTryingSheet(v)}
-              onSet={(who) => onSet(v, who, true)}
-              onAssign={onAssign}
-              onView={onView}
-            />
-          </Fragment>
-        ))}
+          );
+        })}
       </div>
       {trying && (
         <Modal onClose={() => setTrying(null)} wide>
@@ -998,16 +1002,37 @@ function InteractiveVideos({
           <InteractiveVideoPlayer video={trying} />
         </Modal>
       )}
-      {tryingSheet && (
-        <Modal onClose={() => setTryingSheet(null)} wide>
-          <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {tryingSheet.title}: worksheet</h3>
-          <p className="text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
-          <iframe
-            title={`${tryingSheet.title} worksheet`}
-            sandbox={LESSON_SANDBOX}
-            srcDoc={lessonDoc(yearWorksheetHtml(tryingSheet.worksheet))}
-            className="mt-3 h-[75vh] w-full rounded-2xl border-2 border-zinc-100 bg-white"
-          />
+      {sheetOf && (
+        <Modal onClose={() => setSheetOf(null)} wide>
+          <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">📝 {sheetOf.title}: worksheet for after the video</h3>
+          <p className="mb-3 text-sm font-semibold text-zinc-400">Send it on its own, whenever the children have watched the video.</p>
+          <div className="max-w-md">
+            <WorksheetCard
+              ws={{ ...sheetOf.worksheet, title: `📝 ${sheetOf.title}: worksheet` }}
+              set={items.find((it) => it.title === videoSheetTitle(sheetOf))}
+              done={done}
+              names={names}
+              code={code}
+              onTry={() => setSheetPreview((p) => !p)}
+              onSet={(who) => onSet(sheetOf, who, true)}
+              onAssign={onAssign}
+              onView={(item, n) => {
+                setSheetOf(null);
+                onView(item, n);
+              }}
+            />
+          </div>
+          {sheetPreview && (
+            <>
+              <p className="mt-4 text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
+              <iframe
+                title={`${sheetOf.title} worksheet`}
+                sandbox={LESSON_SANDBOX}
+                srcDoc={lessonDoc(yearWorksheetHtml(sheetOf.worksheet))}
+                className="mt-2 h-[70vh] w-full rounded-2xl border-2 border-zinc-100 bg-white"
+              />
+            </>
+          )}
         </Modal>
       )}
     </section>
@@ -1094,6 +1119,7 @@ function WorksheetCard({
   onSet,
   onAssign,
   onView,
+  extra,
 }: {
   ws: SheetInfo;
   /** The assignment, once it's been sent. */
@@ -1105,6 +1131,8 @@ function WorksheetCard({
   onSet: (assignees: string[] | "all") => Promise<string | null>;
   onAssign: (item: Item, assignees: string[] | "all") => Promise<string | null>;
   onView: (item: Item, name: string) => void;
+  /** Another button for the row, beside Send to… (a video's 📝 Worksheet). */
+  extra?: React.ReactNode;
 }) {
   /** The children ticked while choosing who it's for; null when not choosing. */
   const [picking, setPicking] = useState<string[] | null>(null);
@@ -1208,6 +1236,7 @@ function WorksheetCard({
                 📮 Send to…
               </button>
             )}
+            {extra}
           </div>
         )}
 
