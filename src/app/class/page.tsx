@@ -18,6 +18,8 @@ import { collectFrom, lessonDoc, LESSON_SANDBOX } from "@/lib/lessonFrame";
 import ForestBackdrop from "@/components/ForestBackdrop";
 import OnlineWorksheet, { type WorksheetResult } from "@/components/OnlineWorksheet";
 import { storyFor } from "@/app/assignmentStories";
+import { videoInLesson } from "@/app/interactiveVideos";
+import InteractiveVideoPlayer, { type VideoResult } from "@/components/InteractiveVideoPlayer";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
 
 type Item = { id: string; title: string; kind: "html" | "link"; for: string[] };
@@ -42,6 +44,8 @@ export default function ClassPage() {
   /** The reading link: each child's story and nothing else. */
   const [readOnly, setReadOnly] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
+  /** An interactive video's answers so far (it plays outside the frame). */
+  const videoResult = useRef<VideoResult | null>(null);
 
   const load = useCallback(async (c: string) => {
     try {
@@ -141,13 +145,18 @@ export default function ClassPage() {
     const res = await fetch(`/api/class?code=${encodeURIComponent(code!)}&id=${item.id}`, { cache: "no-store" });
     const d = await res.json();
     if (!d.ok) return setError(d.error ?? "Couldn't open that activity.");
+    videoResult.current = null;
     setOpen({ item, html: d.html, url: d.item.url });
   }
 
   async function send() {
     if (!open || !me || !code) return;
     setStage("sending");
-    const got = open.html && frame.current ? await collectFrom(frame.current) : { answers: [], text: "", score: null, images: [] };
+    const got = videoInLesson(open.html)
+      ? (videoResult.current ?? { answers: [], text: "", score: null, images: [] })
+      : open.html && frame.current
+        ? await collectFrom(frame.current)
+        : { answers: [], text: "", score: null, images: [] };
     try {
       const res = await fetch("/api/class", {
         method: "POST",
@@ -221,6 +230,18 @@ export default function ClassPage() {
             >
               {only ? "Back to the names" : "Back to my activities"}
             </button>
+          </div>
+        ) : videoInLesson(open.html) ? (
+          // YouTube won't play in the locked-down frame, so the app plays it
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+            <div className="mx-auto max-w-3xl">
+              <InteractiveVideoPlayer
+                video={videoInLesson(open.html)!}
+                onChange={(r) => {
+                  videoResult.current = r;
+                }}
+              />
+            </div>
           </div>
         ) : open.html !== undefined ? (
           <iframe

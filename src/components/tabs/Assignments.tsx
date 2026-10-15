@@ -8,6 +8,8 @@
                              (children tap their name and get only their story)
      Year-group worksheets   four worksheets per year, sent to the whole class
                              or chosen children, each with its own link
+     Interactive videos      a read-aloud that pauses for questions, sent the
+                             same way (app/interactiveVideos.ts)
 
    A ✅ appears beside each child who has submitted; tap it to see what they
    did. The page refreshes itself while it's open, so ticks appear as
@@ -29,6 +31,8 @@ import { storyFor } from "@/app/assignmentStories";
 import type { Tier, WorksheetInput } from "@/lib/worksheet";
 import { worksheetsFor, type YearWorksheet } from "@/app/yearWorksheets";
 import { yearWorksheetHtml } from "@/lib/yearWorksheetHtml";
+import { INTERACTIVE_VIDEOS, videoLessonHtml, type InteractiveVideo } from "@/app/interactiveVideos";
+import InteractiveVideoPlayer from "@/components/InteractiveVideoPlayer";
 
 type Kind = "html" | "link";
 type Item = { id: string; title: string; kind: Kind; url?: string; assignees: string[] | "all"; createdAt: string };
@@ -103,7 +107,7 @@ export default function Assignments() {
   const [doing, setDoing] = useState<string | null>(null);
   const [history, setHistory] = useState<string | null>(null);
   /** Which half of Assignments is open: each child's reading, or the year worksheets. */
-  const [view, setView] = useState<"reading" | "worksheets">("reading");
+  const [view, setView] = useState<"reading" | "worksheets" | "videos">("reading");
 
   // Ask for the class (making its link on first use, and refreshing its names);
   // `apply` puts the answer on screen.
@@ -172,11 +176,12 @@ export default function Assignments() {
         ))}
       </div>
 
-      <div className="mt-5 grid w-full max-w-2xl grid-cols-2 gap-3">
+      <div className="mt-5 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
         {(
           [
             { id: "reading", icon: "📖", label: "Reading at their level", sub: "Each child's own story", bg: "from-[#8FD1FF] to-[#4DB2FF]", text: "text-sky-950" },
             { id: "worksheets", icon: "📝", label: "Year-group worksheets", sub: `Written for ${group?.year ?? "this year"}`, bg: "from-[#FFC27A] to-[#FF9B3D]", text: "text-orange-950" },
+            { id: "videos", icon: "🎬", label: "Interactive video", sub: "Watch, pause & answer", bg: "from-[#C9B3FF] to-[#A27DFF]", text: "text-violet-950" },
           ] as const
         ).map((b) => (
           <button
@@ -231,6 +236,27 @@ export default function Assignments() {
           {cls.sessions.length > 0 && <SessionPlan names={cls.names} sessions={cls.sessions} plan={cls.plan} />}
 
             </>
+          ) : view === "videos" ? (
+          <InteractiveVideos
+            className={group?.year ?? ""}
+            code={cls.code}
+            items={cls.items}
+            done={cls.done}
+            names={cls.names}
+            onView={(item, name) => setViewing({ item, name })}
+            onSet={async (v, assignees) => {
+              const d = await call({ op: "create", yearKey, title: videoTitle(v), kind: "html", html: videoLessonHtml(v), assignees });
+              if (!d.ok) return d.error ?? "Couldn't send it.";
+              await load();
+              return null;
+            }}
+            onAssign={async (item, assignees) => {
+              const d = await call({ op: "assignees", id: item.id, assignees });
+              if (!d.ok) return d.error ?? "Couldn't save that.";
+              await load();
+              return null;
+            }}
+          />
           ) : (
           <YearWorksheets
             yearKey={yearKey}
@@ -896,6 +922,64 @@ function HistoryView({ yearKey, name, level, onClose }: { yearKey: string; name:
 /* ---------- Year-group reading worksheets (app/yearWorksheets.ts) ---------- */
 
 const worksheetTitle = (ws: YearWorksheet) => `📝 ${ws.year} worksheet: ${ws.title}`;
+const videoTitle = (v: InteractiveVideo) => `🎬 Interactive video: ${v.title}`;
+
+/** What a worksheet card shows, for a year-group worksheet or a video. */
+type SheetInfo = Pick<YearWorksheet, "year" | "title" | "emoji" | "focus" | "minutes" | "colours"> & { questions: unknown[] };
+
+function InteractiveVideos({
+  className,
+  code,
+  items,
+  done,
+  names,
+  onSet,
+  onAssign,
+  onView,
+}: {
+  className: string;
+  code: string;
+  items: Item[];
+  done: ClassState["done"];
+  names: string[];
+  onSet: (v: InteractiveVideo, assignees: string[] | "all") => Promise<string | null>;
+  onAssign: (item: Item, assignees: string[] | "all") => Promise<string | null>;
+  onView: (item: Item, name: string) => void;
+}) {
+  const [trying, setTrying] = useState<InteractiveVideo | null>(null);
+  return (
+    <section className="mt-6 w-full">
+      <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">🎬 Interactive videos</h3>
+      <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        A read-aloud that stops for questions as it goes. Children tap an answer, see why, then keep watching. Send it to {className || "the class"} like a
+        worksheet; their answers and score come back here.
+      </p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {INTERACTIVE_VIDEOS.map((v) => (
+          <WorksheetCard
+            key={v.id}
+            ws={{ ...v, year: "Video", questions: [...v.questions, v.writing] }}
+            set={items.find((it) => it.title === videoTitle(v))}
+            done={done}
+            names={names}
+            code={code}
+            onTry={() => setTrying(v)}
+            onSet={(who) => onSet(v, who)}
+            onAssign={onAssign}
+            onView={onView}
+          />
+        ))}
+      </div>
+      {trying && (
+        <Modal onClose={() => setTrying(null)} wide>
+          <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {trying.title}</h3>
+          <p className="mb-3 text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
+          <InteractiveVideoPlayer video={trying} />
+        </Modal>
+      )}
+    </section>
+  );
+}
 
 /** A card for each of the picked year's worksheets, all written for that
     year (Year 1 the easiest, Year 6 the hardest). Try it to see what children
@@ -978,7 +1062,7 @@ function WorksheetCard({
   onAssign,
   onView,
 }: {
-  ws: YearWorksheet;
+  ws: SheetInfo;
   /** The assignment, once it's been sent. */
   set: Item | undefined;
   done: ClassState["done"];
