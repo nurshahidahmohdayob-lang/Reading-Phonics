@@ -16,7 +16,7 @@
    children finish. Stored in the cloud, filed under the signed-in teacher
    (lib/assignments.ts). */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import qrcode from "qrcode-generator";
 import { ROSTER } from "@/app/roster";
 import { allStudents, useRosterEdits } from "@/lib/rosterStore";
@@ -244,8 +244,15 @@ export default function Assignments() {
             done={cls.done}
             names={cls.names}
             onView={(item, name) => setViewing({ item, name })}
-            onSet={async (v, assignees) => {
-              const d = await call({ op: "create", yearKey, title: videoTitle(v), kind: "html", html: videoLessonHtml(v), assignees });
+            onSet={async (v, assignees, sheet) => {
+              const d = await call({
+                op: "create",
+                yearKey,
+                title: sheet ? videoSheetTitle(v) : videoTitle(v),
+                kind: "html",
+                html: sheet ? yearWorksheetHtml(v.worksheet) : videoLessonHtml(v),
+                assignees,
+              });
               if (!d.ok) return d.error ?? "Couldn't send it.";
               await load();
               return null;
@@ -923,6 +930,7 @@ function HistoryView({ yearKey, name, level, onClose }: { yearKey: string; name:
 
 const worksheetTitle = (ws: YearWorksheet) => `📝 ${ws.year} worksheet: ${ws.title}`;
 const videoTitle = (v: InteractiveVideo) => `🎬 Interactive video: ${v.title}`;
+const videoSheetTitle = (v: InteractiveVideo) => `📝 Video worksheet: ${v.title}`;
 
 /** What a worksheet card shows, for a year-group worksheet or a video. */
 type SheetInfo = Pick<YearWorksheet, "year" | "title" | "emoji" | "focus" | "minutes" | "colours"> & { questions: unknown[] };
@@ -942,32 +950,45 @@ function InteractiveVideos({
   items: Item[];
   done: ClassState["done"];
   names: string[];
-  onSet: (v: InteractiveVideo, assignees: string[] | "all") => Promise<string | null>;
+  onSet: (v: InteractiveVideo, assignees: string[] | "all", sheet: boolean) => Promise<string | null>;
   onAssign: (item: Item, assignees: string[] | "all") => Promise<string | null>;
   onView: (item: Item, name: string) => void;
 }) {
   const [trying, setTrying] = useState<InteractiveVideo | null>(null);
+  const [tryingSheet, setTryingSheet] = useState<InteractiveVideo | null>(null);
   return (
     <section className="mt-6 w-full">
       <h3 className="text-center text-xl font-extrabold text-[#0A4F29] dark:text-emerald-300">🎬 Interactive videos</h3>
       <p className="mx-auto mt-1 max-w-xl text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-        A read-aloud that stops for questions as it goes. Children tap an answer, see why, then keep watching. Send it to {className || "the class"} like a
-        worksheet; their answers and score come back here.
+        A read-aloud that stops for questions as it goes. Children tap an answer, see why, then keep watching. Each video has its own worksheet for
+        afterwards. Send either to {className || "the class"}; their answers and score come back here.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {INTERACTIVE_VIDEOS.map((v) => (
-          <WorksheetCard
-            key={v.id}
-            ws={{ ...v, year: "Video", questions: [...v.questions, v.writing] }}
-            set={items.find((it) => it.title === videoTitle(v))}
-            done={done}
-            names={names}
-            code={code}
-            onTry={() => setTrying(v)}
-            onSet={(who) => onSet(v, who)}
-            onAssign={onAssign}
-            onView={onView}
-          />
+          <Fragment key={v.id}>
+            <WorksheetCard
+              ws={{ ...v, title: `🎬 ${v.title}`, year: "Video", questions: [...v.questions, v.writing] }}
+              set={items.find((it) => it.title === videoTitle(v))}
+              done={done}
+              names={names}
+              code={code}
+              onTry={() => setTrying(v)}
+              onSet={(who) => onSet(v, who, false)}
+              onAssign={onAssign}
+              onView={onView}
+            />
+            <WorksheetCard
+              ws={{ ...v.worksheet, title: `📝 ${v.title}: worksheet` }}
+              set={items.find((it) => it.title === videoSheetTitle(v))}
+              done={done}
+              names={names}
+              code={code}
+              onTry={() => setTryingSheet(v)}
+              onSet={(who) => onSet(v, who, true)}
+              onAssign={onAssign}
+              onView={onView}
+            />
+          </Fragment>
         ))}
       </div>
       {trying && (
@@ -975,6 +996,18 @@ function InteractiveVideos({
           <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {trying.title}</h3>
           <p className="mb-3 text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
           <InteractiveVideoPlayer video={trying} />
+        </Modal>
+      )}
+      {tryingSheet && (
+        <Modal onClose={() => setTryingSheet(null)} wide>
+          <h3 className="pr-10 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">👀 {tryingSheet.title}: worksheet</h3>
+          <p className="text-sm font-semibold text-zinc-400">What children see. Answers here aren&apos;t saved.</p>
+          <iframe
+            title={`${tryingSheet.title} worksheet`}
+            sandbox={LESSON_SANDBOX}
+            srcDoc={lessonDoc(yearWorksheetHtml(tryingSheet.worksheet))}
+            className="mt-3 h-[75vh] w-full rounded-2xl border-2 border-zinc-100 bg-white"
+          />
         </Modal>
       )}
     </section>

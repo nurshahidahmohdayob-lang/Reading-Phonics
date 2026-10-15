@@ -1,3 +1,5 @@
+import type { YearWorksheet } from "@/app/yearWorksheets";
+
 /* Interactive videos: a read-aloud on YouTube that pauses at set moments to
    ask the child a question, then carries on. The video stays on YouTube
    (it's played from there, not copied here); only the questions live in
@@ -30,6 +32,9 @@ export type InteractiveVideo = {
   questions: VideoQuestion[];
   /** A short written answer once the video has finished. */
   writing: string;
+  /** The follow-up worksheet for after watching: a retelling in our own
+      words and mixed activities, built like a year-group worksheet. */
+  worksheet: YearWorksheet;
 };
 
 export const INTERACTIVE_VIDEOS: InteractiveVideo[] = [
@@ -141,6 +146,108 @@ export const INTERACTIVE_VIDEOS: InteractiveVideo[] = [
     ],
     writing:
       "What would you like to do outside instead of watching a screen? Write one or two sentences.",
+    worksheet: {
+      key: "video",
+      year: "After the video",
+      title: "The Couch Potato",
+      emoji: "🥔",
+      focus:
+        "Sequencing · story words · true or false · feelings · screen time or outside time · writing",
+      minutes: 20,
+      colours: ["#C9774A", "#3DD68C"],
+      passage: {
+        title: "Remember the story",
+        paras: [
+          "Couch Potato loved his couch. He sat there all day with his gadgets, his snacks and lots of screens. He even talked to his friends through a screen.",
+          "One day a delivery came: a new video camera. When he plugged it in, the power went out and every screen went dark.",
+          "With nothing to do, he took his dog, Tater, for a walk outside. Everything looked vivid and bright. He smelled fresh air and heard birds singing.",
+          "He found a hill with a big tree and watched the sunset. When he got home, he saw his reflection in a dark screen and made a decision.",
+          "Now he goes outside more often with his friends. He still likes his couch, but he is happier with a balance of screens and the world outside.",
+        ],
+      },
+      questions: [
+        {
+          t: "order",
+          q: "Put these in the order they happened.",
+          items: [
+            "Couch Potato sits on the couch all day.",
+            "A delivery brings a new video camera.",
+            "The power goes out.",
+            "He takes Tater for a walk.",
+            "He watches the sunset from the hill.",
+            "He plays outside with his friends.",
+          ],
+        },
+        {
+          t: "match",
+          q: "Match each word to what it means.",
+          pairs: [
+            ["gadget", "a clever machine that does a job"],
+            ["delivery", "a parcel brought to your door"],
+            ["reflection", "what you see of yourself in a shiny surface"],
+            ["balance", "a fair mix of two things"],
+          ],
+        },
+        {
+          t: "truefalse",
+          q: "Couch Potato's dog is called Tater.",
+          answer: true,
+        },
+        {
+          t: "truefalse",
+          q: "At the start of the story, Couch Potato meets his friends at the park.",
+          answer: false,
+        },
+        {
+          t: "gap",
+          before: "When the power went out, all of his",
+          after: "went dark.",
+          options: ["screens", "trees", "friends", "birds"],
+          answer: 0,
+        },
+        {
+          t: "choose",
+          q: "Why did Couch Potato go outside the first time?",
+          options: [
+            "The power was out and there was nothing else to do",
+            "His mum told him to",
+            "His friends were waiting for him",
+            "He wanted to buy more snacks",
+          ],
+          answer: 0,
+        },
+        {
+          t: "choose",
+          q: "How do you think Couch Potato felt as he watched the sunset?",
+          options: ["Calm and amazed", "Angry", "Bored", "Scared"],
+          answer: 0,
+        },
+        {
+          t: "match",
+          q: "Screen time or outside time? Sort them.",
+          pairs: [
+            ["📺 watching shows", "Screen time"],
+            ["🚲 riding bikes", "Outside time"],
+            ["🎮 playing video games", "Screen time"],
+            ["☁️ watching the clouds", "Outside time"],
+            ["🥾 going hiking", "Outside time"],
+          ],
+          options: ["Screen time", "Outside time"],
+        },
+        {
+          t: "find",
+          q: "Find the word in the story that means very bright and clear.",
+          answers: ["vivid"],
+        },
+        {
+          t: "write",
+          q: "Write a note to Couch Potato. Tell him one thing he could do outside, and why it is fun.",
+          hint: "Dear Couch Potato, you should try… because…",
+          lines: 4,
+        },
+        { t: "draw", q: "Draw your favourite thing to do outside." },
+      ],
+    },
   },
 ];
 
