@@ -6,6 +6,8 @@
  * report that rather than failing the whole sync.
  */
 
+import { communGet } from "./communFetch";
+
 export type ApiGuardian = {
   id: string | number;
   first_name: string;
@@ -50,13 +52,7 @@ export async function guardianEmails(): Promise<GuardianLookup> {
   while (page <= lastPage && page <= 40) {
     const url = new URL(`${cfg.base}/api/v1/guardians`);
     url.searchParams.set("page", String(page));
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${cfg.token}`,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    const res = await communGet(url, cfg.token);
     // 403 = the key exists but has no guardians.read ability.
     if (res.status === 403) return { state: "denied" };
     if (!res.ok) return { state: "unavailable" };

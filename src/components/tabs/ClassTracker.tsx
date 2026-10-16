@@ -250,7 +250,8 @@ export default function ClassTracker({
     autoFillStarted.current = true;
     void (async () => {
       try {
-        const res = await fetch("/api/students");
+        // Just the parent emails: no year-group lookups on opening.
+        const res = await fetch("/api/students?lookups=0");
         const data = await res.json();
         if (!data?.ok || data.guardians !== "ok") return;
         const contacts = (data.contacts ?? []) as ParentContact[];
@@ -341,10 +342,19 @@ export default function ClassTracker({
       let res = await fetch("/api/students");
       // Children with no class set have their year group looked up one by
       // one, a few dozen a minute; until that's done, wait and ask again.
-      for (let round = 0; round < 12 && res.ok; round++) {
-        const peek = await res.clone().json();
-        if (!peek?.ok || !peek.checking) break;
-        setSync({ kind: "loading", left: peek.checking });
+      // If the school system is busy (it allows 60 requests a minute, and
+      // other things share them), wait a minute and try again too.
+      for (let round = 0; round < 15; round++) {
+        if (res.status === 401) break;
+        if (res.ok) {
+          const peek = await res.clone().json();
+          if (!peek?.ok || !peek.checking) break;
+          setSync({ kind: "loading", left: peek.checking });
+        } else if (round >= 3) {
+          break;
+        } else {
+          setSync({ kind: "loading", busy: true });
+        }
         await new Promise((r) => setTimeout(r, 62_000));
         res = await fetch("/api/students");
       }
@@ -620,7 +630,9 @@ export default function ClassTracker({
                 className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
               >
                 {sync.kind === "loading"
-                  ? sync.left
+                  ? sync.busy
+                    ? "⏳ The school system is busy — trying again in a minute"
+                    : sync.left
                     ? `⏳ Checking year groups… ${sync.left} children left`
                     : "⏳ Checking…"
                   : "🔄 Sync students"}
@@ -957,7 +969,7 @@ function BulkEmails({
     setFetching(true);
     setFetchNote("");
     try {
-      const res = await fetch("/api/students");
+      const res = await fetch("/api/students?lookups=0");
       const data = await res.json();
       if (data?.configured === false) {
         setFetchNote(
@@ -1684,7 +1696,7 @@ function SendReports({
 
 type SyncState =
   | { kind: "idle" }
-  | { kind: "loading"; left?: number }
+  | { kind: "loading"; left?: number; busy?: boolean }
   | { kind: "error"; message: string }
   | { kind: "ready"; diffs: ClassDiff[]; picked: Set<string> }
   | { kind: "done"; added: number };

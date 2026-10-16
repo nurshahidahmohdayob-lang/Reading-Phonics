@@ -13,7 +13,7 @@ import { schoolStudents, StudentsApiNotConfigured } from "@/lib/studentsApi";
 // Up to a few dozen children's records are looked up per call.
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(req: Request) {
   const jar = await cookies();
   const session = verifyToken(jar.get(SESSION_COOKIE)?.value);
   // An expired sign-in is the usual reason, and the page can fix that by
@@ -35,7 +35,9 @@ export async function GET() {
   }
 
   try {
-    const { students, contacts, guardians, checking } = await schoolStudents();
+    // ?lookups=0: just the lists and parent emails, no year-group lookups.
+    const lookups = new URL(req.url).searchParams.get("lookups") !== "0";
+    const { students, contacts, guardians, checking } = await schoolStudents({ lookups });
     return NextResponse.json({ ok: true, students, contacts, guardians, checking });
   } catch (err) {
     if (err instanceof StudentsApiNotConfigured) {

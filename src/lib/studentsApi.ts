@@ -46,7 +46,8 @@ export type SchoolStudent = {
 };
 
 import { guardianEmails, type GuardianLookup } from "./guardiansApi";
-import { kvMGetJson, kvSetJson } from "./kv";
+import { kvGetJson, kvMGetJson, kvSetJson } from "./kv";
+import { communGet, requestsLeft } from "./communFetch";
 
 /** How many children's records one sync may look up, leaving room under the
     60-a-minute limit for the list and guardian pages. */
@@ -113,10 +114,7 @@ async function fetchAll(): Promise<ApiStudent[]> {
   while (page <= lastPage && page <= 40) {
     const url = new URL(`${base}/api/v1/students`);
     url.searchParams.set("page", String(page));
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      cache: "no-store",
-    });
+    const res = await communGet(url, token);
     if (!res.ok) throw new Error(`Student API responded ${res.status}`);
     const json = (await res.json()) as {
       data?: ApiStudent[];
@@ -129,11 +127,26 @@ async function fetchAll(): Promise<ApiStudent[]> {
   return out;
 }
 
+/** The student and guardian lists — 20 pages between them — remembered for
+    a few minutes, so a sync asking again for year groups (and the tracker
+    opening at the same moment) doesn't spend the minute's requests on them. */
+const LISTS_KEY = "commun:lists";
+const LISTS_TTL = 180;
+async function lists(): Promise<{ rows: ApiStudent[]; guardians: GuardianLookup }> {
+  const saved = await kvGetJson<{ rows: ApiStudent[]; guardians: GuardianLookup }>(LISTS_KEY);
+  if (saved?.rows?.length) return saved;
+  const rows = await fetchAll();
+  const guardians = await guardianEmails();
+  if (guardians.state === "ok") await kvSetJson(LISTS_KEY, { rows, guardians }, LISTS_TTL);
+  return { rows, guardians };
+}
+
 /** Each classless child's year group from their own record: remembered ones
     first, then up to LOOKUPS_PER_CALL fresh lookups. Returns what's known and
     how many are still to look up. */
 async function cohorts(
   ids: (string | number)[],
+  lookups: boolean,
 ): Promise<{ known: Map<string, string>; left: number }> {
   const { base, token } = config();
   const known = new Map<string, string>();
@@ -145,7 +158,11 @@ async function cohorts(
     else todo.push(id);
   });
 
-  const now = todo.slice(0, LOOKUPS_PER_CALL);
+  // Only as many as the school system has room for this minute, keeping a
+  // few spare for whoever else shares the key.
+  const room = requestsLeft();
+  const budget = !lookups ? 0 : Math.max(0, Math.min(LOOKUPS_PER_CALL, room === null ? LOOKUPS_PER_CALL : room - 5));
+  const now = todo.slice(0, budget);
   let looked = 0;
   let limited = false;
   // A few at a time: quick, without bursting past the rate limit.
@@ -153,10 +170,7 @@ async function cohorts(
     await Promise.all(
       now.slice(i, i + 5).map(async (id) => {
         try {
-          const res = await fetch(`${base}/api/v1/students/${id}`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-            cache: "no-store",
-          });
+          const res = await communGet(`${base}/api/v1/students/${id}`, token);
           if (res.status === 429) {
             limited = true;
             return;
@@ -180,19 +194,25 @@ async function cohorts(
     year group), ready to compare with the roster, each with their guardians'
     email addresses where the key allows it. `checking` is how many children's
     year groups are still to be looked up — ask again in a minute. */
-export async function schoolStudents(): Promise<{
+export async function schoolStudents({
+  lookups = true,
+}: {
+  /** Look up classless children's year groups (Sync students). Left off for
+      a quick look at parent emails, which doesn't need them. */
+  lookups?: boolean;
+} = {}): Promise<{
   students: SchoolStudent[];
   contacts: ParentContact[];
   guardians: GuardianLookup["state"];
   checking: number;
 }> {
-  const rows = await fetchAll();
-  const guardians = await guardianEmails();
+  const { rows, guardians } = await lists();
   const enrolled = (r: ApiStudent) => r.status === 1 || r.status === 0;
   // Only children with no class at all: a class like "Joy" or "Online Class"
   // is a different programme, not a Cambridge year.
   const { known, left } = await cohorts(
     rows.filter((r) => enrolled(r) && !(r.class ?? "").trim()).map((r) => r.id),
+    lookups,
   );
   const out: SchoolStudent[] = [];
   const contacts: ParentContact[] = [];
