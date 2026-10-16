@@ -83,6 +83,18 @@ const BACKDROPS = [
 ] as const;
 type BackdropId = (typeof BACKDROPS)[number]["id"];
 const BACKDROP_KEY = "phonics.3d.backdrop";
+/** What's on each place's stage, so the ocean keeps its fish and the jungle
+    its own drawings — and they're still there next time. */
+const STAGES_KEY = "phonics.3d.stages";
+type Stages = Partial<Record<BackdropId, Actor[]>>;
+
+function savedStages(): Stages {
+  try {
+    const v = JSON.parse(localStorage.getItem(STAGES_KEY) ?? "{}");
+    if (v && typeof v === "object") return v as Stages;
+  } catch {}
+  return {};
+}
 
 function savedBackdrop(): BackdropId {
   try {
@@ -112,7 +124,6 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   } | null>(null);
   const [pairingBusy, setPairingBusy] = useState(false);
 
-  const [actors, setActors] = useState<Actor[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [playing, setPlaying] = useState(true);
   // Which place the stage shows; remembered on this device.
@@ -120,9 +131,40 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   const place = BACKDROPS.find((b) => b.id === backdrop)!.place;
   function pickBackdrop(id: BackdropId) {
     setBackdrop(id);
+    setSelected(null);
     try {
       localStorage.setItem(BACKDROP_KEY, id);
     } catch {}
+  }
+
+  // Each place has its own stage; the one on screen is the chosen place's.
+  const [stages, setStages] = useState<Stages>(savedStages);
+  useEffect(() => {
+    try {
+      localStorage.setItem(STAGES_KEY, JSON.stringify(stages));
+    } catch {}
+  }, [stages]);
+  const actors = useMemo(() => stages[backdrop] ?? [], [stages, backdrop]);
+  // Read when a drawing arrives (a phone's can come at any moment), so it
+  // lands in the place on screen then, not the one there when pairing began.
+  const placeNow = useRef(backdrop);
+  useEffect(() => {
+    placeNow.current = backdrop;
+  }, [backdrop]);
+  /** Change what's on this place's stage. */
+  function setActors(change: (list: Actor[]) => Actor[]) {
+    const id = placeNow.current;
+    setStages((all) => ({ ...all, [id]: change(all[id] ?? []) }));
+  }
+  /** Change a drawing wherever it is, in every place. */
+  function setEverywhere(change: (a: Actor) => Actor) {
+    setStages((all) => {
+      const out: Stages = {};
+      for (const [id, list] of Object.entries(all) as [BackdropId, Actor[]][]) {
+        out[id] = list.map(change);
+      }
+      return out;
+    });
   }
 
   async function onFile(file: File | undefined) {
@@ -169,16 +211,12 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
 
   /** How a drawing moves, everywhere it is on the stage, kept with it. */
   function setMove(drawingId: string, move: Move) {
-    setActors((list) =>
-      list.map((a) => (a.drawingId === drawingId ? { ...a, move } : a)),
-    );
+    setEverywhere((a) => (a.drawingId === drawingId ? { ...a, move } : a));
     void updateDrawing(drawingId, { move });
   }
 
   function setFlip(drawingId: string, flip: boolean) {
-    setActors((list) =>
-      list.map((a) => (a.drawingId === drawingId ? { ...a, flip } : a)),
-    );
+    setEverywhere((a) => (a.drawingId === drawingId ? { ...a, flip } : a));
     void updateDrawing(drawingId, { flip });
   }
 
@@ -283,6 +321,9 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
       stop = true;
       clearInterval(timer);
     };
+    // addToStage only sets state and reads the place from a ref, so the
+    // poll needn't restart when it's redefined.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   function update(key: string, patch: Partial<Actor>) {
@@ -477,7 +518,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
         {actors.length > 0 && (
           <button
             onClick={() => {
-              setActors([]);
+              setActors(() => []);
               setSelected(null);
             }}
             className="absolute left-3 top-3 rounded-full bg-white/90 px-4 py-1.5 text-xs font-extrabold text-zinc-700 shadow active:scale-95"

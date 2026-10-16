@@ -9,6 +9,8 @@ import { useState } from "react";
 import {
   GUIDE_TOOLS,
   GUIDE_INTRO,
+  GUIDE_PARENTS,
+  PARENTS_URL,
   ASSESSMENT_WALKTHROUGH,
   READER_BANDS,
 } from "@/app/guideContent";
@@ -99,17 +101,38 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/tutorial/home.jpg"
-              alt="The app home screen with all nine tool cards"
+              alt="The app home screen with all fourteen sections"
               className="mx-auto mt-4 w-full max-w-xl rounded-2xl shadow-md ring-1 ring-black/5"
             />
             <p className="mt-2 text-xs font-semibold text-amber-700/70">
-              The home screen — tap any tool to open it.
+              The home screen — tap any section to open it.
             </p>
+          </div>
+
+          {/* Parents at home */}
+          <div className="mt-4 flex w-full items-start gap-3 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:ring-emerald-900/50">
+            <span className="text-2xl">🏡</span>
+            <div className="min-w-0">
+              <p className="font-extrabold text-emerald-900 dark:text-emerald-100">
+                For parents, at home
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                {GUIDE_PARENTS}
+              </p>
+              <a
+                href="/parents"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block rounded-full bg-[#0A4F29] px-4 py-1.5 text-xs font-bold text-white shadow-sm active:scale-95"
+              >
+                🏡 Open {PARENTS_URL}
+              </a>
+            </div>
           </div>
 
           {/* Suggested order */}
           <p className="mt-5 text-center text-sm font-bold uppercase tracking-wide text-zinc-400">
-            Suggested order — sounds first, reading last
+            Suggested order — sounds first, reading next, teachers’ tools last
           </p>
 
           {/* One card per tool */}
@@ -127,6 +150,9 @@ export default function Guide({ onOpen }: { onOpen: (id: string) => void }) {
                     <h3 className={`text-lg font-extrabold ${t.text}`}>
                       {i + 1}. {t.label}
                     </h3>
+                    <span className="mt-0.5 inline-block rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-extrabold text-zinc-600">
+                      {t.family ? "🏡 Children · also on the parents’ page" : "🧑‍🏫 Teachers · sign-in needed"}
+                    </span>
                     <p className="text-sm font-semibold text-zinc-700">
                       {t.purpose}
                     </p>

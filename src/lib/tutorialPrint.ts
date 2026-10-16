@@ -5,6 +5,7 @@
 import {
   GUIDE_TOOLS,
   GUIDE_INTRO,
+  GUIDE_PARENTS,
   ASSESSMENT_WALKTHROUGH,
   READER_BANDS,
 } from "@/app/guideContent";
@@ -37,6 +38,8 @@ h1 { font-size: 26px; margin: 6px 0 6px; }
 .thead { display: flex; align-items: center; gap: 12px; }
 .emoji { width: 52px; height: 52px; flex: none; display: grid; place-items: center; font-size: 28px; background: #f4f4f5; border-radius: 14px; }
 .thead h2 { font-size: 18px; margin: 0; }
+.who { display: inline-block; margin: 3px 0 0; padding: 2px 8px; border-radius: 999px; background: #f4f4f5; font-size: 11px; font-weight: 800; color: #52525b; }
+.parents { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 14px; padding: 14px 18px; margin: 14px 0 0; font-weight: 600; font-size: 14px; color: #065f46; text-align: left; }
 .purpose { margin: 2px 0 0; color: #3f3f46; font-weight: 600; font-size: 14px; }
 .shot { display: block; width: 100%; margin: 14px 0 0; border-radius: 12px; border: 1px solid #ececf0; }
 ul { margin: 14px 0 0; padding: 0; list-style: none; }
@@ -70,6 +73,7 @@ export function openTutorial(): void {
         <span class="emoji">${t.emoji}</span>
         <div>
           <h2>${i + 1}. ${esc(t.label)}</h2>
+          <span class="who">${t.family ? "🏡 Children · also on the parents’ page" : "🧑‍🏫 Teachers · sign-in needed"}</span>
           <p class="purpose">${esc(t.purpose)}</p>
         </div>
       </div>
@@ -99,11 +103,12 @@ export function openTutorial(): void {
       <div class="ic">📖</div>
       <h1>How to use this app</h1>
       <p class="intro">${esc(GUIDE_INTRO)}</p>
-      <img class="homeimg" src="${origin}/images/tutorial/home.jpg" alt="The app home screen with all nine tools" />
-      <div class="cap">The home screen — tap any tool to open it.</div>
+      <img class="homeimg" src="${origin}/images/tutorial/home.jpg" alt="The app home screen with all fourteen sections" />
+      <div class="cap">The home screen — tap any section to open it.</div>
+      <div class="parents">🏡 <b>For parents, at home:</b> ${esc(GUIDE_PARENTS)}</div>
     </div>
 
-    <div class="order">Suggested order — sounds first, reading last</div>
+    <div class="order">Suggested order — sounds first, reading next, teachers’ tools last</div>
 
     ${tools}
   </div>

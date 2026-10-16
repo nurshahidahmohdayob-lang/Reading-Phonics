@@ -10,10 +10,18 @@ export type ToolGuide = {
   /** Tailwind gradient + text colour for the in-app card. */
   color: string;
   text: string;
+  /** On the parents' page too (no sign-in); otherwise it's for teachers. */
+  family?: boolean;
 };
 
+/** The parents' page: the children's sections, with no sign-in. */
+export const PARENTS_URL = "readingpals.vercel.app/parents";
+
+export const GUIDE_PARENTS =
+  "Parents can use the children's sections at home with no sign-in: open readingpals.vercel.app/parents, or tap 🏡 Parent on the sign-in screen. Teachers tap 🧑‍🏫 Teacher and sign in with their Zera email; there's a Teacher button at the top of the parents' page too.";
+
 export const GUIDE_INTRO =
-  "Phonics Pals helps children learn to read step by step — first the letter sounds, then blending sounds into words, then spelling, then reading whole stories aloud. There are nine tools. Start with the sounds and work your way down.";
+  "Phonics Pals helps children learn to read step by step — first the letter sounds, then blending sounds into words, then spelling, then reading whole stories aloud. There are fourteen sections. Ten are for children to practise, and parents can open them at home without signing in. The other four are for teachers: Guided Reading, the Reading Assessment, Assignments and the Class Tracker. Start with the sounds and work your way down.";
 
 export const GUIDE_TOOLS: ToolGuide[] = [
   {
@@ -22,10 +30,11 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     label: "Phonics",
     purpose: "Learn the letter sounds and blend them into words.",
     steps: [
-      "Tap a letter to hear its true sound — the sound, not the letter name.",
+      "Sounds: the letter sounds in groups, in the order they're taught. Open a group and tap a letter to hear its true sound — the sound, not the letter name.",
       "Each sound has an action to help children remember it.",
-      "Once they know a few sounds, blend them together into a word.",
+      "Blending: once they know a few sounds, blend them together into a word.",
     ],
+    family: true,
     color: "from-[#FFA3CF] to-[#FF75B5]",
     text: "text-pink-900",
   },
@@ -39,6 +48,7 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Hear it sound-by-sound, then blended back together.",
       "Great for a tricky word that comes up during the day.",
     ],
+    family: true,
     color: "from-[#A9B8FF] to-[#7F93FF]",
     text: "text-indigo-900",
   },
@@ -52,6 +62,7 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Blend Words deck: see the picture, blend the sounds into a word.",
       "Tap the picture or word to hear it. Print any deck for paper cards.",
     ],
+    family: true,
     color: "from-[#84EEF0] to-[#3FD8DE]",
     text: "text-teal-900",
   },
@@ -61,9 +72,10 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     label: "Letter Formation",
     purpose: "Learn to write each letter with the correct stroke.",
     steps: [
-      "Pick a letter and watch the stroke animation.",
-      "Trace along to build neat handwriting.",
+      "Pick a letter, small or capital, and watch it being written.",
+      "Follow the pencil: trace along with a finger or mouse to build neat handwriting.",
     ],
+    family: true,
     color: "from-[#FFC27A] to-[#FF9B3D]",
     text: "text-orange-900",
   },
@@ -73,9 +85,11 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     label: "Spelling",
     purpose: "Break a word into its sounds and spell it — blending in reverse.",
     steps: [
-      "Hear a word.",
-      "Choose the letters for each sound to spell it.",
+      "Follow the treasure trail: 50 spelling adventures, from easy words to harder ones.",
+      "Hear a word, then choose the letters for each sound to spell it.",
+      "Each level done lights up the trail on the way to the treasure chest.",
     ],
+    family: true,
     color: "from-[#7DEBB0] to-[#3DD68C]",
     text: "text-emerald-900",
   },
@@ -85,9 +99,10 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     label: "Tricky Words",
     purpose: "Practise sight words that can't be sounded out.",
     steps: [
-      "Words like ‘the’, ‘said’ and ‘was’.",
+      "Words like ‘the’, ‘said’ and ‘was’, in six colour sets from Cream to Purple.",
       "Read and remember them on sight, not by sounding out.",
     ],
+    family: true,
     color: "from-[#FFEA70] to-[#FFD21F]",
     text: "text-amber-900",
   },
@@ -97,11 +112,27 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     label: "Sentences & Stories",
     purpose: "Read leveled stories and sentences — real reading practice.",
     steps: [
-      "Choose a level, from Year 1 to Year 6.",
+      "Choose a level, from Year 1 to Year 6 — 50 stories each, sorted by Lexile measure.",
       "Open a story and read. Tap any word you’re unsure of to hear it.",
+      "Then answer 10 questions about the story and see the score.",
+      "Every story has a colouring page. Teachers can share a colouring link and see the pictures children send in.",
     ],
+    family: true,
     color: "from-[#8FD1FF] to-[#4DB2FF]",
     text: "text-sky-900",
+  },
+  {
+    id: "storyplay",
+    emoji: "🧩",
+    label: "Story Play",
+    purpose: "Games that show a child understood what they read.",
+    steps: [
+      "Match the Picture: read a sentence, then tap the picture that matches it.",
+      "Build the Story: drag the sentences into the right order to make the story.",
+    ],
+    color: "from-[#84EEF0] to-[#3FD8DE]",
+    text: "text-teal-900",
+    family: true,
   },
   {
     id: "guided",
@@ -113,6 +144,7 @@ export const GUIDE_TOOLS: ToolGuide[] = [
       "Get a report: stars, accuracy, words per minute, and words to practise.",
       "Practise tricky words with the Coach.",
       "Answer 10 optional comprehension questions — a mix, never scored.",
+      "Each read is saved in the Class Tracker’s Guided reading tab.",
     ],
     color: "from-[#C9B3FF] to-[#A27DFF]",
     text: "text-violet-900",
@@ -132,6 +164,66 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     ],
     color: "from-[#FFA699] to-[#FF7B6B]",
     text: "text-rose-900",
+  },
+  {
+    id: "threed",
+    emoji: "🪄",
+    label: "3D Drawings",
+    purpose: "A child’s drawing on paper comes to life on screen.",
+    steps: [
+      "Tap 📷 Scan a drawing: take a photo of the drawing (or pick one). The paper is cut away, leaving just the drawing.",
+      "Choose where it lives: the jungle, a meadow, the ocean or space.",
+      "It moves like the real thing: a fish swims, a jellyfish pulses, a bird flies, a frog hops, a snake slithers. It guesses from the name (‘My fish’), or tap How does it move? to choose.",
+      "Tap a drawing to make it bigger or smaller, turn it round, or take it off. Drag it to move it.",
+      "Teachers can tap 📱 Scan with my phone to send drawings from a phone to the class screen.",
+    ],
+    color: "from-[#C9B3FF] to-[#A27DFF]",
+    text: "text-violet-900",
+    family: true,
+  },
+  {
+    id: "interactive",
+    emoji: "🎭",
+    label: "Interactive Stories",
+    purpose: "Read-along plays: listen, follow the words, tap the characters.",
+    steps: [
+      "Pick a story, from Starter to Year 6.",
+      "The story is read aloud, with a different voice for the narrator and each character, and the words light up as they’re read.",
+      "Tap the characters and the words to hear them.",
+      "Open to anyone with the link — no sign-in needed.",
+    ],
+    color: "from-[#FFA3CF] to-[#FF75B5]",
+    text: "text-rose-900",
+    family: true,
+  },
+  {
+    id: "assignments",
+    emoji: "📮",
+    label: "Assignments",
+    purpose: "Set online work for a class and see who has done it.",
+    steps: [
+      "Pick the year group at the top, then one of three kinds of work.",
+      "Reading at their level: each child gets their own story, pitched from their latest assessment. Share the reading link with parents — a child taps their name and sees only their story.",
+      "Year-group worksheets: four drag-and-drop worksheets for each year. Tap 👀 Try it to see what children see, then 📮 Send to… the whole class or chosen children.",
+      "Interactive video: a read-aloud video that pauses to ask questions. 📝 Worksheet beside it has a follow-up worksheet for afterwards.",
+      "A ✅ appears beside each child who has handed in. Tap it to see their whole worksheet as they did it, with wrong answers marked — 🖨️ Print it, or 🔁 let them do it again.",
+    ],
+    color: "from-[#FFC27A] to-[#FF9B3D]",
+    text: "text-amber-900",
+  },
+  {
+    id: "tracker",
+    emoji: "🗂️",
+    label: "Class Tracker",
+    purpose: "Every child’s reading level for Term 1, 2 and 3, in one private place.",
+    steps: [
+      "Pick a year group. Tap an empty cell to assess that child; tap a saved one to open or download their report.",
+      "Statistics shows how the class is doing; Guided reading shows who has read what, and how well.",
+      "Parent emails and Send reports: add parents’ emails, then send each one their own child’s report.",
+      "Sync students checks the class lists against the school system. A padlock marks a child who isn’t registered yet.",
+    ],
+    color: "from-[#7DEBB0] to-[#3DD68C]",
+    text: "text-emerald-900",
   },
 ];
 
