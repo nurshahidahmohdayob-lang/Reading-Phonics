@@ -6,6 +6,13 @@
  * The school system holds far more than the Cambridge classes (homeschool,
  * ZERA+, music, withdrawn pupils…), so we take only children who are
  * currently in a class named "Year 1"…"Year 6" and who are Active or Pending.
+ *
+ * Many children have no class set at all — only their own record carries
+ * their year group (its `cohort`, e.g. "Year 1 2026"), and the list doesn't
+ * include it. So for those, each child's record is looked up, a few dozen at
+ * a time (the school system allows 60 requests a minute), and the answer is
+ * remembered for a fortnight. Until every child has been looked up, the
+ * result says how many are still to check, and the page asks again.
  */
 
 export type ApiStudent = {
@@ -39,6 +46,19 @@ export type SchoolStudent = {
 };
 
 import { guardianEmails, type GuardianLookup } from "./guardiansApi";
+import { kvMGetJson, kvSetJson } from "./kv";
+
+/** How many children's records one sync may look up, leaving room under the
+    60-a-minute limit for the list and guardian pages. */
+const LOOKUPS_PER_CALL = 35;
+const COHORT_TTL = 14 * 24 * 60 * 60;
+const cohortKey = (id: string | number) => `commun:cohort:${id}`;
+
+/** "Year 1 2026" → "1"; anything that isn't Year 1–6 → null. */
+function yearOf(label: string | null | undefined): string | null {
+  const m = /^\s*Year\s*([1-6])\b/i.exec(label ?? "");
+  return m ? m[1] : null;
+}
 
 /** Any enrolled child with their guardians' addresses — class or no class.
     Many children (all of Year 5, for one) have no class set in the school
@@ -109,15 +129,71 @@ async function fetchAll(): Promise<ApiStudent[]> {
   return out;
 }
 
-/** Children currently in a Year 1–6 class, ready to compare with the roster,
-    each with their guardians' email addresses where the key allows it. */
+/** Each classless child's year group from their own record: remembered ones
+    first, then up to LOOKUPS_PER_CALL fresh lookups. Returns what's known and
+    how many are still to look up. */
+async function cohorts(
+  ids: (string | number)[],
+): Promise<{ known: Map<string, string>; left: number }> {
+  const { base, token } = config();
+  const known = new Map<string, string>();
+  const saved = await kvMGetJson<{ cohort: string }>(ids.map(cohortKey));
+  const todo: (string | number)[] = [];
+  ids.forEach((id, i) => {
+    const c = saved[i];
+    if (c) known.set(String(id), c.cohort);
+    else todo.push(id);
+  });
+
+  const now = todo.slice(0, LOOKUPS_PER_CALL);
+  let looked = 0;
+  let limited = false;
+  // A few at a time: quick, without bursting past the rate limit.
+  for (let i = 0; i < now.length && !limited; i += 5) {
+    await Promise.all(
+      now.slice(i, i + 5).map(async (id) => {
+        try {
+          const res = await fetch(`${base}/api/v1/students/${id}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (res.status === 429) {
+            limited = true;
+            return;
+          }
+          if (!res.ok) return;
+          const json = (await res.json()) as { data?: { cohort?: string | null }; cohort?: string | null };
+          const cohort = (json.data ?? json).cohort ?? "";
+          known.set(String(id), cohort);
+          looked++;
+          await kvSetJson(cohortKey(id), { cohort }, COHORT_TTL);
+        } catch {
+          /* left for the next sync */
+        }
+      }),
+    );
+  }
+  return { known, left: todo.length - looked };
+}
+
+/** Children currently in Year 1–6 (by class, or else by their own record's
+    year group), ready to compare with the roster, each with their guardians'
+    email addresses where the key allows it. `checking` is how many children's
+    year groups are still to be looked up — ask again in a minute. */
 export async function schoolStudents(): Promise<{
   students: SchoolStudent[];
   contacts: ParentContact[];
   guardians: GuardianLookup["state"];
+  checking: number;
 }> {
   const rows = await fetchAll();
   const guardians = await guardianEmails();
+  const enrolled = (r: ApiStudent) => r.status === 1 || r.status === 0;
+  // Only children with no class at all: a class like "Joy" or "Online Class"
+  // is a different programme, not a Cambridge year.
+  const { known, left } = await cohorts(
+    rows.filter((r) => enrolled(r) && !(r.class ?? "").trim()).map((r) => r.id),
+  );
   const out: SchoolStudent[] = [];
   const contacts: ParentContact[] = [];
   for (const r of rows) {
@@ -139,15 +215,18 @@ export async function schoolStudents(): Promise<{
     // Parent emails: every enrolled child, whether or not a class is set.
     if (parentEmails.length) contacts.push({ name, preferred, parentEmails });
 
-    // Class lists: only children actually placed in a Year 1–6 class.
-    const m = /^\s*Year\s*([1-6])\b/i.exec(r.class ?? "");
-    if (!m) continue;
+    // Class lists: children in a Year 1–6 class, or with no class but a
+    // Year 1–6 year group on their own record.
+    const year = (r.class ?? "").trim()
+      ? yearOf(r.class)
+      : yearOf(known.get(String(r.id)));
+    if (!year) continue;
     out.push({
       id: r.id,
       name,
       preferred,
-      year: `Year ${m[1]}`,
-      yearKey: `y${m[1]}`,
+      year: `Year ${year}`,
+      yearKey: `y${year}`,
       pending: r.status === 0,
       parentEmails,
     });
@@ -156,5 +235,5 @@ export async function schoolStudents(): Promise<{
     (a, b) =>
       a.yearKey.localeCompare(b.yearKey) || a.name.localeCompare(b.name),
   );
-  return { students: out, contacts, guardians: guardians.state };
+  return { students: out, contacts, guardians: guardians.state, checking: left };
 }

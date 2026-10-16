@@ -338,7 +338,16 @@ export default function ClassTracker({
   async function runSync() {
     setSync({ kind: "loading" });
     try {
-      const res = await fetch("/api/students");
+      let res = await fetch("/api/students");
+      // Children with no class set have their year group looked up one by
+      // one, a few dozen a minute; until that's done, wait and ask again.
+      for (let round = 0; round < 12 && res.ok; round++) {
+        const peek = await res.clone().json();
+        if (!peek?.ok || !peek.checking) break;
+        setSync({ kind: "loading", left: peek.checking });
+        await new Promise((r) => setTimeout(r, 62_000));
+        res = await fetch("/api/students");
+      }
       if (res.status === 401) {
         askToSignIn();
         setSync({
@@ -610,7 +619,11 @@ export default function ClassTracker({
                 title="Check the class lists against the school system"
                 className="rounded-full bg-white px-4 py-2 text-xs font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
               >
-                {sync.kind === "loading" ? "⏳ Checking…" : "🔄 Sync students"}
+                {sync.kind === "loading"
+                  ? sync.left
+                    ? `⏳ Checking year groups… ${sync.left} children left`
+                    : "⏳ Checking…"
+                  : "🔄 Sync students"}
               </button>
               <button
                 onClick={() => setManage((m) => !m)}
@@ -1671,7 +1684,7 @@ function SendReports({
 
 type SyncState =
   | { kind: "idle" }
-  | { kind: "loading" }
+  | { kind: "loading"; left?: number }
   | { kind: "error"; message: string }
   | { kind: "ready"; diffs: ClassDiff[]; picked: Set<string> }
   | { kind: "done"; added: number };

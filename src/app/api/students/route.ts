@@ -1,13 +1,17 @@
 /* The class lists as the school system has them.
 
    Only the tracker owner may call this, and the API key stays on the server.
-   Returns the children who are in a Year 1–6 class and Active or Pending. */
+   Returns the children who are in Year 1–6 and Active or Pending, and how
+   many children's year groups are still being looked up (`checking`). */
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken, SESSION_COOKIE } from "@/lib/session";
 import { isTrackerOwner } from "@/lib/trackerAccess";
 import { schoolStudents, StudentsApiNotConfigured } from "@/lib/studentsApi";
+
+// Up to a few dozen children's records are looked up per call.
+export const maxDuration = 60;
 
 export async function GET() {
   const jar = await cookies();
@@ -31,8 +35,8 @@ export async function GET() {
   }
 
   try {
-    const { students, contacts, guardians } = await schoolStudents();
-    return NextResponse.json({ ok: true, students, contacts, guardians });
+    const { students, contacts, guardians, checking } = await schoolStudents();
+    return NextResponse.json({ ok: true, students, contacts, guardians, checking });
   } catch (err) {
     if (err instanceof StudentsApiNotConfigured) {
       return NextResponse.json({ ok: false, configured: false });
