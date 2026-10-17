@@ -172,10 +172,10 @@ export const GUIDE_TOOLS: ToolGuide[] = [
     purpose: "A child’s drawing on paper comes to life on screen.",
     steps: [
       "Tap 📷 Scan a drawing: take a photo of the drawing (or pick one). The paper is cut away, leaving just the drawing.",
-      "Choose where it lives: the jungle, a meadow, the ocean or space.",
+      "Choose where it lives: the jungle, a meadow, the ocean or space. Each place has its own music; tap 🎵 Music on to turn it off.",
       "It moves like the real thing: a fish swims, a jellyfish pulses, a bird flies, a frog hops, a snake slithers. It guesses from the name (‘My fish’), or tap How does it move? to choose.",
       "Tap a drawing to make it bigger or smaller, turn it round, or take it off. Drag it to move it.",
-      "Teachers can tap 📱 Scan with my phone to send drawings from a phone to the class screen.",
+      "Tap 📱 Scan with my phone to send drawings from a phone straight to the big screen.",
     ],
     color: "from-[#C9B3FF] to-[#A27DFF]",
     text: "text-violet-900",

@@ -15,6 +15,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import qrcode from "qrcode-generator";
 import { cutOutDrawing } from "@/lib/cutout";
+import {
+  pauseThemeMusic,
+  startThemeMusic,
+  stopThemeMusic,
+} from "@/lib/themeMusic";
 import { publicSiteBase } from "@/lib/reportLink";
 import {
   useDrawings,
@@ -82,6 +87,17 @@ const BACKDROPS = [
   { id: "space", label: "🚀 Space", place: "space" },
 ] as const;
 type BackdropId = (typeof BACKDROPS)[number]["id"];
+
+/** Music on or off, remembered on this device. On unless turned off. */
+const MUSIC_KEY = "phonics.3d.music";
+function savedMusic(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return localStorage.getItem(MUSIC_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
 const BACKDROP_KEY = "phonics.3d.backdrop";
 /** What's on each place's stage, so the ocean keeps its fish and the jungle
     its own drawings — and they're still there next time. */
@@ -139,6 +155,38 @@ export default function ThreeD(_props: { family?: boolean }) {
       localStorage.setItem(BACKDROP_KEY, id);
     } catch {}
   }
+
+  // Each place has its own music, playing while the section is open.
+  const [music, setMusic] = useState(savedMusic);
+  function toggleMusic() {
+    const on = !music;
+    setMusic(on);
+    try {
+      localStorage.setItem(MUSIC_KEY, on ? "on" : "off");
+    } catch {}
+  }
+  useEffect(() => {
+    if (!music) {
+      stopThemeMusic();
+      return;
+    }
+    // Browsers only allow sound after a tap: start now if there's been
+    // one, otherwise on the first.
+    const go = () => startThemeMusic(backdrop);
+    const tapped =
+      (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } })
+        .userActivation?.hasBeenActive ?? false;
+    if (tapped) go();
+    window.addEventListener("pointerdown", go, { once: true });
+    const onHide = () => pauseThemeMusic(document.hidden);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pointerdown", go);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [music, backdrop]);
+  // Leaving the section stops it.
+  useEffect(() => () => stopThemeMusic(), []);
 
   // Each place has its own stage; the one on screen is the chosen place's.
   const [stages, setStages] = useState<Stages>(savedStages);
@@ -499,6 +547,14 @@ export default function ThreeD(_props: { family?: boolean }) {
             {b.label}
           </button>
         ))}
+        <button
+          onClick={toggleMusic}
+          aria-pressed={music}
+          title={music ? "Turn the music off" : "Turn the music on"}
+          className="rounded-full bg-white px-4 py-2 text-sm font-extrabold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          {music ? "🎵 Music on" : "🔇 Music off"}
+        </button>
       </div>
 
       {/* The stage */}
