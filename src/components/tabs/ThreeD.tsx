@@ -104,9 +104,10 @@ function savedBackdrop(): BackdropId {
   return "jungle";
 }
 
-/** `family`: the parents' page — no "Scan with my phone" (pairing a phone to
-    a class screen needs a teacher's sign-in); the camera button still works. */
-export default function ThreeD({ family = false }: { family?: boolean }) {
+/** `family`: the parents' page (no sign-in). "Scan with my phone" works
+    there too — the screen gets its own key for collecting what's sent. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function ThreeD(_props: { family?: boolean }) {
   const { drawings, loading } = useDrawings();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +120,8 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
   // Pairing a phone: the screen shows a code, the phone sends drawings to it.
   const [pairing, setPairing] = useState<{
     code: string;
+    /** Collects what's sent, when nobody is signed in (the parents' page). */
+    key?: string;
     got: number;
     note: string;
   } | null>(null);
@@ -258,11 +261,20 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
         return;
       }
       if (!data?.ok || typeof data.code !== "string") {
-        setError("Couldn't start the phone link. Try again.");
+        setError(
+          typeof data?.error === "string" && data.error !== "forbidden"
+            ? data.error
+            : "Couldn't start the phone link. Try again.",
+        );
         return;
       }
       setError("");
-      setPairing({ code: data.code, got: 0, note: "" });
+      setPairing({
+        code: data.code,
+        key: typeof data.key === "string" ? data.key : undefined,
+        got: 0,
+        note: "",
+      });
     } catch {
       setError("Couldn't start the phone link. Try again.");
     } finally {
@@ -272,12 +284,16 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
 
   // While the code is on screen, watch for drawings the phone sends.
   const code = pairing?.code;
+  const screenKey = pairing?.key;
   useEffect(() => {
     if (!code) return;
     let stop = false;
     const tick = async () => {
       try {
-        const res = await fetch(`/api/scan?code=${encodeURIComponent(code)}`);
+        const res = await fetch(
+          `/api/scan?code=${encodeURIComponent(code)}` +
+            (screenKey ? `&key=${encodeURIComponent(screenKey)}` : ""),
+        );
         const data = await res.json();
         if (stop) return;
         if (data?.expired) {
@@ -324,7 +340,7 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
     // addToStage only sets state and reads the place from a ref, so the
     // poll needn't restart when it's redefined.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, screenKey]);
 
   function update(key: string, patch: Partial<Actor>) {
     setActors((list) =>
@@ -377,19 +393,17 @@ export default function ThreeD({ family = false }: { family?: boolean }) {
       >
         {busy ? "✨ Cutting it out…" : "📷 Scan a drawing"}
       </button>
-      {!family && (
-        <button
-          onClick={() => (pairing ? setPairing(null) : void startPairing())}
-          disabled={pairingBusy}
-          className="mt-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
-        >
-          {pairingBusy
-            ? "⏳ Getting a code…"
-            : pairing
-              ? "✕ Stop using my phone"
-              : "📱 Scan with my phone"}
-        </button>
-      )}
+      <button
+        onClick={() => (pairing ? setPairing(null) : void startPairing())}
+        disabled={pairingBusy}
+        className="mt-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-zinc-600 shadow-sm ring-1 ring-black/5 active:scale-95 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-200"
+      >
+        {pairingBusy
+          ? "⏳ Getting a code…"
+          : pairing
+            ? "✕ Stop using my phone"
+            : "📱 Scan with my phone"}
+      </button>
       <p className="mt-1 max-w-sm text-center text-xs font-semibold text-zinc-400">
         On a phone or tablet this opens the camera — or a photo you&apos;ve
         already taken. Lay the drawing flat in good light, with all of it in the

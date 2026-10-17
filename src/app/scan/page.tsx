@@ -85,7 +85,7 @@ export default function ScanPage() {
           Scan the code on the screen
         </h1>
         <p className="mt-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-          Open <b>3D Drawings</b> on the class screen, tap{" "}
+          Open <b>3D Drawings</b> on the big screen, tap{" "}
           <b>📱 Scan with my phone</b>, and point your camera at the code it
           shows.
         </p>
@@ -100,7 +100,7 @@ export default function ScanPage() {
         Send a drawing to the screen
       </h1>
       <p className="mt-1 text-xs font-semibold text-zinc-400">
-        Linked to the class screen · {sentCount} sent
+        Linked to the big screen · {sentCount} sent
       </p>
 
       <input

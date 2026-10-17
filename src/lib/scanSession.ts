@@ -7,10 +7,11 @@
 
    The code IS the permission: whoever holds it can post a drawing to that
    screen, and nothing else — it can't read anything, and it dies after
-   fifteen minutes. Only a signed-in teacher can create one, and only the
-   teacher who created it can collect what was sent: with several classes
-   playing at once, one room's drawings must not land on another room's
-   screen. Server-side only. */
+   fifteen minutes. Only whoever created it can collect what was sent: with
+   several classes playing at once, one room's drawings must not land on
+   another room's screen. A signed-in teacher's pairing is theirs; one made
+   on the parents' page (no sign-in) belongs to a secret key handed only to
+   the screen that asked for it. Server-side only. */
 
 import { randomBytes } from "crypto";
 import { kvConfigured, kvGetJson, kvSetJson } from "./kv";
@@ -37,7 +38,8 @@ export type ScanItem = {
 type Session = {
   createdAt: string;
   items: ScanItem[];
-  /** The address of the teacher whose screen this pairing belongs to. */
+  /** The teacher whose screen this pairing belongs to, or "screen:<key>"
+      for one made without signing in. */
   owner: string;
 };
 
@@ -51,6 +53,22 @@ export function isScanCode(code: string): boolean {
 
 function key(code: string) {
   return PREFIX + code;
+}
+
+/** A secret for a screen with nobody signed in: it alone collects. */
+export function newScreenKey(): string {
+  return randomBytes(18).toString("base64url");
+}
+
+/** Pairings started without signing in, per address per hour — enough for
+    any family, a cap on anyone filling the store. */
+const OPEN_PER_HOUR = 20;
+export async function mayOpenPairing(ip: string): Promise<boolean> {
+  const k = `scanopen:${ip}`;
+  const n = (await kvGetJson<number>(k)) ?? 0;
+  if (n >= OPEN_PER_HOUR) return false;
+  await kvSetJson(k, n + 1, 60 * 60);
+  return true;
 }
 
 /** Start a pairing, owned by the teacher who asked for it. */

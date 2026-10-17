@@ -1,8 +1,9 @@
 /* The pairing channel between a phone and the class screen.
 
-   POST { action: "new" }                       signed in — start a pairing
+   POST { action: "new" }                       start a pairing (signed in, or
+                                                the parents' page: gets a key)
    POST { action: "upload", code, dataUrl, … }  the phone — send a drawing
-   GET  ?code=…                                 signed in — collect and clear
+   GET  ?code=…[&key=…]                         the screen — collect and clear
 
    Uploading needs no sign-in: the code from the QR is the permission, it
    only ever adds a drawing to that one screen, and it expires. */
@@ -14,7 +15,9 @@ import {
   addScan,
   drainScans,
   isScanCode,
+  mayOpenPairing,
   newScanSession,
+  newScreenKey,
   scanReady,
   MAX_UPLOAD_CHARS,
   type ScanItem,
@@ -49,16 +52,27 @@ export async function POST(req: Request) {
     );
   }
 
-  // Starting a pairing is the teacher's own doing.
+  // A signed-in teacher's pairing is theirs. Without a sign-in (the
+  // parents' page) the screen gets a secret key that alone can collect.
   if (body.action === "new") {
     const teacher = await signedInAs();
-    if (!teacher) {
+    if (teacher) {
+      return NextResponse.json({ ok: true, code: await newScanSession(teacher) });
+    }
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!(await mayOpenPairing(ip))) {
       return NextResponse.json(
-        { ok: false, error: "forbidden" },
-        { status: 403 },
+        { ok: false, error: "Too many phone links just now — try again later." },
+        { status: 429 },
       );
     }
-    return NextResponse.json({ ok: true, code: await newScanSession(teacher) });
+    const screenKey = newScreenKey();
+    return NextResponse.json({
+      ok: true,
+      code: await newScanSession(`screen:${screenKey}`),
+      key: screenKey,
+    });
   }
 
   // Sending a drawing: the code is the permission.
@@ -112,8 +126,10 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const teacher = await signedInAs();
-  if (!teacher) {
+  const params = new URL(req.url).searchParams;
+  const screenKey = params.get("key");
+  const owner = screenKey ? `screen:${screenKey}` : await signedInAs();
+  if (!owner) {
     return NextResponse.json(
       { ok: false, error: "forbidden" },
       { status: 403 },
@@ -122,8 +138,8 @@ export async function GET(req: Request) {
   if (!scanReady()) {
     return NextResponse.json({ ok: false, configured: false });
   }
-  const code = new URL(req.url).searchParams.get("code") ?? "";
-  const items = await drainScans(code, teacher);
+  const code = params.get("code") ?? "";
+  const items = await drainScans(code, owner);
   if (items === null) {
     return NextResponse.json({ ok: false, expired: true });
   }
