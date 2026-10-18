@@ -16,6 +16,13 @@ import dynamic from "next/dynamic";
 import qrcode from "qrcode-generator";
 import { cutOutDrawing } from "@/lib/cutout";
 import {
+  MAX_SCALE,
+  MIN_SCALE,
+  MOVE_IDS,
+  MOVES,
+  SCALE_STEP,
+} from "@/lib/drawingMoves";
+import {
   pauseThemeMusic,
   startThemeMusic,
   stopThemeMusic,
@@ -40,17 +47,6 @@ const Stage3D = dynamic(() => import("./Stage3D"), {
 
 type Move = Move3D;
 
-/** How a drawing can move: each like the real thing (see Stage3D). */
-const MOVES: { id: Move; label: string }[] = [
-  { id: "walk", label: "🚶 Walk" },
-  { id: "swim", label: "🐟 Swim" },
-  { id: "jelly", label: "🪼 Jellyfish" },
-  { id: "fly", label: "🐦 Fly" },
-  { id: "hop", label: "🐸 Hop" },
-  { id: "slither", label: "🐍 Slither" },
-  { id: "float", label: "🚀 Float" },
-];
-const MOVE_IDS = new Set<string>(MOVES.map((m) => m.id));
 
 /* Guessing how a drawing moves from what it's called — in English or Malay.
    Jellyfish before fish, so "jellyfish" doesn't swim like a fish. */
@@ -144,6 +140,45 @@ export default function ThreeD(_props: { family?: boolean }) {
   const [pairingBusy, setPairingBusy] = useState(false);
 
   const [selected, setSelected] = useState<string | null>(null);
+
+  // Full screen: the stage alone, filling the display.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  const [canFull, setCanFull] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => void;
+    };
+    // An iPhone can't make part of a page full screen; there's no button.
+    const frame = requestAnimationFrame(() =>
+      setCanFull(!!(el.requestFullscreen || el.webkitRequestFullscreen)),
+    );
+    const onChange = () => {
+      const d = document as Document & { webkitFullscreenElement?: Element };
+      setFull(!!(d.fullscreenElement ?? d.webkitFullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
+  }, []);
+  function toggleFull() {
+    const d = document as Document & { webkitExitFullscreen?: () => void };
+    if (full) {
+      if (document.exitFullscreen) void document.exitFullscreen();
+      else d.webkitExitFullscreen?.();
+      return;
+    }
+    const el = stageRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => void })
+      | null;
+    if (!el) return;
+    if (el.requestFullscreen) void el.requestFullscreen().catch(() => {});
+    else el.webkitRequestFullscreen?.();
+  }
   const [playing, setPlaying] = useState(true);
   // Which place the stage shows; remembered on this device.
   const [backdrop, setBackdrop] = useState<BackdropId>(savedBackdrop);
@@ -271,8 +306,12 @@ export default function ThreeD(_props: { family?: boolean }) {
     void updateDrawing(drawingId, { flip });
   }
 
-  function addToStage(d: Drawing, fallback: Move = "walk") {
-    const key = `${d.id}-${Date.now().toString(36)}`;
+  function addToStage(
+    d: Drawing,
+    fallback: Move = "walk",
+    chosen: { scale?: number } = {},
+  ): string {
+    const key = `${d.id}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
     // Pick it straight away, so what it can do is on screen without having
     // to know to tap it first.
     setSelected(key);
@@ -281,7 +320,7 @@ export default function ThreeD(_props: { family?: boolean }) {
       {
         key,
         drawingId: d.id,
-        scale: 1,
+        scale: chosen.scale ?? 1,
         // Moving from the moment it lands, rather than waiting to be told:
         // as it moved last time, or as its name suggests.
         move:
@@ -291,7 +330,12 @@ export default function ThreeD(_props: { family?: boolean }) {
         flip: !!d.flip,
       },
     ]);
+    return key;
   }
+
+  /** Drawings the phone sent, by the phone's name for each, so a change it
+      sends later finds the right one. */
+  const fromPhone = useRef(new Map<string, { key: string; drawingId: string }>());
 
   async function startPairing() {
     setPairingBusy(true);
@@ -351,27 +395,64 @@ export default function ThreeD(_props: { family?: boolean }) {
           return;
         }
         const items = (data?.items ?? []) as {
-          dataUrl: string;
-          width: number;
-          height: number;
+          kind?: "drawing" | "change";
+          ref?: string;
+          dataUrl?: string;
+          width?: number;
+          height?: number;
+          move?: string;
+          flip?: boolean;
+          scale?: number;
         }[];
+        let arrived = 0;
         for (const item of items) {
-          const saved = await saveDrawing({
+          const move =
+            item.move && MOVE_IDS.has(item.move) ? (item.move as Move) : undefined;
+          // A change to one the phone already sent.
+          if (item.kind === "change") {
+            const was = item.ref ? fromPhone.current.get(item.ref) : undefined;
+            if (!was) continue;
+            if (move) {
+              picked.current.add(was.drawingId);
+              setMove(was.drawingId, move);
+            }
+            if (item.flip !== undefined) setFlip(was.drawingId, item.flip);
+            if (item.scale !== undefined) update(was.key, { scale: item.scale });
+            continue;
+          }
+          if (!item.dataUrl || !item.width || !item.height) continue;
+          let saved = await saveDrawing({
             name: "Scanned drawing",
             dataUrl: item.dataUrl,
             width: item.width,
             height: item.height,
           });
           if (stop) return;
-          addToStage(saved);
+          // Moving the way it was chosen on the phone, and kept with it.
+          if (move || item.flip) {
+            saved = { ...saved, move: move ?? saved.move, flip: !!item.flip };
+            void updateDrawing(saved.id, {
+              ...(move ? { move } : {}),
+              flip: !!item.flip,
+            });
+            if (move) picked.current.add(saved.id);
+          }
+          const place = placeNow.current;
+          const key = addToStage(
+            saved,
+            place === "ocean" ? "swim" : place === "space" ? "float" : "walk",
+            { scale: item.scale },
+          );
+          if (item.ref) fromPhone.current.set(item.ref, { key, drawingId: saved.id });
+          arrived++;
         }
-        if (items.length) {
+        if (arrived) {
           setPairing((p) =>
             p
               ? {
                   ...p,
-                  got: p.got + items.length,
-                  note: `✓ ${items.length === 1 ? "A drawing" : `${items.length} drawings`} arrived`,
+                  got: p.got + arrived,
+                  note: `✓ ${arrived === 1 ? "A drawing" : `${arrived} drawings`} arrived`,
                 }
               : p,
           );
@@ -414,6 +495,70 @@ export default function ThreeD(_props: { family?: boolean }) {
       }),
     [actors, pictures],
   );
+
+  /** What the chosen drawing does: under the stage, or over it at full
+      screen. */
+  const toolbar = chosen ? (
+    <div
+      className={`flex flex-wrap items-center justify-center gap-2 rounded-2xl p-3 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900 ${
+        full
+          ? "absolute inset-x-3 bottom-3 bg-white/90 backdrop-blur"
+          : "mt-3 w-full bg-white"
+      }`}
+    >
+      {MOVES.map((m) => (
+        <button
+          key={m.id}
+          onClick={() => {
+            picked.current.add(chosen.drawingId);
+            setMove(chosen.drawingId, m.id);
+          }}
+          className={`rounded-full px-3 py-1.5 text-xs font-extrabold active:scale-95 ${
+            chosen.move === m.id
+              ? "bg-brand-600 text-white shadow"
+              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+          }`}
+        >
+          {m.label}
+        </button>
+      ))}
+      <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" />
+      {chosen.move !== "jelly" && (
+        <button
+          onClick={() => setFlip(chosen.drawingId, !chosen.flip)}
+          title="If it's going backwards, turn it round"
+          className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+        >
+          ↔️ Turn round
+        </button>
+      )}
+      <button
+        onClick={() =>
+          update(chosen.key, { scale: Math.max(MIN_SCALE, chosen.scale - SCALE_STEP) })
+        }
+        className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+      >
+        ➖ Smaller
+      </button>
+      <button
+        onClick={() =>
+          update(chosen.key, { scale: Math.min(MAX_SCALE, chosen.scale + SCALE_STEP) })
+        }
+        className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
+      >
+        ➕ Bigger
+      </button>
+      <button
+        onClick={() => {
+          setActors((list) => list.filter((a) => a.key !== chosen.key));
+          setSelected(null);
+        }}
+        className="rounded-full bg-rose-100 px-3 py-1.5 text-xs font-extrabold text-rose-600 active:scale-95 dark:bg-rose-950/50 dark:text-rose-300"
+      >
+        🗑️ Take off
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="flex w-full max-w-4xl flex-1 flex-col items-center">
@@ -559,8 +704,11 @@ export default function ThreeD(_props: { family?: boolean }) {
 
       {/* The stage */}
       <div
-        className="relative mt-3 w-full overflow-hidden rounded-[2rem] shadow-lg ring-4 ring-white/60"
-        style={{ aspectRatio: "16 / 9" }}
+        ref={stageRef}
+        className={`relative w-full overflow-hidden bg-black ${
+          full ? "" : "mt-3 rounded-[2rem] shadow-lg ring-4 ring-white/60"
+        }`}
+        style={full ? { width: "100%", height: "100%" } : { aspectRatio: "16 / 9" }}
       >
         <Backdrop id={backdrop} />
 
@@ -579,12 +727,22 @@ export default function ThreeD(_props: { family?: boolean }) {
           </p>
         )}
 
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          className="absolute right-3 top-3 rounded-full bg-white/90 px-4 py-1.5 text-xs font-extrabold text-zinc-700 shadow active:scale-95"
-        >
-          {playing ? "⏸ Pause" : "▶️ Play"}
-        </button>
+        <div className="absolute right-3 top-3 flex gap-2">
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-extrabold text-zinc-700 shadow active:scale-95"
+          >
+            {playing ? "⏸ Pause" : "▶️ Play"}
+          </button>
+          {canFull && (
+            <button
+              onClick={toggleFull}
+              className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-extrabold text-zinc-700 shadow active:scale-95"
+            >
+              {full ? "✕ Exit full screen" : "⛶ Full screen"}
+            </button>
+          )}
+        </div>
         {actors.length > 0 && (
           <button
             onClick={() => {
@@ -596,64 +754,10 @@ export default function ThreeD(_props: { family?: boolean }) {
             ✨ Clear stage
           </button>
         )}
+        {full && toolbar}
       </div>
 
-      {/* What the chosen drawing does */}
-      {chosen && (
-        <div className="mt-3 flex w-full flex-wrap items-center justify-center gap-2 rounded-2xl bg-white p-3 shadow-sm ring-2 ring-white/70 dark:bg-zinc-900">
-          {MOVES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => {
-                picked.current.add(chosen.drawingId);
-                setMove(chosen.drawingId, m.id);
-              }}
-              className={`rounded-full px-3 py-1.5 text-xs font-extrabold active:scale-95 ${
-                chosen.move === m.id
-                  ? "bg-brand-600 text-white shadow"
-                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-          <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" />
-          {chosen.move !== "jelly" && (
-            <button
-              onClick={() => setFlip(chosen.drawingId, !chosen.flip)}
-              title="If it's going backwards, turn it round"
-              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-            >
-              ↔️ Turn round
-            </button>
-          )}
-          <button
-            onClick={() =>
-              update(chosen.key, { scale: Math.max(0.3, chosen.scale - 0.15) })
-            }
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-          >
-            ➖ Smaller
-          </button>
-          <button
-            onClick={() =>
-              update(chosen.key, { scale: Math.min(2.5, chosen.scale + 0.15) })
-            }
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold text-zinc-600 active:scale-95 dark:bg-zinc-800 dark:text-zinc-300"
-          >
-            ➕ Bigger
-          </button>
-          <button
-            onClick={() => {
-              setActors((list) => list.filter((a) => a.key !== chosen.key));
-              setSelected(null);
-            }}
-            className="rounded-full bg-rose-100 px-3 py-1.5 text-xs font-extrabold text-rose-600 active:scale-95 dark:bg-rose-950/50 dark:text-rose-300"
-          >
-            🗑️ Take off
-          </button>
-        </div>
-      )}
+      {!full && toolbar}
 
       {/* Saved drawings */}
       <div className="mt-5 w-full">

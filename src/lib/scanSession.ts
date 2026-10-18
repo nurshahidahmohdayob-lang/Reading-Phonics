@@ -20,7 +20,9 @@ const PREFIX = "scan:";
 /** Long enough for a lesson, short enough that a photographed QR goes stale. */
 const TTL_SECONDS = 15 * 60;
 /** Plenty for one lesson's drawings, and a cap on what a stranger could add. */
-const MAX_ITEMS = 12;
+const MAX_DRAWINGS = 12;
+/** Waiting messages of any kind, setting changes included. */
+const MAX_ITEMS = 80;
 /** Characters of data URL. The phone shrinks pictures to well under this. */
 export const MAX_UPLOAD_CHARS = 700_000;
 
@@ -28,10 +30,18 @@ export const MAX_UPLOAD_CHARS = 700_000;
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 const CODE = /^[a-z2-9]{12}$/;
 
+/** A drawing from the phone, with how it should move if the phone chose;
+    or a change the phone made to one it already sent (`kind: "change"`).
+    `ref` is the phone's own name for the drawing, to match the two up. */
 export type ScanItem = {
-  dataUrl: string;
-  width: number;
-  height: number;
+  kind?: "drawing" | "change";
+  ref?: string;
+  dataUrl?: string;
+  width?: number;
+  height?: number;
+  move?: string;
+  flip?: boolean;
+  scale?: number;
   at: string;
 };
 
@@ -92,7 +102,12 @@ export async function addScan(
   if (!isScanCode(code)) return "gone";
   const session = await kvGetJson<Session>(key(code));
   if (!session) return "gone";
-  if (session.items.length >= MAX_ITEMS) return "full";
+  const drawings = session.items.filter((i) => i.kind !== "change").length;
+  if (
+    session.items.length >= MAX_ITEMS ||
+    (item.kind !== "change" && drawings >= MAX_DRAWINGS)
+  )
+    return "full";
   session.items.push(item);
   // Keep the pairing alive while it's being used.
   await kvSetJson(key(code), session, TTL_SECONDS);

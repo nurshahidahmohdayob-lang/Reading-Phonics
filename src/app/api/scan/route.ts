@@ -2,13 +2,17 @@
 
    POST { action: "new" }                       start a pairing (signed in, or
                                                 the parents' page: gets a key)
-   POST { action: "upload", code, dataUrl, … }  the phone — send a drawing
+   POST { action: "upload", code, dataUrl, … }  the phone — send a drawing,
+                                                with how it moves if chosen
+   POST { action: "change", code, ref, … }      the phone — change how one it
+                                                sent moves, turns or its size
    GET  ?code=…[&key=…]                         the screen — collect and clear
 
    Uploading needs no sign-in: the code from the QR is the permission, it
    only ever adds a drawing to that one screen, and it expires. */
 
 import { NextResponse } from "next/server";
+import { MAX_SCALE, MIN_SCALE, MOVE_IDS } from "@/lib/drawingMoves";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifyToken } from "@/lib/session";
 import {
@@ -25,6 +29,26 @@ import {
 
 /** The signed-in teacher's address, or null. A pairing belongs to one
     teacher: they made it, and only they can collect from it. */
+/** The settings a phone may send with a drawing, checked; null if any is
+    malformed. */
+function settings(body: {
+  ref?: unknown;
+  move?: unknown;
+  flip?: unknown;
+  scale?: unknown;
+}): Pick<ScanItem, "ref" | "move" | "flip" | "scale"> | null {
+  const { ref, move, flip, scale } = body;
+  if (ref !== undefined && (typeof ref !== "string" || !/^[a-z0-9]{6,20}$/.test(ref))) return null;
+  if (move !== undefined && (typeof move !== "string" || !MOVE_IDS.has(move))) return null;
+  if (flip !== undefined && typeof flip !== "boolean") return null;
+  if (
+    scale !== undefined &&
+    (typeof scale !== "number" || !(scale >= MIN_SCALE && scale <= MAX_SCALE))
+  )
+    return null;
+  return { ref, move, flip, scale } as Pick<ScanItem, "ref" | "move" | "flip" | "scale">;
+}
+
 async function signedInAs(): Promise<string | null> {
   const jar = await cookies();
   const session = verifyToken(jar.get(SESSION_COOKIE)?.value);
@@ -42,6 +66,10 @@ export async function POST(req: Request) {
     dataUrl?: string;
     width?: number;
     height?: number;
+    ref?: unknown;
+    move?: unknown;
+    flip?: unknown;
+    scale?: unknown;
   };
   try {
     body = await req.json();
@@ -78,7 +106,9 @@ export async function POST(req: Request) {
   // Sending a drawing: the code is the permission.
   if (body.action === "upload") {
     const { code, dataUrl, width, height } = body;
+    const chosen = settings(body);
     if (
+      !chosen ||
       !code ||
       !isScanCode(code) ||
       typeof dataUrl !== "string" ||
@@ -98,9 +128,11 @@ export async function POST(req: Request) {
       );
     }
     const item: ScanItem = {
+      kind: "drawing",
       dataUrl,
       width,
       height,
+      ...chosen,
       at: new Date().toISOString(),
     };
     const result = await addScan(code, item);
@@ -117,6 +149,29 @@ export async function POST(req: Request) {
       });
     }
     return NextResponse.json({ ok: true });
+  }
+
+  // Changing one already sent: how it moves, which way it faces, its size.
+  if (body.action === "change") {
+    const chosen = settings(body);
+    if (!chosen?.ref || !body.code || !isScanCode(body.code)) {
+      return NextResponse.json(
+        { ok: false, error: "bad request" },
+        { status: 400 },
+      );
+    }
+    const result = await addScan(body.code, {
+      kind: "change",
+      ...chosen,
+      at: new Date().toISOString(),
+    });
+    if (result === "gone") {
+      return NextResponse.json({
+        ok: false,
+        error: "That code has expired — show a fresh one on the screen.",
+      });
+    }
+    return NextResponse.json({ ok: result === "ok" });
   }
 
   return NextResponse.json(
