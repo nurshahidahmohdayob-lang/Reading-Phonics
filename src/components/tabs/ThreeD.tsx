@@ -78,8 +78,8 @@ type Actor = {
 };
 
 /** The places a drawing can be put in: looping films in public/video. The
-    jungle, meadow and ocean are films; space is rendered by
-    blender/backdrops.py. */
+    jungle, meadow and ocean are films; space is a ringed-planet film,
+    played forwards then back so its slow zoom loops without a jump. */
 const BACKDROPS = [
   { id: "jungle", label: "🌴 Jungle", place: "the jungle" },
   { id: "meadow", label: "🌳 Meadow", place: "the meadow" },
@@ -705,11 +705,16 @@ export default function ThreeD(_props: { family?: boolean }) {
 }
 
 /** What the drawings stand in front of: a film of a place (a jungle path, a
-    meadow, the sea floor, the moon), scenery stirring at the sides and
+    meadow, the sea floor, a ringed planet in space), scenery stirring at the sides and
     the middle left clear for the drawings to stand on. It loops quietly behind the stage and takes no taps
     — the drawings on top do. Muted and inline, so it plays on its own on a
     phone as well as the class screen. */
+/** A place's film, when it isn't simply named after the place. A new film
+    gets a new name, so devices that kept the old one fetch it afresh. */
+const FILM: Partial<Record<BackdropId, string>> = { space: "space-planet" };
+
 function Backdrop({ id }: { id: BackdropId }) {
+  const film = FILM[id] ?? id;
   return (
     <video
       key={id}
@@ -719,10 +724,10 @@ function Backdrop({ id }: { id: BackdropId }) {
       loop
       playsInline
       preload="auto"
-      poster={`/video/${id}-poster.jpg`}
+      poster={`/video/${film}-poster.jpg`}
       className="pointer-events-none absolute inset-0 h-full w-full object-cover"
     >
-      <source src={`/video/${id}.mp4`} type="video/mp4" />
+      <source src={`/video/${film}.mp4`} type="video/mp4" />
     </video>
   );
 }
