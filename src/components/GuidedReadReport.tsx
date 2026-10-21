@@ -15,6 +15,7 @@ import { classifyAccuracy } from "@/app/stories";
 import { lexileLabel } from "@/lib/lexileStats";
 import type { GuidedRead } from "@/lib/guidedLog";
 import { printWorksheetForRead } from "@/lib/worksheet";
+import { printGuidedRead } from "@/lib/guidedReadPrint";
 
 function longDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -70,6 +71,75 @@ export default function GuidedReadReport({
   const accuracyMet = level ? read.accuracy >= level.accuracyGoal : null;
   const wpmMet = level ? read.wcpm >= level.wpmLow : null;
 
+  const wrong = read.total - read.correct;
+  const stats = [
+    {
+      label: "Accuracy",
+      value: `${read.accuracy}%`,
+      note: level ? `goal ≥${level.accuracyGoal}%` : "",
+      met: accuracyMet,
+    },
+    {
+      label: "Words correct",
+      value: `${read.correct}/${read.total}`,
+      note: !marked
+        ? "of the whole story"
+        : reached >= read.total
+          ? "read to the end"
+          : `stopped after ${reached} of ${read.total}`,
+      met: null,
+    },
+    {
+      label: "Words / min",
+      value: `${read.wcpm}`,
+      note: level ? `goal ${level.wpmLow}–${level.wpmHigh}` : "",
+      met: wpmMet,
+    },
+  ];
+
+  /** The same report on an A4 page, in a new tab, with the print dialog up. */
+  function print() {
+    printGuidedRead({
+      name,
+      year,
+      date: longDate(read.at),
+      title: read.title,
+      emoji: found?.passage.emoji ?? "📖",
+      levelLine: `${read.grade}${read.lexile ? ` · ${lexileLabel(read.lexile)}` : ""}`,
+      verdict: verdict
+        ? {
+            label: verdict.label,
+            grade: read.grade,
+            meaning: verdict.meaning,
+            kind:
+              verdict.label === "Independent"
+                ? "independent"
+                : verdict.label === "Instructional"
+                  ? "instructional"
+                  : "developing",
+          }
+        : null,
+      stats,
+      story:
+        found && marked
+          ? { kind: "marked", words, missed: [...missed], reached }
+          : found
+            ? {
+                kind: "plain",
+                text: found.passage.text,
+                note:
+                  wrong > 0
+                    ? `${wrong} ${wrong === 1 ? "word was" : "words were"} marked wrong in this read, but which ones wasn't saved at the time — so none are marked here.`
+                    : "Every word was read correctly.",
+              }
+            : {
+                kind: "missing",
+                note: "This story isn't on this device any more, so its words can't be shown — the marks above are as they were saved.",
+              },
+      practice: marked ? practice : null,
+    });
+  }
+
   return (
     <div
       role="dialog"
@@ -110,14 +180,22 @@ export default function GuidedReadReport({
           </span>
         </div>
 
-        {found && (
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
-            onClick={() => printWorksheetForRead(read, { name, year, lexile })}
-            className="mt-3 rounded-full bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95"
+            onClick={print}
+            className="rounded-full bg-[#0A4F29] px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95"
           >
-            📝 Print a worksheet on this story
+            🖨️ Print this report
           </button>
-        )}
+          {found && (
+            <button
+              onClick={() => printWorksheetForRead(read, { name, year, lexile })}
+              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95"
+            >
+              📝 Print a worksheet on this story
+            </button>
+          )}
+        </div>
 
         {verdict && (
           <div className={`mt-3 rounded-2xl px-4 py-3 ${verdict.tone}`}>
@@ -127,30 +205,9 @@ export default function GuidedReadReport({
         )}
 
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat
-            label="Accuracy"
-            value={`${read.accuracy}%`}
-            note={level ? `goal ≥${level.accuracyGoal}%` : ""}
-            met={accuracyMet}
-          />
-          <Stat
-            label="Words correct"
-            value={`${read.correct}/${read.total}`}
-            note={
-              !marked
-                ? "of the whole story"
-                : reached >= read.total
-                  ? "read to the end"
-                  : `stopped after ${reached} of ${read.total}`
-            }
-            met={null}
-          />
-          <Stat
-            label="Words / min"
-            value={`${read.wcpm}`}
-            note={level ? `goal ${level.wpmLow}–${level.wpmHigh}` : ""}
-            met={wpmMet}
-          />
+          {stats.map((st) => (
+            <Stat key={st.label} {...st} />
+          ))}
         </div>
 
         {/* The story, marked */}
