@@ -164,6 +164,47 @@ export function deleteRecord(yearKey: string, name: string, term: TermNo) {
   void pushServer({ op: "delete", yearKey, name, term });
 }
 
+/** Results filed under "Other" for a child who is on a class list. Until
+    October 2026 a result for a child added by hand was saved before the
+    hand-added names had loaded, so it went to "Other". Each is moved to the
+    child's class: copied there first (unless the class already holds a newer
+    one for that term), then taken out of "Other". */
+const refiling = new Set<string>();
+export async function refileFromOther(
+  name: string,
+  to: { yearKey: string; year: string },
+): Promise<void> {
+  const from = studentKey("other", name);
+  if (refiling.has(from)) return;
+  const misfiled = read()[from];
+  if (!misfiled) return;
+  refiling.add(from);
+  try {
+    const target = read()[studentKey(to.yearKey, name)] ?? {};
+    const moved: TrackerRecord[] = [];
+    for (const rec of Object.values(misfiled)) {
+      if (!rec) continue;
+      const there = target[rec.term];
+      if (!there || there.savedAt < rec.savedAt) {
+        moved.push({ ...rec, yearKey: to.yearKey, year: to.year });
+      }
+    }
+    // Locally at once, so the row moves straight away.
+    const store = read();
+    const k = studentKey(to.yearKey, name);
+    for (const rec of moved) store[k] = { ...(store[k] ?? {}), [rec.term]: rec };
+    delete store[from];
+    writeLocal(store);
+    // Then the shared copy: the class's copy saved before "Other"'s goes.
+    for (const rec of moved) await pushServer({ op: "save", record: rec });
+    for (const rec of Object.values(misfiled)) {
+      if (rec) await pushServer({ op: "delete", yearKey: "other", name: rec.student, term: rec.term });
+    }
+  } finally {
+    refiling.delete(from);
+  }
+}
+
 export function totalSaved(store: TrackerStore): number {
   return Object.values(store).reduce((n, terms) => n + Object.keys(terms).length, 0);
 }

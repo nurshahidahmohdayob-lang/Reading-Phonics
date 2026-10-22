@@ -29,6 +29,7 @@ import {
   useTracker,
   deleteRecord,
   totalSaved,
+  refileFromOther,
   type TermNo,
   type TrackerRecord,
   type TrackerStore,
@@ -228,6 +229,30 @@ export default function ClassTracker({
   const autoFillStarted = useRef(false);
   const mailVia = useMailVia();
   const groups = buildGroups(edits, store);
+
+  // A result filed under "Other" for a child who is on a class list (added
+  // by hand, assessed before the app knew) goes to their class.
+  useEffect(() => {
+    if (cloud === "checking") return;
+    const onList = new Map<string, { yearKey: string; year: string }[]>();
+    for (const g of groups) {
+      if (g.key === "other") continue;
+      for (const s of g.students) {
+        const k = s.name.toLowerCase().replace(/\s+/g, " ").trim();
+        onList.set(k, [...(onList.get(k) ?? []), { yearKey: g.key, year: g.year }]);
+      }
+    }
+    for (const [key, terms] of Object.entries(store)) {
+      if (!key.startsWith("other:")) continue;
+      const rec = Object.values(terms)[0];
+      if (!rec) continue;
+      const classes = onList.get(key.slice("other:".length)) ?? [];
+      // Only a single, certain match: the same name in two classes stays.
+      if (classes.length === 1) void refileFromOther(rec.student, classes[0]);
+    }
+    // groups is rebuilt every render from edits and store, which are the deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, edits, cloud]);
 
   const [view, setView] = useState<"tracker" | "stats" | "guided">(
     initial?.view ?? "tracker",

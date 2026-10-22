@@ -17,7 +17,12 @@ import { alignReading, type Rating } from "@/lib/reading";
 import { speak, stopSpeech, chime, praise } from "@/lib/speak";
 import { sayWord } from "@/lib/sayWord";
 import { openReport, type ReportData } from "@/lib/reportPrint";
-import { useRosterEdits, allStudents, findStudent } from "@/lib/rosterStore";
+import {
+  useRosterEdits,
+  allStudents,
+  findStudent,
+  loadRosterEdits,
+} from "@/lib/rosterStore";
 import { saveRecord, type TermNo } from "@/lib/tracker";
 
 /* ---------- Stage 1: the Cambridge graded word list, easiest → ~Lexile 1050 ----------
@@ -1858,10 +1863,13 @@ function Report({
   }
 
   function saveToTracker() {
+    // Read the class lists afresh: this runs as the report first opens,
+    // before rosterEdits has loaded the children added by hand.
+    const match = findStudent(loadRosterEdits(), studentName);
     saveRecord({
       student: studentName,
-      year: rosterMatch?.year ?? "Other",
-      yearKey: rosterMatch?.yearKey ?? "other",
+      year: match?.year ?? "Other",
+      yearKey: match?.yearKey ?? "other",
       term: assessTerm,
       savedAt: new Date().toISOString(),
       report: buildReport(),

@@ -130,6 +130,13 @@ export function findStudent(
   return allStudents(edits).find((s) => s.name.toLowerCase() === wanted);
 }
 
+/** The edits as saved right now. For a decision made at once (filing a
+    result), where the hook's first render — before it has read them — would
+    leave out every child added by hand. */
+export function loadRosterEdits(): RosterEdits {
+  return read();
+}
+
 /** Reactive snapshot; re-renders on any change here or in another tab. */
 export function useRosterEdits(): RosterEdits {
   const [edits, setEdits] = useState<RosterEdits>(EMPTY);
