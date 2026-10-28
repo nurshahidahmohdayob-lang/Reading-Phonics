@@ -16,6 +16,7 @@ import { lexileLabel } from "@/lib/lexileStats";
 import type { GuidedRead } from "@/lib/guidedLog";
 import { printWorksheetForRead } from "@/lib/worksheet";
 import { printGuidedRead } from "@/lib/guidedReadPrint";
+import { readDetail, type ReadDetail } from "@/lib/guidedReadInsights";
 
 function longDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -33,6 +34,7 @@ export default function GuidedReadReport({
   year,
   read,
   lexile,
+  history = [],
   onClose,
 }: {
   name: string;
@@ -40,6 +42,8 @@ export default function GuidedReadReport({
   read: GuidedRead;
   /** The child's reading level, which sets how easy the worksheet is. */
   lexile: number | null;
+  /** Every read by this child, for how this one compares. */
+  history?: GuidedRead[];
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -72,6 +76,17 @@ export default function GuidedReadReport({
   const wpmMet = level ? read.wcpm >= level.wpmLow : null;
 
   const wrong = read.total - read.correct;
+  const detail = readDetail({
+    name,
+    read,
+    level,
+    verdict,
+    childLexile: lexile,
+    missedWords: marked ? practice : [],
+    marked,
+    reached,
+    history,
+  });
   const stats = [
     {
       label: "Accuracy",
@@ -137,6 +152,7 @@ export default function GuidedReadReport({
                 note: "This story isn't on this device any more, so its words can't be shown — the marks above are as they were saved.",
               },
       practice: marked ? practice : null,
+      detail,
     });
   }
 
@@ -210,6 +226,8 @@ export default function GuidedReadReport({
           ))}
         </div>
 
+        <Detail detail={detail} part="top" />
+
         {/* The story, marked */}
         {found && marked ? (
           <div className="mt-5">
@@ -279,17 +297,38 @@ export default function GuidedReadReport({
             <h3 className="text-sm font-extrabold text-zinc-600 dark:text-zinc-300">
               Words to practise
             </h3>
-            {practice.length ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {practice.map((w) => (
-                  <span
-                    key={w}
-                    className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                  >
-                    {w}
-                  </span>
-                ))}
-              </div>
+            {detail.words.length ? (
+              <>
+                <div className="mt-2 flex flex-col gap-2">
+                  {detail.words.map((w) => (
+                    <div
+                      key={w.word}
+                      className="flex flex-col gap-1 rounded-2xl bg-amber-50/70 p-3 sm:flex-row sm:items-start sm:gap-3 dark:bg-zinc-800"
+                    >
+                      <span className="w-fit shrink-0 rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                        {w.word}
+                      </span>
+                      <ul className="flex flex-col gap-0.5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                        {w.patterns.length ? (
+                          w.patterns.map((p) => (
+                            <li key={p.label}>
+                              <b className="text-zinc-800 dark:text-zinc-100">{p.label}</b>{" "}
+                              — {p.tip}
+                            </li>
+                          ))
+                        ) : (
+                          <li>Practise it as a whole word: read it, spell it, read it again.</li>
+                        )}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                {detail.wordSummary.length > 0 && (
+                  <p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                    In common: {detail.wordSummary.join("; ")}.
+                  </p>
+                )}
+              </>
             ) : (
               <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                 🎉 Every word they read, they read correctly.
@@ -297,6 +336,8 @@ export default function GuidedReadReport({
             )}
           </div>
         )}
+
+        <Detail detail={detail} part="bottom" />
       </div>
     </div>
   );
@@ -336,5 +377,89 @@ function Stat({
         </div>
       )}
     </div>
+  );
+}
+
+/** The report's detail: a summary and the figures behind it (top), and
+    their progress and what to do next (bottom). */
+function Detail({ detail, part }: { detail: ReadDetail; part: "top" | "bottom" }) {
+  if (part === "top") {
+    return (
+      <>
+        <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold leading-relaxed text-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
+          <span className="font-extrabold">Summary. </span>
+          {detail.summary}
+        </div>
+        <h3 className="mt-5 text-sm font-extrabold text-zinc-600 dark:text-zinc-300">
+          The reading in detail
+        </h3>
+        <dl className="mt-2 divide-y divide-zinc-100 rounded-2xl ring-1 ring-zinc-100 dark:divide-zinc-800 dark:ring-zinc-800">
+          {detail.facts.map((f) => (
+            <div key={f.label} className="flex flex-col gap-0.5 px-4 py-2 sm:flex-row sm:gap-4">
+              <dt className="w-40 shrink-0 text-xs font-extrabold uppercase tracking-wide text-zinc-400">
+                {f.label}
+              </dt>
+              <dd className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </>
+    );
+  }
+  return (
+    <>
+      {detail.history && (
+        <div className="mt-5">
+          <h3 className="text-sm font-extrabold text-zinc-600 dark:text-zinc-300">
+            Progress
+          </h3>
+          {detail.history.change && (
+            <p className="mt-1 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+              {detail.history.change}
+            </p>
+          )}
+          <div className="mt-2 overflow-x-auto rounded-2xl ring-1 ring-zinc-100 dark:ring-zinc-800">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-zinc-50 text-[10px] font-extrabold uppercase tracking-wide text-zinc-400 dark:bg-zinc-800">
+                <tr>
+                  <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">Story</th>
+                  <th className="px-3 py-2">Level</th>
+                  <th className="px-3 py-2 text-right">Accuracy</th>
+                  <th className="px-3 py-2 text-right">Words / min</th>
+                </tr>
+              </thead>
+              <tbody className="font-semibold text-zinc-600 dark:text-zinc-300">
+                {detail.history.rows.map((r, i) => (
+                  <tr
+                    key={i}
+                    className={r.current ? "bg-amber-50/70 font-extrabold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100" : ""}
+                  >
+                    <td className="whitespace-nowrap px-3 py-1.5">{r.date}</td>
+                    <td className="px-3 py-1.5">
+                      {r.title}
+                      {r.current ? " (this read)" : ""}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-1.5">{r.grade}</td>
+                    <td className="px-3 py-1.5 text-right">{r.accuracy}%</td>
+                    <td className="px-3 py-1.5 text-right">{r.wcpm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      <div className="mt-5">
+        <h3 className="text-sm font-extrabold text-zinc-600 dark:text-zinc-300">
+          Next steps
+        </h3>
+        <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5 text-sm font-semibold text-zinc-700 marker:font-extrabold marker:text-emerald-600 dark:text-zinc-200">
+          {detail.nextSteps.map((st) => (
+            <li key={st}>{st}</li>
+          ))}
+        </ol>
+      </div>
+    </>
   );
 }

@@ -2,6 +2,8 @@
     in a new tab, ready to print or save as a PDF. The report works out what
     to show; this only lays it out. Modelled on reportPrint.ts. */
 
+import type { ReadDetail } from "./guidedReadInsights";
+
 export type GuidedReadPrint = {
   name: string;
   year: string;
@@ -25,6 +27,8 @@ export type GuidedReadPrint = {
     | { kind: "missing"; note: string };
   /** Words to practise, when the marks were kept; null when they weren't. */
   practice: string[] | null;
+  /** The summary, figures, word patterns, progress and next steps. */
+  detail?: ReadDetail;
 };
 
 function esc(s: string): string {
@@ -86,14 +90,47 @@ export function guidedReadHtml(d: GuidedReadPrint): string {
     story = `<p class="missing">${esc(d.story.note)}</p>`;
   }
 
+  const x = d.detail;
   const practice =
     d.practice === null
       ? ""
       : `<h3>Words to practise</h3>${
-          d.practice.length
-            ? `<div class="chips">${d.practice.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</div>`
-            : `<p class="allgood">🎉 Every word they read, they read correctly.</p>`
+          !d.practice.length
+            ? `<p class="allgood">🎉 Every word they read, they read correctly.</p>`
+            : x
+              ? `<div class="words">${x.words
+                  .map(
+                    (w) => `<div class="wordrow"><span class="chip">${esc(w.word)}</span><ul>${
+                      w.patterns.length
+                        ? w.patterns.map((p) => `<li><b>${esc(p.label)}</b> — ${esc(p.tip)}</li>`).join("")
+                        : "<li>Practise it as a whole word: read it, spell it, read it again.</li>"
+                    }</ul></div>`,
+                  )
+                  .join("")}</div>${
+                  x.wordSummary.length ? `<p class="legend">In common: ${esc(x.wordSummary.join("; "))}.</p>` : ""
+                }`
+              : `<div class="chips">${d.practice.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</div>`
         }`;
+
+  const top = x
+    ? `<div class="summary"><b>Summary.</b> ${esc(x.summary)}</div>
+      <h3>The reading in detail</h3>
+      <dl class="facts">${x.facts.map((f) => `<div><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`).join("")}</dl>`
+    : "";
+  const bottom = x
+    ? `${
+        x.history
+          ? `<h3>Progress</h3>${x.history.change ? `<p class="change">${esc(x.history.change)}</p>` : ""}
+        <table class="hist"><thead><tr><th>Date</th><th>Story</th><th>Level</th><th class="r">Accuracy</th><th class="r">Words / min</th></tr></thead><tbody>${x.history.rows
+          .map(
+            (r) => `<tr${r.current ? ' class="cur"' : ""}><td>${esc(r.date)}</td><td>${esc(r.title)}${r.current ? " (this read)" : ""}</td><td>${esc(r.grade)}</td><td class="r">${r.accuracy}%</td><td class="r">${r.wcpm}</td></tr>`,
+          )
+          .join("")}</tbody></table>`
+          : ""
+      }
+      <h3>Next steps</h3>
+      <ol class="steps">${x.nextSteps.map((st) => `<li>${esc(st)}</li>`).join("")}</ol>`
+    : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -142,6 +179,29 @@ h3 { margin: 24px 0 0; font-size: 15px; font-weight: 800; color: #52525b; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .chip { border-radius: 999px; background: #fef3c7; color: #92400e; padding: 4px 14px;
   font-size: 15px; font-weight: 700; }
+.summary { margin-top: 16px; border-radius: 16px; background: #f0f9ff; color: #0c4a6e;
+  padding: 12px 16px; font-size: 14px; font-weight: 600; line-height: 1.6; }
+.facts { margin: 8px 0 0; border: 1px solid #f0f0f0; border-radius: 16px; }
+.facts div { display: flex; gap: 16px; padding: 7px 14px; border-top: 1px solid #f4f4f5; }
+.facts div:first-child { border-top: 0; }
+.facts dt { width: 150px; flex-shrink: 0; font-size: 11px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; color: #a1a1aa; padding-top: 2px; }
+.facts dd { margin: 0; font-size: 14px; font-weight: 600; }
+.words { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.wordrow { display: flex; gap: 12px; align-items: flex-start; border-radius: 14px;
+  background: #fffbeb; padding: 10px 12px; break-inside: avoid; }
+.wordrow ul { margin: 0; padding: 0; list-style: none; font-size: 12.5px; font-weight: 600; color: #52525b; }
+.wordrow .chip { flex-shrink: 0; }
+.change { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: #52525b; }
+.hist { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12.5px; font-weight: 600; }
+.hist th { text-align: left; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; color: #a1a1aa; padding: 6px 8px; background: #fafafa; }
+.hist td { padding: 5px 8px; border-top: 1px solid #f4f4f5; color: #52525b; }
+.hist .r { text-align: right; }
+.hist tr.cur td { background: #fffbeb; color: #27272a; font-weight: 800; }
+.steps { margin: 8px 0 0; padding-left: 22px; font-size: 14px; font-weight: 600; line-height: 1.55; }
+.steps li { margin-top: 4px; }
+.steps li::marker { color: #059669; font-weight: 800; }
 .allgood { margin: 6px 0 0; font-size: 14px; font-weight: 600; color: #047857; }
 @media print {
   @page { size: A4; margin: 14mm; }
@@ -149,7 +209,8 @@ h3 { margin: 24px 0 0; font-size: 15px; font-weight: 800; color: #52525b; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bar { display: none; }
   .page { box-shadow: none; margin: 0; padding: 0; border-radius: 0; max-width: none; }
-  .story, .stats, .verdict { break-inside: avoid; }
+  .story, .stats, .verdict, .summary, .facts, .hist, h3 { break-inside: avoid; }
+  h3 { break-after: avoid; }
 }
 </style>
 </head>
@@ -162,8 +223,10 @@ h3 { margin: 24px 0 0; font-size: 15px; font-weight: 800; color: #52525b; }
   <div class="title"><b>${esc(d.emoji)} ${esc(d.title)}</b><span class="pill">${esc(d.levelLine)}</span></div>
   ${verdict}
   <div class="stats">${stats}</div>
+  ${top}
   ${story}
   ${practice}
+  ${bottom}
 </main>
 <script>window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 300); });</script>
 </body>

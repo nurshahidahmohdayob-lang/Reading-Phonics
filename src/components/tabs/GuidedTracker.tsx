@@ -86,6 +86,7 @@ export default function GuidedTracker({
     year: string;
     read: GuidedRead;
     lexile: number | null;
+    history: GuidedRead[];
   } | null>(null);
 
   const rows = students.map((s) => {
@@ -212,6 +213,7 @@ export default function GuidedTracker({
                                 year: r.year,
                                 read,
                                 lexile: r.lexile,
+                                history: r.reads,
                               })
                             }
                             onWorksheet={() =>
@@ -259,6 +261,7 @@ export default function GuidedTracker({
                             year: r.year,
                             read: last,
                             lexile: r.lexile,
+                            history: r.reads,
                           })
                         }
                         title="Open the report for this read"
@@ -311,6 +314,7 @@ export default function GuidedTracker({
           year={viewing.year}
           read={viewing.read}
           lexile={viewing.lexile}
+          history={viewing.history}
           onClose={() => setViewing(null)}
         />
       )}
