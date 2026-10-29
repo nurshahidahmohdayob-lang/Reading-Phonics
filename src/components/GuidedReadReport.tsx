@@ -144,12 +144,12 @@ export default function GuidedReadReport({
                 text: found.passage.text,
                 note:
                   wrong > 0
-                    ? `${wrong} ${wrong === 1 ? "word was" : "words were"} marked wrong in this read, but which ones wasn't saved at the time — so none are marked here.`
+                    ? `${wrong} ${wrong === 1 ? "word was" : "words were"} marked wrong in this read, but which ones wasn't saved at the time, so none are marked here.`
                     : "Every word was read correctly.",
               }
             : {
                 kind: "missing",
-                note: "This story isn't on this device any more, so its words can't be shown — the marks above are as they were saved.",
+                note: "This story isn't on this device any more, so its words can't be shown. The marks above are as they were saved.",
               },
       practice: marked ? practice : null,
       detail,
@@ -216,7 +216,7 @@ export default function GuidedReadReport({
         {verdict && (
           <div className={`mt-3 rounded-2xl px-4 py-3 ${verdict.tone}`}>
             <span className="font-extrabold">{verdict.label}</span> for a{" "}
-            {read.grade} story — {verdict.meaning}
+            {read.grade} story. {verdict.meaning}
           </div>
         )}
 
@@ -281,14 +281,14 @@ export default function GuidedReadReport({
               {read.total - read.correct > 0
                 ? `${read.total - read.correct} ${
                     read.total - read.correct === 1 ? "word was" : "words were"
-                  } marked wrong in this read, but which ones wasn't saved at the time — so none are marked here. Every read from now on keeps them.`
+                  } marked wrong in this read, but which ones wasn't saved at the time, so none are marked here. Every read from now on keeps them.`
                 : "Every word was read correctly."}
             </p>
           </div>
         ) : (
           <p className="mt-5 rounded-2xl bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
             This story isn&apos;t on this device any more, so its words
-            can&apos;t be shown — the marks above are as they were saved.
+            can&apos;t be shown. The marks above are as they were saved.
           </p>
         )}
 
@@ -312,8 +312,8 @@ export default function GuidedReadReport({
                         {w.patterns.length ? (
                           w.patterns.map((p) => (
                             <li key={p.label}>
-                              <b className="text-zinc-800 dark:text-zinc-100">{p.label}</b>{" "}
-                              — {p.tip}
+                              <b className="text-zinc-800 dark:text-zinc-100">{p.label}:</b>{" "}
+                              {p.tip}
                             </li>
                           ))
                         ) : (
@@ -325,7 +325,7 @@ export default function GuidedReadReport({
                 </div>
                 {detail.wordSummary.length > 0 && (
                   <p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                    In common: {detail.wordSummary.join("; ")}.
+                    {detail.wordSummary.join(". ")}.
                   </p>
                 )}
               </>
@@ -387,7 +387,7 @@ function Detail({ detail, part }: { detail: ReadDetail; part: "top" | "bottom" }
     return (
       <>
         <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold leading-relaxed text-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
-          <span className="font-extrabold">Summary. </span>
+          <span className="font-extrabold">Teacher&apos;s comment. </span>
           {detail.summary}
         </div>
         <h3 className="mt-5 text-sm font-extrabold text-zinc-600 dark:text-zinc-300">

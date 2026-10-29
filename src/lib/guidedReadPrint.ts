@@ -48,7 +48,7 @@ const VERDICT_COLOURS = {
 export function guidedReadHtml(d: GuidedReadPrint): string {
   const verdict = d.verdict
     ? `<div class="verdict" style="background:${VERDICT_COLOURS[d.verdict.kind][0]};color:${VERDICT_COLOURS[d.verdict.kind][1]}">
-        <b>${esc(d.verdict.label)}</b> for a ${esc(d.verdict.grade)} story — ${esc(d.verdict.meaning)}
+        <b>${esc(d.verdict.label)}</b> for a ${esc(d.verdict.grade)} story. ${esc(d.verdict.meaning)}
       </div>`
     : "";
 
@@ -102,18 +102,18 @@ export function guidedReadHtml(d: GuidedReadPrint): string {
                   .map(
                     (w) => `<div class="wordrow"><span class="chip">${esc(w.word)}</span><ul>${
                       w.patterns.length
-                        ? w.patterns.map((p) => `<li><b>${esc(p.label)}</b> — ${esc(p.tip)}</li>`).join("")
+                        ? w.patterns.map((p) => `<li><b>${esc(p.label)}:</b> ${esc(p.tip)}</li>`).join("")
                         : "<li>Practise it as a whole word: read it, spell it, read it again.</li>"
                     }</ul></div>`,
                   )
                   .join("")}</div>${
-                  x.wordSummary.length ? `<p class="legend">In common: ${esc(x.wordSummary.join("; "))}.</p>` : ""
+                  x.wordSummary.length ? `<p class="legend">${esc(x.wordSummary.join(". "))}.</p>` : ""
                 }`
               : `<div class="chips">${d.practice.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</div>`
         }`;
 
   const top = x
-    ? `<div class="summary"><b>Summary.</b> ${esc(x.summary)}</div>
+    ? `<div class="summary"><b>Teacher's comment.</b> ${esc(x.summary)}</div>
       <h3>The reading in detail</h3>
       <dl class="facts">${x.facts.map((f) => `<div><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`).join("")}</dl>`
     : "";

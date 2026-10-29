@@ -80,7 +80,7 @@ function patternsOf(raw: string): WordPattern[] {
       /'s$/.test(w)
         ? {
             label: "Apostrophe 's",
-            tip: `Read “${w.replace(/'s$/, "")}”, then add the s — it means “belonging to”.`,
+            tip: `Read “${w.replace(/'s$/, "")}” first, then add the s. It shows something belongs to someone.`,
           }
         : {
             label: "Contraction",
@@ -95,7 +95,7 @@ function patternsOf(raw: string): WordPattern[] {
       label: `Ending -${suffix}`,
       tip:
         suffix === "ed"
-          ? "Cover the -ed, read the base word, then add it back. -ed can sound like /t/, /d/ or /id/."
+          ? "Cover the -ed, read the base word, then add it back. Remember -ed can sound like /t/, /d/ or /id/."
           : `Cover the -${suffix}, read the base word, then add the ending back.`,
     });
   }
@@ -103,7 +103,7 @@ function patternsOf(raw: string): WordPattern[] {
   if (syl >= 3) {
     out.push({
       label: `Long word (${syl} syllables)`,
-      tip: "Clap it in parts, read each part, then blend them together.",
+      tip: "Clap it out, read one part at a time, then put it together.",
     });
   }
   if (/(arch[ia]|chor|chem|chao|chara|sch|tech|ache|echo|stomach|orchestr)/.test(plain)) {
@@ -124,26 +124,30 @@ function patternsOf(raw: string): WordPattern[] {
     (suffix &&
       /^(ed|ing|er|est)$/.test(suffix) &&
       syllables(stem) === 1 &&
-      /^[^aeiou]*([aiou])[bcdfgklmnprstvz]$/.exec(stem));
+      /^[^aeiou]*([aiou])[bcdfgklmnprstvz]$/.exec(stem)) ||
+    // A longer word whose e went before the ending: "retired", "admiring".
+    (suffix && /^(ed|ing|er|est)$/.test(suffix) && /[^aeiou]([aiou])r$/.exec(stem));
   if (split) {
     out.push({
       label: `Split vowel (${split[1]}-e)`,
-      tip: `The e (even when an ending has replaced it) makes the ${split[1]} say its name.`,
+      tip: suffix
+        ? `There was an e before the ending (${stem}e). It makes the ${split[1]} say its name.`
+        : `The e at the end makes the ${split[1]} say its name.`,
     });
   }
   const team = /(eau|igh|ai|ay|ee|ea|oa|oe|ie|ou|ow|oi|oy|au|aw|ew|ue|oo)/.exec(plain);
   if (team) {
     out.push({
       label: `Vowel team ${team[1]}`,
-      tip: `${team[1]} makes one sound together — say that sound, not two.`,
+      tip: `${team[1]} work together to make one sound.`,
     });
   }
   const r = /(ar|er|ir|or|ur)(?![aeiou])/.exec(stem);
   if (r && !split) {
-    out.push({ label: `${r[1]} sound`, tip: `The r changes the vowel: ${r[1]} is one sound.` });
+    out.push({ label: `${r[1]} sound`, tip: `The r changes the vowel, so ${r[1]} is read as one sound.` });
   }
   if (/^(kn|wr|gn)|mb$|gh(?!o)|(?<=s)ce?n|stle$/.test(plain)) {
-    out.push({ label: "Silent letter", tip: "One letter here is written but not said." });
+    out.push({ label: "Silent letter", tip: "One letter is written but not said." });
   }
   // Keep it to the most useful few.
   return out.slice(0, 3);
@@ -182,6 +186,16 @@ function shortDate(iso: string): string {
 
 /* ---------- the whole detail ---------- */
 
+const NUMBER = ["no", "one", "two", "three", "four", "five", "six"];
+const count = (n: number) => NUMBER[n] ?? String(n);
+const listWords = (ws: string[]) => {
+  const q = ws.map((w) => `“${w}”`);
+  return q.length > 1 ? `${q.slice(0, -1).join(", ")} and ${q[q.length - 1]}` : q.join("");
+};
+/** "up 3%", "down 5 words a minute", "the same". */
+const moved = (n: number, unit: string) =>
+  n === 0 ? "the same" : `${n > 0 ? "up" : "down"} ${Math.abs(n)}${unit}`;
+
 export function readDetail({
   name,
   read,
@@ -218,38 +232,36 @@ export function readDetail({
   facts.push({
     label: "Errors",
     value: wrong
-      ? `${wrong} — about 1 in every ${Math.max(1, Math.round(read.total / wrong))} words`
+      ? `${wrong}, about 1 in every ${Math.max(1, Math.round(read.total / wrong))} words`
       : "none",
   });
   if (marked && reached < read.total) {
     facts.push({ label: "How far", value: `stopped after ${reached} of ${read.total} words` });
   }
   if (level) {
-    const pct = Math.round((read.wcpm / level.wpmLow) * 100);
+    const pace = paceLike(read.wcpm);
     facts.push({
       label: "Reading speed",
-      value: `${read.wcpm} words a minute — ${pct}% of the ${level.grade} goal (${level.wpmLow}–${level.wpmHigh}); ${paceLike(read.wcpm)}`,
+      value: `${read.wcpm} words a minute. The ${level.grade} target is ${level.wpmLow} to ${level.wpmHigh}${pace ? `, so this is ${pace}` : ""}.`,
     });
     const gap = read.accuracy - level.accuracyGoal;
+    const short = Math.ceil((level.accuracyGoal / 100) * read.total - read.correct);
     facts.push({
       label: "Accuracy",
       value:
         gap >= 0
-          ? `${read.accuracy}% — meets the ${level.grade} goal of ${level.accuracyGoal}%`
-          : `${read.accuracy}% — ${-gap}% short of the ${level.grade} goal of ${level.accuracyGoal}%` +
-            (wrong ? ` (${Math.ceil((level.accuracyGoal / 100) * read.total - read.correct)} fewer error${Math.ceil((level.accuracyGoal / 100) * read.total - read.correct) === 1 ? "" : "s"} would reach it)` : ""),
+          ? `${read.accuracy}%, which meets the ${level.grade} target of ${level.accuracyGoal}%.`
+          : `${read.accuracy}%. The ${level.grade} target is ${level.accuracyGoal}%` +
+            (wrong && short > 0 ? `, so ${count(short)} fewer mistake${short === 1 ? "" : "s"} would get there.` : "."),
     });
   }
   if (childLexile !== null && read.lexile) {
     const d = read.lexile - childLexile;
     facts.push({
-      label: "Story vs their level",
+      label: "Story level",
       value:
-        Math.abs(d) <= 50
-          ? `on their level (story ${read.lexile}L, theirs ${childLexile}L)`
-          : d > 0
-            ? `${d}L harder than their level (story ${read.lexile}L, theirs ${childLexile}L)`
-            : `${-d}L easier than their level (story ${read.lexile}L, theirs ${childLexile}L)`,
+        `${read.lexile}L against ${first}'s ${childLexile}L, ` +
+        (Math.abs(d) <= 50 ? "about right." : d > 0 ? `so ${d}L harder.` : `so ${-d}L easier.`),
     });
   }
 
@@ -259,25 +271,22 @@ export function readDetail({
   for (const w of words) {
     const kinds = new Set(
       w.patterns.map((p) =>
-        p.label.startsWith("Ending") ? "an ending (-ed, -ing…)" :
+        p.label.startsWith("Ending") ? "an ending like -ed or -ing" :
         p.label.startsWith("Long word") ? "three or more syllables" :
         p.label.startsWith("Apostrophe") || p.label === "Contraction" ? "an apostrophe" :
         p.label.startsWith("Vowel team") ? "a vowel team" :
-        p.label.endsWith(" sound") ? "an r-controlled vowel (ar, er, ir, or, ur)" :
-        p.label.startsWith("Split vowel") ? "a split vowel (a-e, i-e…)" :
-        p.label.startsWith("Soft") || p.label === "ch says /k/" ? "a letter that changes its sound (soft c/g, ch as /k/)" :
-        p.label,
+        p.label.endsWith(" sound") ? "an r sound like ar, er or or" :
+        p.label.startsWith("Split vowel") ? "a split vowel like a-e or i-e" :
+        p.label.startsWith("Soft") || p.label === "ch says /k/" ? "a letter that doesn't make its usual sound" :
+        p.label.toLowerCase(),
       ),
     );
     for (const k of kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
   }
+  const common = [...counts.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const wordSummary =
     words.length >= 2
-      ? [...counts.entries()]
-          .filter(([, n]) => n >= 2)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([k, n]) => `${n} of ${words.length} had ${k}`)
+      ? common.map(([k, n]) => `${n === words.length ? `All ${words.length}` : `${n} of the ${words.length}`} have ${k}`)
       : [];
 
   // Their earlier reads.
@@ -288,12 +297,21 @@ export function readDetail({
     .slice(0, Math.max(0, at))
     .reverse()
     .find((r) => r.passageId === read.passageId);
+  const compare = sameBefore ?? before;
   let change: string | null = null;
-  const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
-  if (sameBefore) {
-    change = `Last time on this story (${shortDate(sameBefore.at)}): ${sameBefore.accuracy}% and ${sameBefore.wcpm} a minute — now ${sign(read.accuracy - sameBefore.accuracy)}% accuracy, ${sign(read.wcpm - sameBefore.wcpm)} words a minute.`;
-  } else if (before) {
-    change = `Since their last read (${before.title}, ${before.grade}, ${shortDate(before.at)}): ${sign(read.accuracy - before.accuracy)}% accuracy, ${sign(read.wcpm - before.wcpm)} words a minute.`;
+  if (compare) {
+    const da = read.accuracy - compare.accuracy;
+    const dw = read.wcpm - compare.wcpm;
+    const verdictLine =
+      da >= 0 && dw > 0 ? "Good progress." :
+      da < 0 && dw < 0 ? "Not as strong as last time." :
+      "";
+    change =
+      (sameBefore
+        ? `Compared with reading this story on ${shortDate(compare.at)}, `
+        : `Compared with the last read (“${compare.title}”, ${shortDate(compare.at)}), `) +
+      `accuracy is ${moved(da, "%")} and speed is ${moved(dw, dw === 0 ? "" : " words a minute")}.` +
+      (verdictLine ? ` ${verdictLine}` : "");
   }
   const recent = sorted.slice(Math.max(0, at - 5), at + 1);
   const historyBlock =
@@ -313,25 +331,41 @@ export function readDetail({
         }
       : null;
 
-  // Summary.
+  // The comment, written the way a teacher would jot it down.
   const parts: string[] = [];
+  const title = `“${read.title}”`;
   parts.push(
-    `${first} read “${read.title}” (${read.grade}${read.lexile ? `, ${read.lexile}L` : ""}) with ${read.accuracy}% accuracy` +
-      (verdict ? ` — ${verdict.label.toLowerCase()} level for this story` : "") +
-      ".",
+    verdict?.label === "Independent"
+      ? `${first} read ${title} (${read.grade}) well and got ${read.accuracy}% of the words right.`
+      : verdict?.label === "Instructional"
+        ? `${first} read ${title} (${read.grade}) with ${read.accuracy}% accuracy, so this level is about right for guided reading.`
+        : verdict
+          ? `${first} found ${title} (${read.grade}) hard and got ${read.accuracy}% of the words right.`
+          : `${first} read ${title} (${read.grade}) with ${read.accuracy}% accuracy.`,
   );
   if (level) {
     const ratio = read.wcpm / level.wpmLow;
     parts.push(
-      ratio >= 1
-        ? `Reading speed (${read.wcpm} a minute) is on track for ${level.grade}.`
-        : ratio >= 0.75
-          ? `Reading speed (${read.wcpm} a minute) is a little below the ${level.grade} goal.`
-          : `Reading speed (${read.wcpm} a minute) is well below the ${level.grade} goal of ${level.wpmLow}–${level.wpmHigh}, so the main thing to build is smooth, quicker reading.`,
+      read.wcpm > level.wpmHigh
+        ? `Reading was quick at ${read.wcpm} words a minute.`
+        : ratio >= 1
+          ? `Reading speed was good at ${read.wcpm} words a minute.`
+          : ratio >= 0.75
+            ? `Reading was a little slow at ${read.wcpm} words a minute, just under the ${level.grade} target.`
+            : `Reading was slow at ${read.wcpm} words a minute (the ${level.grade} target is ${level.wpmLow}), so fluency is the main thing to work on.`,
     );
   }
-  if (wordSummary.length) {
-    parts.push(`The words that tripped them up have something in common: ${wordSummary[0]}.`);
+  if (missedWords.length) {
+    const shown = missedWords.slice(0, 4);
+    parts.push(
+      `${missedWords.length === 1 ? "The word that caused trouble was" : "Words that caused trouble were"} ${listWords(shown)}${missedWords.length > shown.length ? " and a few others" : ""}.`,
+    );
+    if (common.length && words.length >= 2) {
+      const [k, n] = common[0];
+      parts.push(`${n === words.length ? (n === 2 ? "Both" : "All of them") : `${count(n).replace(/^./, (c) => c.toUpperCase())} of them`} ${n === 1 ? "has" : "have"} ${k}.`);
+    }
+  } else if (marked && !wrong) {
+    parts.push("No mistakes at all.");
   }
   if (change) parts.push(change);
 
@@ -339,50 +373,42 @@ export function readDetail({
   const steps: string[] = [];
   const fast = level ? read.wcpm >= level.wpmLow : true;
   if (verdict?.label === "Independent") {
-    steps.push(
-      fast
-        ? "Ready for harder stories: try one from the next level up."
-        : "Accurate enough to read this level alone. Stay here to build speed before moving up.",
-    );
+    steps.push(fast ? "Move up to the next level." : "Stay at this level a little longer to build speed, then move up.");
   } else if (verdict?.label === "Instructional") {
-    steps.push(
-      "This level is right for guided reading: stay here with support. Before the next story, go over its harder words first.",
-    );
+    steps.push("Stay at this level for guided reading. Go through the tricky words before starting the next story.");
   } else if (verdict) {
-    steps.push(
-      "This story was too hard to read alone. Try one a level down, and read this one together first.",
-    );
+    steps.push("Drop down a level for now. Read this story together first before trying it alone again.");
   }
   if (level && read.wcpm < level.wpmLow) {
-    const ratio = read.wcpm / level.wpmLow;
     steps.push(
-      ratio < 0.75
-        ? `Build fluency with repeated reading: read this same story three times this week — first you read a sentence and ${first} echoes it, then together, then ${first} alone. Aim for about 10 more words a minute each time.`
-        : "Re-read this story once or twice, pausing at full stops and commas, to make it smoother and a little quicker.",
+      read.wcpm / level.wpmLow < 0.75
+        ? `Repeated reading of this story three times this week. I read a sentence and ${first} echoes it, then we read together, then ${first} reads alone.`
+        : "Reread this story once or twice, pausing at full stops and commas.",
     );
   } else if (level && read.wcpm > level.wpmHigh) {
-    steps.push("Quick reader: check they aren't rushing past full stops — ask them to read one paragraph with expression.");
+    steps.push("Read one page aloud with expression, watching for full stops.");
   }
   // Word work, with their own words as the examples.
   const withKind = (start: string) =>
-    words
-      .filter((w) => w.patterns.some((p) => p.label.startsWith(start)))
-      .map((w) => `“${w.word}”`)
-      .slice(0, 3)
-      .join(", ");
+    listWords(
+      words
+        .filter((w) => w.patterns.some((p) => p.label.startsWith(start)))
+        .map((w) => w.word)
+        .slice(0, 3),
+    );
   const endings = withKind("Ending");
-  if (endings) steps.push(`Practise endings with ${endings}: cover the ending, read the base word, then add the ending back.`);
+  if (endings) steps.push(`Endings: cover the ending on ${endings}, read the base word, then add the ending back.`);
   const long = withKind("Long word");
-  if (long) steps.push(`Practise long words like ${long}: clap the syllables, read each part, then blend them together.`);
+  if (long) steps.push(`Long words: clap out ${long} in syllables, then blend.`);
   const apostrophe = withKind("Apostrophe");
-  if (apostrophe) steps.push(`Talk about apostrophes in ${apostrophe}: 's shows something belongs to someone.`);
+  if (apostrophe) steps.push(`Go over the 's in ${apostrophe} and what it means.`);
   if (missedWords.length) {
-    steps.push(`Make word cards for ${missedWords.slice(0, 6).map((w) => `“${w}”`).join(", ")}: read them daily until they're quick, then use each in a sentence.`);
+    steps.push(`Word cards for ${listWords(missedWords.slice(0, 6))}. Practise daily, then use each one in a sentence.`);
   }
   if (marked && reached < read.total) {
-    steps.push("They didn't finish: build stamina with shorter stories at this level, then come back to this one.");
+    steps.push("Didn't finish the story. Use shorter stories at this level to build stamina.");
   }
-  steps.push("Check understanding: ask who the story was about, what happened, and why — or print the worksheet on this story.");
+  steps.push("Ask a few questions about the story (who, what happened, why) or use the worksheet.");
 
   return {
     summary: parts.join(" "),
