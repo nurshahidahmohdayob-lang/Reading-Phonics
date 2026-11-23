@@ -621,12 +621,48 @@ function PassageReader({
   const [micSuggested, setMicSuggested] = useState(0); // the mic's original suggested count (shown in the prompt)
   const [micWpm, setMicWpm] = useState<number | null>(null);
   const [missedWords, setMissedWords] = useState<string[]>([]); // the specific words the mic flagged; feeds the results practice list
+  // Words the teacher tapped in the book because the child couldn't read them,
+  // keyed "page:index" so a repeated word is marked only where it was missed.
+  const [tapped, setTapped] = useState<Set<string>>(new Set());
   const startedAt = useRef<number | null>(null);
   const pages = passage.pages;
   const fullText = pages.map((p) => p.text).join(" ");
   const words = fullText.split(/\s+/);
   const isLast = page === pages.length - 1;
   const cur = pages[page];
+  const pageWords = (i: number) => pages[i].text.split(/\s+/).filter(Boolean);
+  const clean = (w: string) => w.replace(/[.,!?;:"“”‘’()—–-]+$|^[.,!?;:"“”‘’()—–-]+/g, "");
+
+  // The tapped words in reading order, as plain words (punctuation stripped).
+  function tappedWords(): string[] {
+    const out: string[] = [];
+    pages.forEach((_, pi) =>
+      pageWords(pi).forEach((w, wi) => {
+        if (tapped.has(`${pi}:${wi}`)) out.push(clean(w));
+      }),
+    );
+    return out.filter(Boolean);
+  }
+
+  // Tap a word the child can't read → mark it missed (and count it wrong);
+  // tap again to unmark.
+  function toggleWord(key: string) {
+    const on = !tapped.has(key);
+    setTapped((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+    setWrong((n) => Math.max(0, Math.min(words.length, n + (on ? 1 : -1))));
+  }
+
+  // Words for the report: the teacher's taps first, then any the mic flagged.
+  function missedList(limit: number): string[] {
+    const mine = tappedWords();
+    const extra = missedWords.slice(0, Math.max(0, limit - mine.length));
+    return [...mine, ...extra];
+  }
 
   // The student finished reading aloud: take the mic's best guess at the misread
   // count + timing, and SEED the teacher counter with it (to adjust), rather
@@ -647,7 +683,20 @@ function PassageReader({
       .filter(Boolean);
     setMissedWords(flagged);
     setMicSuggested(flagged.length);
-    setWrong(flagged.length);
+    // Combine with the teacher's taps: count each word position once.
+    const bad = new Set<number>();
+    status.forEach((st, i) => {
+      if (st !== "correct") bad.add(i);
+    });
+    let offset = 0;
+    pages.forEach((_, pi) => {
+      const n = pageWords(pi).length;
+      for (let wi = 0; wi < n; wi++) {
+        if (tapped.has(`${pi}:${wi}`)) bad.add(offset + wi);
+      }
+      offset += n;
+    });
+    setWrong(Math.min(words.length, bad.size));
     setDidMic(true);
   }
 
@@ -661,7 +710,7 @@ function PassageReader({
         selfCorrections: sc,
         wpm: null,
       },
-      [],
+      tappedWords(),
     );
   }
 
@@ -675,7 +724,7 @@ function PassageReader({
       const elapsed = (Date.now() - startedAt.current) / 1000;
       wpm = elapsed > 1 ? Math.round(words.length / (elapsed / 60)) : null;
     }
-    const missed = missedWords.slice(0, errors);
+    const missed = missedList(errors);
     onDone(
       { accuracy, totalWords: words.length, errors, selfCorrections: sc, wpm },
       missed,
@@ -738,7 +787,27 @@ function PassageReader({
             </div>
             <div className="flex min-h-[12rem] flex-col items-center justify-center px-6 py-9">
               <p className="text-center text-2xl font-bold leading-relaxed text-zinc-800 sm:text-[1.7rem]">
-                {cur.text}
+                {pageWords(page).map((w, wi) => {
+                  const key = `${page}:${wi}`;
+                  const on = tapped.has(key);
+                  return (
+                    <span key={key}>
+                      <button
+                        type="button"
+                        onClick={() => toggleWord(key)}
+                        aria-pressed={on}
+                        title={on ? "Marked as missed — tap to undo" : "Tap if the student can't read this word"}
+                        className={`rounded-md px-0.5 transition-colors ${
+                          on
+                            ? "bg-rose-200 text-rose-700 underline decoration-rose-500 decoration-wavy decoration-2 underline-offset-4"
+                            : "hover:bg-amber-200/60"
+                        }`}
+                      >
+                        {w}
+                      </button>{" "}
+                    </span>
+                  );
+                })}
               </p>
             </div>
           </div>
@@ -751,6 +820,26 @@ function PassageReader({
           />
         </div>
       </div>
+
+      <p className="mt-3 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+        👆 Tap any word the student can&apos;t read — it goes into the report.
+        Tap again to undo.
+      </p>
+      {tapped.size > 0 && (
+        <div className="mt-2 flex max-w-2xl flex-wrap items-center justify-center gap-1.5">
+          <span className="text-xs font-bold text-rose-700 dark:text-rose-300">
+            Missed ({tapped.size}):
+          </span>
+          {tappedWords().map((w, i) => (
+            <span
+              key={`${w}-${i}`}
+              className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+            >
+              {w}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Page turning */}
       <nav className="mt-5 flex w-full max-w-2xl items-center justify-between gap-4">
@@ -1776,9 +1865,9 @@ function Report({
   const ladderMissed = LADDER.filter(
     (x) => wordRatings[x.w] && wordRatings[x.w] !== "green",
   ).map((x) => x.w);
-  const practice = [...new Set([...ladderMissed, ...missed])]
+  const practice = [...new Set([...missed, ...ladderMissed])]
     .filter((w) => w.length <= 14)
-    .slice(0, 12);
+    .slice(0, 24);
 
   const strands: { label: string; weight: number; score: number | null }[] = [
     { label: "Decoding accuracy", weight: 40, score: accuracy },
