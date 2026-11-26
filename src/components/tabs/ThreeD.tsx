@@ -56,7 +56,8 @@ const GUESSES: [Move, RegExp][] = [
   ["fly", /bird|butterfly|bee|bat|dragonfly|ladybird|ladybug|owl|eagle|parrot|plane|dragon|fairy|burung|rama|lebah|kelawar|helang|kapal terbang|pepatung/i],
   ["hop", /frog|toad|rabbit|bunny|kangaroo|grasshopper|katak|arnab|kanggaru|belalang/i],
   ["slither", /snake|worm|caterpillar|slug|snail|ular|cacing|ulat|siput/i],
-  ["float", /rocket|astronaut|alien|ufo|planet|star|roket|angkasawan|bintang/i],
+  ["rocket", /rocket|roket|spaceship|space ship|kapal angkasa/i],
+  ["float", /astronaut|alien|ufo|planet|star|angkasawan|bintang/i],
 ];
 function guessMove(name: string): Move | null {
   for (const [move, re] of GUESSES) if (re.test(name)) return move;

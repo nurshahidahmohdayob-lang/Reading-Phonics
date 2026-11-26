@@ -18,6 +18,8 @@
    - hop: a frog or a bunny. Crouch, leap forward, land with a squash.
    - slither: a snake or a worm. Ripples along the ground.
    - float: drifting, as in space.
+   - rocket: rumbles on the ground, blasts off in fire and smoke, swoops
+     across the sky nose first, then comes down slowly on its flame and lands.
    The bending is done on the picture itself (it's a finely divided sheet),
    so the shadow on the floor bends with it.
 
@@ -39,6 +41,7 @@ export type Move3D =
   | "hop"
   | "slither"
   | "float"
+  | "rocket"
   | "alive"
   | "still";
 
@@ -91,7 +94,19 @@ type Live = {
   sinking: boolean;
   /** Hops: how far through the current hop (0 crouched … 1 landed). */
   hop: number;
+  /** Rockets: seconds into the current flight (see ROCKET). */
+  flight: number;
+  /** Rockets: how hard the engine is burning (0 off … 1 full), and how much
+      smoke is billowing along the ground, this frame. */
+  thrust: number;
+  smoke: number;
 };
+
+/* A rocket's flight, in seconds, one part after another, round and round. */
+const ROCKET = { rumble: 1.8, launch: 2.2, gone: 0.8, swoop: 3.2, back: 0.8, land: 3, rest: 1.4 };
+const ROCKET_TOTAL = Object.values(ROCKET).reduce((a, b) => a + b, 0);
+/** High enough to be out of sight above the stage. */
+const ROCKET_TOP = 3.6;
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -288,6 +303,8 @@ function step(l: Live, now: number, dt: number): Shape {
         sy: 1 + 0.03 * Math.sin(t * 1.6),
         lean: Math.sin(t * 1.1) * 0.08,
       };
+    case "rocket":
+      return fly(l, m, now, dt);
     case "alive": {
       m.y = Math.abs(Math.sin(t * 1.2)) * 0.05;
       const breath = Math.sin(t * 2);
@@ -296,6 +313,239 @@ function step(l: Live, now: number, dt: number): Shape {
     default:
       m.y = 0;
       return REST;
+  }
+}
+
+/** A rocket's flight for this frame (see ROCKET). Sets how hard its engine
+    burns, for the fire and smoke drawn after. */
+function fly(l: Live, m: THREE.Vector3, now: number, dt: number): Shape {
+  l.flight = (l.flight + dt) % ROCKET_TOTAL;
+  let f = l.flight;
+  l.thrust = 0;
+  l.smoke = 0;
+
+  // On the pad, engine lighting: it shakes and crouches, smoke spreading.
+  if (f < ROCKET.rumble) {
+    const s = f / ROCKET.rumble;
+    m.y += (0 - m.y) * Math.min(1, dt * 6);
+    l.thrust = 0.2 + 0.5 * s;
+    l.smoke = 0.4 + 0.6 * s;
+    const shake = Math.sin(now * 55) * 0.5 + Math.sin(now * 37) * 0.5;
+    return { sx: 1 + 0.04 * s, sy: 1 - 0.06 * s, lean: shake * 0.035 * (0.3 + s) };
+  }
+  f -= ROCKET.rumble;
+
+  // Lift off, faster and faster, straight up and out of sight.
+  if (f < ROCKET.launch) {
+    const s = f / ROCKET.launch;
+    m.y = ROCKET_TOP * s * s;
+    l.thrust = 1;
+    l.smoke = Math.max(0, 1 - m.y / 0.9);
+    return { sx: 0.94, sy: 1.1, lean: Math.sin(now * 40) * 0.02 * (1 - s) };
+  }
+  f -= ROCKET.launch;
+
+  // Out of sight. It'll come back across the sky towards the other side,
+  // already turned to point the way it's going.
+  const dir = () => (l.goingLeft ? -1 : 1);
+  if (f < ROCKET.gone) {
+    m.y = ROCKET_TOP + 1;
+    l.goingLeft = m.x > 0;
+    return { sx: 1, sy: 1, lean: (dir() * -Math.PI) / 2 };
+  }
+  f -= ROCKET.gone;
+
+  // Swoop across the sky, nose first, dipping down towards the middle.
+  if (f < ROCKET.swoop) {
+    const s = f / ROCKET.swoop;
+    const X = 5;
+    const dip = 1.1;
+    m.x = dir() * X * (2 * s - 1);
+    m.y = 2.3 - dip * Math.sin(Math.PI * s);
+    const vx = (dir() * 2 * X) / ROCKET.swoop;
+    const vy = (-dip * Math.PI * Math.cos(Math.PI * s)) / ROCKET.swoop;
+    let lean = Math.atan2(vy, vx) - Math.PI / 2;
+    if (lean < -Math.PI) lean += Math.PI * 2;
+    l.thrust = 1;
+    return { sx: 0.95, sy: 1.08, lean };
+  }
+  f -= ROCKET.swoop;
+
+  // Out of sight again, choosing somewhere on the stage to land.
+  if (f < ROCKET.back) {
+    m.y = ROCKET_TOP + 1;
+    m.x = Math.sin(l.phase * 3 + now * 0.37) * FLOOR_W * 0.35;
+    m.z = Math.cos(l.phase * 2 + now * 0.29) * FLOOR_D * 0.3;
+    return { sx: 1, sy: 1, lean: 0 };
+  }
+  f -= ROCKET.back;
+
+  // Come down on its flame, slowing all the way to a gentle touch-down.
+  if (f < ROCKET.land) {
+    const s = f / ROCKET.land;
+    m.y = ROCKET_TOP * (1 - s) ** 2;
+    l.thrust = 0.5 + 0.4 * s;
+    l.smoke = Math.max(0, 1 - m.y / 0.8);
+    return { sx: 1, sy: 1.04, lean: Math.sin(now * 3 + l.phase) * 0.05 * (1 - s) };
+  }
+  f -= ROCKET.land;
+
+  // Landed: a squash as its weight settles, a last puff, engine off.
+  m.y = 0;
+  const settle = 1 - smooth(0, 0.45, f);
+  l.smoke = f < 0.4 ? 0.6 : 0;
+  return { sx: 1 + 0.08 * settle, sy: 1 - 0.1 * settle, lean: 0 };
+}
+
+/* Fire and smoke: soft round puffs, each living a moment, drawn as points so
+   hundreds cost next to nothing. Fire glows (its colours add up); smoke
+   doesn't. They stay where they were puffed out, so a moving rocket leaves a
+   trail. */
+type Puff = {
+  x: number; y: number; z: number;
+  vx: number; vy: number; vz: number;
+  age: number; life: number;
+  size0: number; size1: number;
+  /** Colours it passes through as it ages, start → middle → end. */
+  colors: readonly (readonly [number, number, number])[];
+  alpha: number;
+  drag: number;
+};
+
+const PUFF_VERTEX = `
+  attribute float aSize;
+  attribute vec3 aColor;
+  attribute float aAlpha;
+  uniform float uScale;
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    vColor = aColor;
+    vAlpha = aAlpha;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = aSize * uScale / -mv.z;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const PUFF_FRAGMENT = `
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    float d = length(gl_PointCoord - 0.5) * 2.0;
+    float a = (1.0 - smoothstep(0.25, 1.0, d)) * vAlpha;
+    if (a < 0.01) discard;
+    gl_FragColor = vec4(vColor, a);
+  }`;
+
+function puffs(max: number, glow: boolean) {
+  const geometry = new THREE.BufferGeometry();
+  const pos = new Float32Array(max * 3);
+  const col = new Float32Array(max * 3);
+  const size = new Float32Array(max);
+  const alpha = new Float32Array(max);
+  const attr = (name: string, arr: Float32Array, n: number) => {
+    const a = new THREE.BufferAttribute(arr, n);
+    a.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute(name, a);
+    return a;
+  };
+  const attrs = [attr("position", pos, 3), attr("aColor", col, 3), attr("aSize", size, 1), attr("aAlpha", alpha, 1)];
+  geometry.setDrawRange(0, 0);
+  const material = new THREE.ShaderMaterial({
+    uniforms: { uScale: { value: 1000 } },
+    vertexShader: PUFF_VERTEX,
+    fragmentShader: PUFF_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: glow ? THREE.AdditiveBlending : THREE.NormalBlending,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false;
+  points.renderOrder = glow ? 3 : 2;
+  let list: Puff[] = [];
+
+  return {
+    points,
+    material,
+    add(p: Puff) {
+      if (list.length < max) list.push(p);
+    },
+    update(dt: number) {
+      list = list.filter((p) => (p.age += dt) < p.life);
+      list.forEach((p, i) => {
+        const k = Math.max(0, 1 - p.drag * dt);
+        p.vx *= k; p.vy *= k; p.vz *= k;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        const a = p.age / p.life;
+        pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
+        // Through the colours in turn.
+        const c = p.colors;
+        const at = a * (c.length - 1);
+        const j = Math.min(c.length - 2, Math.floor(at));
+        const u = at - j;
+        for (let ch = 0; ch < 3; ch++) col[i * 3 + ch] = c[j][ch] + (c[j + 1][ch] - c[j][ch]) * u;
+        size[i] = p.size0 + (p.size1 - p.size0) * Math.sqrt(a);
+        alpha[i] = p.alpha * (1 - a) * Math.min(1, a * 8);
+      });
+      geometry.setDrawRange(0, list.length);
+      for (const a of attrs) a.needsUpdate = true;
+    },
+    dispose() {
+      geometry.dispose();
+      material.dispose();
+    },
+  };
+}
+
+const FIRE = [[1, 0.98, 0.8], [1, 0.7, 0.2], [1, 0.3, 0.35], [0.6, 0.15, 0.5]] as const;
+const SMOKE = [[1, 0.97, 1], [0.9, 0.85, 1], [0.8, 0.74, 0.95]] as const;
+const rand = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Puff fire and smoke out of a rocket for this frame. */
+function exhaust(l: Live, dt: number, fire: ReturnType<typeof puffs>, smoke: ReturnType<typeof puffs>) {
+  const m = l.mesh;
+  const sc = l.scale;
+  // Out of its bottom, opposite to where its nose points.
+  const th = m.rotation.z;
+  const ex = Math.sin(th);
+  const ey = -Math.cos(th);
+  const count = (rate: number) => Math.floor(rate * dt + Math.random());
+
+  if (m.position.y < ROCKET_TOP) {
+    for (let i = count(l.thrust * 150); i > 0; i--) {
+      const side = rand(-0.5, 0.5);
+      const speed = rand(1, 1.7) * sc * (0.5 + 0.5 * l.thrust);
+      fire.add({
+        x: m.position.x + ey * -side * 0.08 * sc, y: m.position.y + ex * side * 0.08 * sc, z: m.position.z + rand(-0.03, 0.03),
+        vx: ex * speed + -ey * side * 0.5 * sc, vy: ey * speed + ex * side * 0.5 * sc, vz: rand(-0.1, 0.1),
+        age: 0, life: rand(0.25, 0.5),
+        size0: 0.2 * sc * (0.6 + 0.4 * l.thrust), size1: 0.07 * sc,
+        colors: FIRE, alpha: 0.9, drag: 2.5,
+      });
+    }
+    // A trail of smoke behind it once it's off the ground.
+    if (m.position.y > 0.3) {
+      for (let i = count(l.thrust * 28); i > 0; i--) {
+        smoke.add({
+          x: m.position.x + ex * 0.15 * sc, y: m.position.y + ey * 0.15 * sc, z: m.position.z,
+          vx: ex * 0.3 + rand(-0.08, 0.08), vy: ey * 0.3 + rand(-0.05, 0.08), vz: rand(-0.05, 0.05),
+          age: 0, life: rand(1.1, 1.8),
+          size0: 0.12 * sc, size1: 0.5 * sc,
+          colors: SMOKE, alpha: 0.38, drag: 1.5,
+        });
+      }
+    }
+  }
+  // Smoke billowing out along the ground beneath it.
+  for (let i = count(l.smoke * 70); i > 0; i--) {
+    const a = rand(0, Math.PI * 2);
+    const out = rand(0.5, 1.2) * sc;
+    smoke.add({
+      x: m.position.x + rand(-0.08, 0.08), y: 0.04, z: m.position.z + rand(-0.05, 0.05),
+      vx: Math.cos(a) * out, vy: rand(0.05, 0.25), vz: Math.sin(a) * out * 0.45,
+      age: 0, life: rand(1.3, 2.3),
+      size0: 0.2 * sc, size1: 0.75 * sc,
+      colors: SMOKE, alpha: 0.5, drag: 1.3,
+    });
   }
 }
 
@@ -369,6 +619,17 @@ export default function Stage3D({
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     world.add(floor);
+
+    const fire = puffs(700, true);
+    const smoke = puffs(400, false);
+    world.add(smoke.points, fire.points);
+    const pointScale = () => {
+      const h = renderer.getDrawingBufferSize(new THREE.Vector2()).y;
+      const s = h / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+      fire.material.uniforms.uScale.value = s;
+      smoke.material.uniforms.uScale.value = s;
+    };
+    pointScale();
 
     const standees = () =>
       [...live.current.values()].filter((l): l is Live => !!l);
@@ -455,7 +716,7 @@ export default function Stage3D({
         // doesn't snap it into a new shape. Going the other way flips it
         // over — passing through edge-on for a moment, as a fish turns.
         const ease = Math.min(1, dt * 12);
-        const symmetric = l.move === "jelly";
+        const symmetric = l.move === "jelly" || l.move === "rocket";
         const facing =
           (symmetric ? 1 : l.goingLeft ? -1 : 1) * (l.flip ? -1 : 1);
         const turnEase = l.move === "swim" ? Math.min(1, dt * 6) : ease;
@@ -463,6 +724,7 @@ export default function Stage3D({
         m.scale.y += (l.scale * want.sy - m.scale.y) * ease;
         m.scale.z += (l.scale - m.scale.z) * ease;
         m.rotation.z += (want.lean - m.rotation.z) * ease;
+        if (moving && l.move === "rocket") exhaust(l, dt, fire, smoke);
 
         // The chosen one sits a touch brighter.
         const mats = Array.isArray(m.material) ? m.material : [m.material];
@@ -471,6 +733,10 @@ export default function Stage3D({
             mat.emissiveIntensity = l.key === chosen ? 0.25 : 0;
           }
         }
+      }
+      if (running) {
+        fire.update(dt);
+        smoke.update(dt);
       }
       renderer.render(world, camera);
     };
@@ -482,6 +748,7 @@ export default function Stage3D({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
+      pointScale();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
@@ -497,6 +764,8 @@ export default function Stage3D({
       for (const l of meshes.values()) if (l) disposeMesh(l.mesh);
       meshes.clear();
       floor.geometry.dispose();
+      fire.dispose();
+      smoke.dispose();
       renderer.dispose();
       canvas.remove();
       scene.current = null;
@@ -521,6 +790,8 @@ export default function Stage3D({
             if (actor.move === "fly") existing.aim = 1.05;
             existing.vy = 0;
             existing.sinking = false;
+            // A rocket starts on the pad, lighting its engine.
+            existing.flight = 0;
           }
           existing.move = actor.move;
           existing.flip = actor.flip;
@@ -581,6 +852,9 @@ export default function Stage3D({
             aim: up || 1,
             sinking: false,
             hop: Math.random(),
+            flight: 0,
+            thrust: 0,
+            smoke: 0,
           });
         })
         .catch(() => {

@@ -11,7 +11,8 @@ export const MOVES: { id: Move3D; label: string }[] = [
   { id: "fly", label: "🐦 Fly" },
   { id: "hop", label: "🐸 Hop" },
   { id: "slither", label: "🐍 Slither" },
-  { id: "float", label: "🚀 Float" },
+  { id: "rocket", label: "🚀 Rocket" },
+  { id: "float", label: "🛸 Float" },
 ];
 export const MOVE_IDS = new Set<string>(MOVES.map((m) => m.id));
 
