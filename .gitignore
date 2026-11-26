@@ -45,3 +45,6 @@ next-env.d.ts
 # Blender build output (the app uses public/images/home-island.webp)
 blender/out/
 blender/__pycache__/
+
+# Space film frames (scripts/space-film/render.mjs → public/video/space-moon.mp4)
+scripts/space-film/out/

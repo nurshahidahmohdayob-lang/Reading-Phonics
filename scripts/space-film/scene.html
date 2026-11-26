@@ -1,0 +1,448 @@
+<!doctype html>
+<!--
+  The space backdrop for 3D Drawings: a bright cartoon moon. The children's
+  drawings stand on the lilac moon floor in the middle (the 3D stage's floor
+  covers about 56–77% of the height, so that band is kept plain for their
+  shadows), with a ringed planet and the Earth in the top corners, a rocket on
+  its launch pad on the left, glowing crystals and a flag on the right,
+  twinkling stars, a UFO and shooting stars. Light comes from the top right,
+  like the stage's sun, so the drawings' shadows agree with the picture.
+
+  draw(t) paints the frame at t seconds. Everything repeats every T seconds,
+  so the film loops without a jump. Rendered by render.mjs.
+-->
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+<canvas id="c" width="1280" height="720"></canvas>
+<script>
+const W = 1280, H = 720, T = 12, TAU = Math.PI * 2;
+const cv = document.getElementById("c");
+const g = cv.getContext("2d");
+const HORIZON = 392; // where the moon meets the sky
+
+function rng(seed) {
+  return () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+}
+/** A wave that repeats exactly k times per loop. */
+const wave = (t, k = 1, ph = 0) => Math.sin((TAU * k * t) / T + ph);
+const lerp = (a, b, f) => a + (b - a) * f;
+const OUT = "#2a1f5c"; // the soft ink outline round things
+
+/* ---------- things placed once ---------- */
+const R = rng(7);
+const stars = [];
+for (let i = 0; i < 260; i++) {
+  stars.push({
+    x: R() * W, y: Math.pow(R(), 1.25) * (HORIZON - 30),
+    r: 0.5 + R() * 1.5, k: 1 + Math.floor(R() * 4), ph: R() * TAU,
+    c: ["#ffffff", "#fff4c2", "#d6f1ff", "#ffd9f3"][Math.floor(R() * 4)],
+  });
+}
+// Big cartoon sparkles, kept off the planets.
+const sparkles = [
+  [520, 60, 11], [700, 130, 8], [610, 250, 7], [985, 300, 9], [380, 245, 8],
+  [860, 200, 10], [470, 140, 6], [760, 40, 7], [1020, 210, 6], [300, 300, 6],
+  [90, 300, 8], [1210, 260, 9], [1240, 40, 6], [40, 60, 7],
+].map(([x, y, s], i) => ({ x, y, s, k: 1 + (i % 3), ph: i * 1.7,
+  c: ["#fff7b0", "#ffffff", "#bff4ff", "#ffc8f0"][i % 4] }));
+
+const RC = rng(21);
+// Craters away from the middle of the floor, squashed by perspective.
+const craters = [];
+function crater(x, y, rx) { craters.push({ x, y, rx, ry: rx * lerp(0.22, 0.36, (y - HORIZON) / (H - HORIZON)) }); }
+crater(70, 640, 70); crater(250, 690, 46); crater(1185, 668, 80); crater(1010, 700, 40);
+crater(150, 455, 30); crater(1120, 450, 26); crater(330, 420, 16); crater(950, 418, 14);
+crater(560, 408, 9); crater(760, 412, 11); crater(640, 700, 34); crater(420, 655, 18); crater(880, 650, 20);
+for (let i = 0; i < 16; i++) {
+  const side = i % 2 ? 1 : -1;
+  const x = W / 2 + side * (360 + RC() * 300);
+  const y = HORIZON + 30 + RC() * (H - HORIZON - 40);
+  crater(x, y, 6 + RC() * 10);
+}
+craters.sort((a, b) => a.y - b.y);
+
+const RD = rng(99);
+const dust = Array.from({ length: 40 }, () => ({
+  x: RD() * W, y: RD() * H, r: 0.8 + RD() * 1.8, ph: RD(), k: 1 + Math.floor(RD() * 2),
+}));
+
+/* ---------- little helpers ---------- */
+function circle(x, y, r) { g.beginPath(); g.arc(x, y, r, 0, TAU); }
+function ellipse(x, y, rx, ry, rot = 0) { g.beginPath(); g.ellipse(x, y, rx, ry, rot, 0, TAU); }
+function ink(width = 3, colour = OUT) { g.lineWidth = width; g.strokeStyle = colour; g.lineJoin = "round"; g.lineCap = "round"; g.stroke(); }
+function glow(x, y, r, colour, alpha) {
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, colour.replace("A", alpha));
+  gr.addColorStop(1, colour.replace("A", 0));
+  g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function sparkle(x, y, s, colour) {
+  g.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * TAU) / 8 - TAU / 4;
+    const rr = i % 2 ? s * 0.28 : s;
+    g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  g.closePath(); g.fillStyle = colour; g.fill();
+}
+
+/* ---------- the sky ---------- */
+function sky(t) {
+  const gr = g.createLinearGradient(0, 0, 0, HORIZON + 20);
+  gr.addColorStop(0, "#160f45");
+  gr.addColorStop(0.45, "#2d2180");
+  gr.addColorStop(0.78, "#5b3aa8");
+  gr.addColorStop(1, "#b071cf");
+  g.fillStyle = gr; g.fillRect(0, 0, W, HORIZON + 40);
+  // Soft, drifting nebula clouds.
+  const neb = [
+    [330, 120, 260, "rgba(255,120,200,A)", 0.22, 0],
+    [960, 260, 300, "rgba(90,220,255,A)", 0.16, 2],
+    [640, 330, 380, "rgba(255,170,230,A)", 0.18, 4],
+    [1150, 330, 220, "rgba(180,130,255,A)", 0.2, 1],
+    [90, 210, 240, "rgba(120,170,255,A)", 0.16, 3],
+  ];
+  for (const [x, y, r, c, a, ph] of neb) glow(x + 14 * wave(t, 1, ph), y + 6 * wave(t, 1, ph + 1), r, c, a);
+  for (const s of stars) {
+    const tw = 0.55 + 0.45 * wave(t, s.k, s.ph);
+    g.globalAlpha = tw; circle(s.x, s.y, s.r); g.fillStyle = s.c; g.fill();
+  }
+  g.globalAlpha = 1;
+  for (const s of sparkles) {
+    const tw = 0.6 + 0.4 * wave(t, s.k, s.ph);
+    glow(s.x, s.y, s.s * 2.4, "rgba(255,255,255,A)", 0.25 * tw);
+    sparkle(s.x, s.y, s.s * (0.7 + 0.35 * tw), s.c);
+  }
+}
+
+/* ---------- the ringed planet, top left ---------- */
+function ringedPlanet(t) {
+  const x = 215, y = 140 + 5 * wave(t, 1), r = 80, tilt = -0.32;
+  glow(x, y, r * 2.1, "rgba(255,180,120,A)", 0.28);
+  const ring = (front) => {
+    g.save(); g.translate(x, y); g.rotate(tilt);
+    g.beginPath();
+    if (front) g.ellipse(0, 0, r * 1.75, r * 0.42, 0, 0, Math.PI);
+    else g.ellipse(0, 0, r * 1.75, r * 0.42, 0, Math.PI, TAU);
+    g.lineWidth = 22; g.strokeStyle = "#ffd98a"; g.stroke();
+    g.lineWidth = 7; g.strokeStyle = "#ff9fb8"; g.stroke();
+    g.beginPath();
+    if (front) g.ellipse(0, 0, r * 1.75 + 13, r * 0.42 + 11, 0, 0, Math.PI);
+    else g.ellipse(0, 0, r * 1.75 + 13, r * 0.42 + 11, 0, Math.PI, TAU);
+    ink(3);
+    g.beginPath();
+    if (front) g.ellipse(0, 0, r * 1.75 - 13, r * 0.42 - 11, 0, 0, Math.PI);
+    else g.ellipse(0, 0, r * 1.75 - 13, r * 0.42 - 11, 0, Math.PI, TAU);
+    ink(2.5);
+    g.restore();
+  };
+  ring(false);
+  // The body: warm bands that slowly ripple, lit from the top right.
+  g.save(); circle(x, y, r); g.clip();
+  g.fillStyle = "#ffb36b"; g.fillRect(x - r, y - r, r * 2, r * 2);
+  const bands = ["#ff8f5a", "#ffd08a", "#f0705f", "#ffc27a", "#ff9a6b"];
+  g.save(); g.translate(x, y); g.rotate(tilt);
+  for (let i = 0; i < 7; i++) {
+    const by = -r + (i + 0.5) * (r * 2 / 7);
+    g.beginPath();
+    for (let px = -r; px <= r; px += 4) {
+      const yy = by + 5 * Math.sin(px / 18 + (TAU * t) / T + i);
+      px === -r ? g.moveTo(px, yy - 7) : g.lineTo(px, yy - 7);
+    }
+    for (let px = r; px >= -r; px -= 4) {
+      const yy = by + 5 * Math.sin(px / 18 + (TAU * t) / T + i + 0.6);
+      g.lineTo(px, yy + 7);
+    }
+    g.closePath(); g.fillStyle = bands[i % bands.length]; g.fill();
+  }
+  g.restore();
+  const sh = g.createRadialGradient(x + r * 0.45, y - r * 0.45, r * 0.1, x, y, r * 1.15);
+  sh.addColorStop(0, "rgba(255,255,230,0.55)");
+  sh.addColorStop(0.45, "rgba(255,255,255,0)");
+  sh.addColorStop(1, "rgba(60,20,90,0.55)");
+  g.fillStyle = sh; g.fillRect(x - r, y - r, r * 2, r * 2);
+  g.restore();
+  circle(x, y, r); ink(3.5);
+  ring(true);
+}
+
+/* ---------- the Earth, top right, turning ---------- */
+const LANDS = [
+  [0.0, -0.25, 0.42, 0.34], [0.9, 0.2, 0.36, 0.42], [1.9, -0.35, 0.5, 0.26],
+  [2.9, 0.3, 0.3, 0.3], [3.8, -0.05, 0.46, 0.4], [4.9, 0.4, 0.28, 0.22], [5.6, -0.4, 0.3, 0.2],
+];
+const CLOUDS = [[0.4, 0.05, 0.5], [1.7, -0.55, 0.4], [2.6, 0.55, 0.45], [3.6, -0.2, 0.35], [4.6, 0.15, 0.55], [5.5, 0.6, 0.35]];
+function earth(t) {
+  const x = 1105, y = 118 + 4 * wave(t, 1, 2), r = 52;
+  glow(x, y, r * 2, "rgba(120,210,255,A)", 0.35);
+  g.save(); circle(x, y, r); g.clip();
+  const sea = g.createRadialGradient(x + r * 0.35, y - r * 0.35, 4, x, y, r);
+  sea.addColorStop(0, "#7fe0ff"); sea.addColorStop(1, "#2a7fe0");
+  g.fillStyle = sea; g.fillRect(x - r, y - r, r * 2, r * 2);
+  const spin = (TAU * t) / T;
+  const blobAt = (lon, lat, w, h, colour, edge) => {
+    const a = lon + spin, c = Math.cos(a);
+    if (c < -0.1) return;
+    const bx = x + Math.sin(a) * r * Math.cos(lat * 1.2), by = y + lat * r;
+    ellipse(bx, by, Math.max(1, w * r * Math.max(0, c + 0.1)), h * r, 0);
+    g.fillStyle = colour; g.fill();
+    if (edge) ink(2, edge);
+  };
+  for (const [lon, lat, w, h] of LANDS) blobAt(lon, lat, w, h, "#5fd36a", "#2f9a4a");
+  for (const [lon, lat, w] of CLOUDS) blobAt(lon * 1 + spin, lat, w, 0.11, "rgba(255,255,255,0.9)");
+  const sh = g.createRadialGradient(x + r * 0.4, y - r * 0.4, r * 0.2, x, y, r * 1.1);
+  sh.addColorStop(0, "rgba(255,255,255,0.25)");
+  sh.addColorStop(0.5, "rgba(255,255,255,0)");
+  sh.addColorStop(1, "rgba(20,20,80,0.55)");
+  g.fillStyle = sh; g.fillRect(x - r, y - r, r * 2, r * 2);
+  g.restore();
+  circle(x, y, r); ink(3.5);
+}
+
+/* ---------- small far planets ---------- */
+function littlePlanets(t) {
+  const p = [[890, 70, 16, "#c58cff", "#8a52e0", 0], [420, 52, 10, "#7af0c8", "#2fae8f", 2], [1230, 330, 12, "#ff9ec7", "#e0558f", 4]];
+  for (const [x0, y0, r, a, b, ph] of p) {
+    const x = x0, y = y0 + 3 * wave(t, 1, ph);
+    glow(x, y, r * 2.4, "rgba(255,255,255,A)", 0.12);
+    const gr = g.createRadialGradient(x + r * 0.4, y - r * 0.4, 1, x, y, r);
+    gr.addColorStop(0, a); gr.addColorStop(1, b);
+    circle(x, y, r); g.fillStyle = gr; g.fill(); ink(2.5);
+  }
+}
+
+/* ---------- shooting stars ---------- */
+function shootingStars(t) {
+  const runs = [[1.5, 1.1, 560, 40, 900, 150], [7.2, 1.0, 790, 28, 570, 120]];
+  for (const [start, dur, x0, y0, x1, y1] of runs) {
+    const f = (t - start) / dur;
+    if (f < 0 || f > 1) continue;
+    const e = f * f * (3 - 2 * f);
+    const x = lerp(x0, x1, e), y = lerp(y0, y1, e);
+    const fade = Math.sin(Math.PI * f);
+    const tx = x - (x1 - x0) * 0.35, ty = y - (y1 - y0) * 0.35;
+    const gr = g.createLinearGradient(tx, ty, x, y);
+    gr.addColorStop(0, "rgba(255,255,255,0)");
+    gr.addColorStop(1, `rgba(255,250,210,${0.95 * fade})`);
+    g.beginPath(); g.moveTo(tx, ty); g.lineTo(x, y);
+    g.lineWidth = 4; g.strokeStyle = gr; g.stroke();
+    g.globalAlpha = fade; sparkle(x, y, 9, "#fffbd8"); g.globalAlpha = 1;
+  }
+}
+
+/* ---------- a friendly UFO, far off on the right ---------- */
+function ufo(t) {
+  const x = 950 + 46 * wave(t, 1), y = 245 + 12 * wave(t, 2, 1);
+  g.save(); g.translate(x, y); g.rotate(0.06 * wave(t, 2));
+  ellipse(0, -9, 15, 13); g.fillStyle = "rgba(180,240,255,0.95)"; g.fill(); ink(2.5);
+  circle(0, -10, 6); g.fillStyle = "#7ae37a"; g.fill(); ink(2); // the little alien
+  circle(-2, -11, 1.4); circle(2.5, -11, 1.4); g.fillStyle = OUT; g.fill();
+  ellipse(0, 0, 32, 9); g.fillStyle = "#c0c6e8"; g.fill(); ink(2.5);
+  for (let i = 0; i < 5; i++) {
+    const on = Math.floor((t * 3 + i) % 5) === 0 ? 1 : 0.35;
+    circle(-20 + i * 10, 2, 2.6);
+    g.fillStyle = `rgba(255,${200 - i * 20},${120 + i * 25},${on})`; g.fill();
+  }
+  g.restore();
+}
+
+/* ---------- the moon ---------- */
+function farHills() {
+  const layer = (base, amp, colour, seed, edge) => {
+    const r = rng(seed);
+    const pts = [];
+    for (let x = -40; x <= W + 40; x += 80) pts.push([x, base - r() * amp]);
+    g.beginPath(); g.moveTo(-40, HORIZON + 30);
+    g.lineTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = pts[i - 1], [cx, cy] = pts[i];
+      g.quadraticCurveTo(px, py, (px + cx) / 2, (py + cy) / 2);
+    }
+    g.lineTo(W + 40, HORIZON + 30); g.closePath();
+    g.fillStyle = colour; g.fill();
+    if (edge) ink(2.5, edge);
+  };
+  layer(HORIZON - 4, 70, "#7a5bbd", 3, "#5a3f9a");
+  layer(HORIZON + 6, 34, "#9878d0", 11, "#6d52ad");
+}
+function ground(t) {
+  const gr = g.createLinearGradient(0, HORIZON, 0, H);
+  gr.addColorStop(0, "#a98bdf");
+  gr.addColorStop(0.3, "#c4aaee");
+  gr.addColorStop(0.7, "#cdb5f1");
+  gr.addColorStop(1, "#b598e6");
+  g.fillStyle = gr; g.fillRect(0, HORIZON, W, H - HORIZON);
+  // A soft rim of light along the far edge.
+  const rim = g.createLinearGradient(0, HORIZON - 4, 0, HORIZON + 26);
+  rim.addColorStop(0, "rgba(255,220,255,0.55)"); rim.addColorStop(1, "rgba(255,220,255,0)");
+  g.fillStyle = rim; g.fillRect(0, HORIZON - 4, W, 30);
+  // Gentle sandy speckle so the floor isn't flat colour.
+  const RS = rng(5);
+  for (let i = 0; i < 420; i++) {
+    const y = HORIZON + 8 + Math.pow(RS(), 0.8) * (H - HORIZON);
+    const x = RS() * W, f = (y - HORIZON) / (H - HORIZON);
+    ellipse(x, y, 1 + f * 2.2, 0.5 + f * 0.9);
+    g.fillStyle = RS() < 0.5 ? "rgba(255,255,255,0.35)" : "rgba(110,80,180,0.22)"; g.fill();
+  }
+  for (const c of craters) {
+    ellipse(c.x, c.y, c.rx, c.ry); g.fillStyle = "#a184d6"; g.fill();
+    ellipse(c.x - c.rx * 0.08, c.y - c.ry * 0.15, c.rx * 0.82, c.ry * 0.68); g.fillStyle = "#8f72c9"; g.fill();
+    g.beginPath(); g.ellipse(c.x, c.y, c.rx, c.ry, 0, 0.1, Math.PI - 0.1);
+    g.lineWidth = Math.max(1.5, c.rx * 0.09); g.strokeStyle = "#f3eaff"; g.stroke();
+    g.beginPath(); g.ellipse(c.x, c.y, c.rx, c.ry, 0, Math.PI + 0.15, TAU - 0.15);
+    g.lineWidth = Math.max(1, c.rx * 0.05); g.strokeStyle = "#8a6cc4"; g.stroke();
+  }
+  // Moon rocks in the near corners.
+  const rocks = [[30, 600, 46, 30], [110, 700, 60, 34], [1240, 590, 50, 30], [1160, 715, 66, 36], [1268, 690, 40, 30], [-10, 705, 50, 34]];
+  for (const [x, y, rx, ry] of rocks) {
+    ellipse(x, y, rx, ry); g.fillStyle = "#9c80d2"; g.fill(); ink(3);
+    ellipse(x + rx * 0.25, y - ry * 0.35, rx * 0.45, ry * 0.3); g.fillStyle = "rgba(255,255,255,0.28)"; g.fill();
+  }
+}
+
+/* ---------- the rocket on its launch pad, left ---------- */
+function rocket(t) {
+  const bx = 150, by = 530; // where it stands
+  // The launch tower behind it.
+  g.save();
+  g.fillStyle = "#7b5cc0";
+  g.fillRect(bx - 95, by - 230, 14, 230);
+  g.beginPath(); g.rect(bx - 95, by - 230, 14, 230); ink(2.5);
+  for (let i = 0; i < 8; i++) {
+    g.beginPath(); g.moveTo(bx - 95, by - 220 + i * 28); g.lineTo(bx - 81, by - 206 + i * 28); ink(2, "#5a3f9a");
+  }
+  g.fillRect(bx - 81, by - 150, 36, 8); g.beginPath(); g.rect(bx - 81, by - 150, 36, 8); ink(2.5);
+  const blink = (Math.floor(t * 2) % 2) === 0;
+  circle(bx - 88, by - 238, 6); g.fillStyle = blink ? "#ff5b7a" : "#7a2a45"; g.fill(); ink(2);
+  if (blink) glow(bx - 88, by - 238, 26, "rgba(255,90,120,A)", 0.6);
+  g.restore();
+  // The pad.
+  ellipse(bx, by + 6, 92, 20); g.fillStyle = "#8a6cc4"; g.fill(); ink(3);
+  ellipse(bx, by, 80, 15); g.fillStyle = "#b9a2e6"; g.fill(); ink(2.5);
+  // Steam puffing out from under it, rising and fading.
+  for (let i = 0; i < 6; i++) {
+    const f = ((t / T) * 4 + i / 6) % 1;
+    const side = i % 2 ? 1 : -1;
+    const px = bx + side * (18 + f * 60), py = by - 4 - f * 34;
+    g.globalAlpha = 0.85 * (1 - f);
+    circle(px, py, 10 + f * 16); g.fillStyle = "#ffffff"; g.fill();
+    g.globalAlpha = 1;
+  }
+  // The rocket.
+  const hover = 1.2 * wave(t, 6);
+  g.save(); g.translate(bx, by - 12 + hover);
+  const fin = (s) => {
+    g.beginPath(); g.moveTo(s * 26, -70); g.quadraticCurveTo(s * 58, -40, s * 52, 0); g.lineTo(s * 24, -18); g.closePath();
+    g.fillStyle = "#ff5b6e"; g.fill(); ink(3);
+  };
+  fin(-1); fin(1);
+  g.beginPath();
+  g.moveTo(0, -205);
+  g.bezierCurveTo(40, -170, 36, -60, 28, -14);
+  g.lineTo(-28, -14);
+  g.bezierCurveTo(-36, -60, -40, -170, 0, -205);
+  const body = g.createLinearGradient(-30, 0, 34, 0);
+  body.addColorStop(0, "#d8d4f0"); body.addColorStop(0.55, "#ffffff"); body.addColorStop(1, "#c9c3ea");
+  g.fillStyle = body; g.fill(); ink(3.5);
+  // Nose cone.
+  g.save(); g.clip();
+  g.fillStyle = "#ff5b6e"; g.fillRect(-45, -215, 90, 52);
+  g.beginPath(); g.moveTo(-45, -163); g.lineTo(45, -163); ink(3);
+  g.restore();
+  // Window.
+  circle(0, -118, 17); g.fillStyle = "#ffcf4d"; g.fill(); ink(3);
+  circle(0, -118, 11); const win = g.createRadialGradient(-4, -122, 1, 0, -118, 11);
+  win.addColorStop(0, "#c8f4ff"); win.addColorStop(1, "#3aa6e8"); g.fillStyle = win; g.fill(); ink(2);
+  circle(-4, -122, 3); g.fillStyle = "rgba(255,255,255,0.9)"; g.fill();
+  // Middle fin and stripe.
+  g.beginPath(); g.moveTo(-6, -60); g.lineTo(6, -60); g.lineTo(4, -8); g.lineTo(-4, -8); g.closePath();
+  g.fillStyle = "#e0465a"; g.fill(); ink(2.5);
+  g.beginPath(); g.moveTo(-30, -48); g.quadraticCurveTo(0, -42, 30, -48); ink(2.5);
+  // Nozzle.
+  g.beginPath(); g.moveTo(-18, -14); g.lineTo(18, -14); g.lineTo(22, 0); g.lineTo(-22, 0); g.closePath();
+  g.fillStyle = "#6f5aa8"; g.fill(); ink(3);
+  g.restore();
+}
+
+/* ---------- crystals and a flag, right ---------- */
+function crystals(t) {
+  const base = [[1150, 545], [1215, 520]];
+  const set = [
+    [1150, 545, 0, 70, 20, "#7ff5ff", "#2bb8d8"], [1124, 548, -0.4, 46, 15, "#ff9ef0", "#d94fb8"],
+    [1176, 550, 0.35, 52, 16, "#b8a2ff", "#7a5ae6"], [1215, 520, 0.1, 54, 16, "#ff9ef0", "#d94fb8"],
+    [1236, 524, 0.45, 36, 12, "#7ff5ff", "#2bb8d8"],
+  ];
+  const pulse = 0.5 + 0.5 * wave(t, 2);
+  for (const [x, y] of base) glow(x, y - 30, 120, "rgba(150,240,255,A)", 0.22 + 0.18 * pulse);
+  for (const [x, y, rot, h, w, light, dark] of set) {
+    g.save(); g.translate(x, y); g.rotate(rot);
+    g.beginPath(); g.moveTo(-w, 0); g.lineTo(-w, -h * 0.7); g.lineTo(0, -h); g.lineTo(w, -h * 0.7); g.lineTo(w, 0); g.closePath();
+    g.fillStyle = dark; g.fill();
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -h); g.lineTo(w, -h * 0.7); g.lineTo(w, 0); g.closePath();
+    g.fillStyle = light; g.fill();
+    g.beginPath(); g.moveTo(-w, 0); g.lineTo(-w, -h * 0.7); g.lineTo(0, -h); g.lineTo(w, -h * 0.7); g.lineTo(w, 0); g.closePath(); ink(3);
+    g.beginPath(); g.moveTo(0, -h); g.lineTo(0, 0); ink(1.5, "rgba(42,31,92,0.5)");
+    g.restore();
+  }
+  // A twinkle that hops between the crystals.
+  const which = Math.floor((t / T) * 6) % set.length;
+  const tf = ((t / T) * 6) % 1;
+  const [sx, sy, , sh] = set[which];
+  g.globalAlpha = Math.sin(Math.PI * tf);
+  sparkle(sx + 6, sy - sh * 0.8, 10, "#ffffff"); g.globalAlpha = 1;
+  ellipse(1180, 552, 90, 12); g.fillStyle = "rgba(90,60,150,0.25)"; g.fill();
+}
+function flag(t) {
+  const x = 1010, y = 478;
+  ellipse(x, y + 2, 16, 4); g.fillStyle = "rgba(90,60,150,0.3)"; g.fill();
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 110); ink(5, OUT); g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 110); ink(2.5, "#e8e4ff");
+  // A cloth that ripples (slowly — there's no wind on the moon, but it's a cartoon).
+  g.beginPath();
+  const top = y - 108, w = 66, h = 42;
+  g.moveTo(x, top);
+  for (let i = 0; i <= 12; i++) { const px = (i / 12) * w; g.lineTo(x + px, top + 4 * Math.sin(px / 14 - (TAU * 2 * t) / T) * (px / w)); }
+  for (let i = 12; i >= 0; i--) { const px = (i / 12) * w; g.lineTo(x + px, top + h + 4 * Math.sin(px / 14 - (TAU * 2 * t) / T) * (px / w)); }
+  g.closePath(); g.fillStyle = "#ffcf4d"; g.fill(); ink(3);
+  const wy = 4 * Math.sin(33 / 14 - (TAU * 2 * t) / T) * 0.5;
+  sparkle(x + 33, top + h / 2 + wy, 13, "#ff5b6e");
+}
+
+/* ---------- floating moon dust in front ---------- */
+function moonDust(t) {
+  for (const d of dust) {
+    const f = ((t / T) * d.k + d.ph) % 1;
+    const y = d.y - f * 120;
+    const a = Math.sin(Math.PI * f) * 0.7;
+    g.globalAlpha = a; circle(d.x + 8 * Math.sin(f * TAU), (y + H) % H, d.r); g.fillStyle = "#ffffff"; g.fill();
+  }
+  g.globalAlpha = 1;
+}
+function vignette() {
+  const v = g.createRadialGradient(W / 2, H * 0.55, H * 0.45, W / 2, H * 0.55, W * 0.75);
+  v.addColorStop(0, "rgba(20,10,60,0)"); v.addColorStop(1, "rgba(20,10,60,0.32)");
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
+}
+
+function draw(t) {
+  t = ((t % T) + T) % T;
+  g.clearRect(0, 0, W, H);
+  sky(t);
+  littlePlanets(t);
+  shootingStars(t);
+  ringedPlanet(t);
+  earth(t);
+  ufo(t);
+  farHills();
+  ground(t);
+  flag(t);
+  crystals(t);
+  rocket(t);
+  moonDust(t);
+  vignette();
+}
+draw(0);
+window.frameAt = (t) => { draw(t); return cv.toDataURL("image/png"); };
+</script>
