@@ -13,9 +13,9 @@ import { tmpdir } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
-const NAME = "space-moon";
+const NAME = "space-walk";
 const FPS = 24;
-const SECONDS = 12; // must match T in scene.html
+const SECONDS = 16; // must match T in scene.html
 const OUT = join(HERE, "out");
 const FRAMES = join(OUT, "frames");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";

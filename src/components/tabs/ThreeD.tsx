@@ -74,7 +74,7 @@ type Actor = {
 };
 
 /** The places a drawing can be put in: looping films in public/video. The
-    jungle, meadow and ocean are films; space is a cartoon moon drawn for
+    jungle, meadow and ocean are films; space is a walk across a cartoon moon drawn for
     the stage (scripts/space-film), its floor lined up with the stage's. */
 const BACKDROPS = [
   { id: "jungle", label: "🌴 Jungle", place: "the jungle" },
@@ -815,7 +815,7 @@ export default function ThreeD(_props: { family?: boolean }) {
     phone as well as the class screen. */
 /** A place's film, when it isn't simply named after the place. A new film
     gets a new name, so devices that kept the old one fetch it afresh. */
-const FILM: Partial<Record<BackdropId, string>> = { space: "space-moon" };
+const FILM: Partial<Record<BackdropId, string>> = { space: "space-walk" };
 
 function Backdrop({ id }: { id: BackdropId }) {
   const film = FILM[id] ?? id;

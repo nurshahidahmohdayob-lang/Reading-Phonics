@@ -46,5 +46,5 @@ next-env.d.ts
 blender/out/
 blender/__pycache__/
 
-# Space film frames (scripts/space-film/render.mjs → public/video/space-moon.mp4)
+# Space film frames (scripts/space-film/render.mjs → public/video/space-walk.mp4)
 scripts/space-film/out/
